@@ -33,6 +33,12 @@ public class Utils {
 		return Base64Coder.encodeLines(output, 0, output.length, 120, "");
 	}
 	
+	public synchronized static String base64Hash(String s) {
+		md.update(s.getBytes());
+		byte[] output = md.digest();
+		return Base64Coder.encodeLines(output, 0, output.length, 120, "");
+	}
+	
 	public static String clockString(long millis) {
 		long totalSecs = millis / 1000;
 		
