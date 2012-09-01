@@ -14,9 +14,8 @@ public class FileObjUtils {
 
 	/**
 	 * 
-	 * @param <T>
 	 * @param filename
-	 * @param spd
+	 * @param obj
 	 */
 	public static <T> void writeToGZIP(String filename, T obj) {
 		ObjectOutputStream os = null;
@@ -43,9 +42,8 @@ public class FileObjUtils {
 
 	/**
 	 * 
-	 * @param <T>
 	 * @param filename
-	 * @param spd A generically typed value to allow the type cast to work correctly, usually set to null.
+	 * @param obj
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
