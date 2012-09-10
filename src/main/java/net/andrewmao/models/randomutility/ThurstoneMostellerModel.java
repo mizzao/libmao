@@ -38,6 +38,8 @@ public class ThurstoneMostellerModel<T> implements RandomUtilityModel<T> {
 		});
 		
 		optim = new PowellOptimizer();
+		optim.setMaxIterations(500); // Due to Optimization exception for default of 100
+		
 		logLKfunc = new TMLogLikelihood(mat);
 	}
 	
