@@ -94,7 +94,8 @@ public class Utils {
 	//					System.out.println("Checking out " + ni.getName() + " with address " + addr.toString());
 						
 						if (!addr.isSiteLocalAddress() && 
-								!addr.isLoopbackAddress() &&
+								!addr.isLoopbackAddress() && 
+								!addr.isLinkLocalAddress() &&
 								addr.getHostAddress().indexOf(":") == -1) { // MAC/IPv6 address detection
 							System.out.println("Interface " + ni.getName()
 									+ " seems to be InternetInterface. I'll take address " + addr.toString());

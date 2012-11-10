@@ -62,6 +62,28 @@ public class RandomSelection {
 	}
 
 	/**
+	 * Selects indices from an array based on weights.
+	 * 
+	 * @param wts
+	 * @param rnd 
+	 * @return
+	 */
+	public static int selectRandomWeighted(double[] wts, Random rnd) {
+		int selected = 0;
+		double total = wts[0];
+		
+		for( int i = 1; i < wts.length; i++ ) {
+			total += wts[i];
+			
+			if( rnd.nextDouble() <= (wts[i] / total)) {
+				selected = i;
+			}
+		}
+		
+		return selected;		
+	}
+	
+	/**
 	 * N choose K from a list.
 	 * @param <T>
 	 * @param list
