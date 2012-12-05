@@ -61,6 +61,10 @@ public class Utils {
 		return DATE_FORMAT.format(Calendar.getInstance().getTime());
 	}
 	
+	public static String getTimeString(long startTime) {		
+		return DATE_FORMAT.format(new Date(startTime));
+	}
+
 	public static String getTimeStringFromDate(Date date) {
 		return DATE_FORMAT.format(date);
 	}
