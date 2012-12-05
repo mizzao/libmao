@@ -29,6 +29,10 @@ public class Pair<T1, T2> implements Serializable {
 		}
 	}
 	
+	public String toString() {
+		return "(" + t1.toString() + ", " + t2.toString() + ")";
+	}
+	
 	public <O1, O2> boolean equals(Pair<O1, O2> other) {
 		return this.t1.equals(other.t1) && this.t2.equals(other.t2);
 	}
