@@ -3,17 +3,14 @@ package net.andrewmao.models.randomutility;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.math.MathException;
-import org.apache.commons.math.linear.Array2DRowRealMatrix;
-import org.apache.commons.math.linear.ArrayRealVector;
-import org.apache.commons.math.linear.DefaultRealMatrixChangingVisitor;
-import org.apache.commons.math.linear.MatrixVisitorException;
-import org.apache.commons.math.linear.RealMatrix;
-import org.apache.commons.math.linear.RealVector;
-import org.apache.commons.math.optimization.GoalType;
-import org.apache.commons.math.optimization.RealPointValuePair;
-import org.apache.commons.math.optimization.direct.PowellOptimizer;
-import org.apache.commons.math.optimization.general.AbstractScalarDifferentiableOptimizer;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.DefaultRealMatrixChangingVisitor;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.optimization.GoalType;
+import org.apache.commons.math3.optimization.PointValuePair;
+import org.apache.commons.math3.optimization.direct.PowellOptimizer;
 
 public class ThurstoneMostellerModel<T> implements RandomUtilityModel<T> {
 	
@@ -21,15 +18,14 @@ public class ThurstoneMostellerModel<T> implements RandomUtilityModel<T> {
 	private RealMatrix mat;
 	
 	private TMLogLikelihood logLKfunc;
-	private AbstractScalarDifferentiableOptimizer optim;
+	private PowellOptimizer optim;
 	
 	public ThurstoneMostellerModel(List<T> items) {
 		this.items = items;				
 		
 		mat = new Array2DRowRealMatrix(items.size(), items.size());		
 		mat.walkInRowOrder(new DefaultRealMatrixChangingVisitor() {
-			public double visit(int row, int column, double value)
-					throws MatrixVisitorException {
+			public double visit(int row, int column, double value) {
 				if (row == column)
 					return 0;
 				else
@@ -37,8 +33,7 @@ public class ThurstoneMostellerModel<T> implements RandomUtilityModel<T> {
 			}
 		});
 		
-		optim = new PowellOptimizer();
-		optim.setMaxIterations(500); // Due to Optimization exception for default of 100
+		optim = new PowellOptimizer(1e-7, 1e-11); // From commons 2.2 defaults
 		
 		logLKfunc = new TMLogLikelihood(mat);
 	}
@@ -52,14 +47,16 @@ public class ThurstoneMostellerModel<T> implements RandomUtilityModel<T> {
 	}
 
 	@Override
-	public double[] getParameters() throws MathException {
+	public double[] getParameters() {
 		double[] start = new double[items.size() - 1];
 		Arrays.fill(start, 0.0);
 		
-		RealPointValuePair result = optim.optimize(logLKfunc, GoalType.MINIMIZE, start);
-		RealVector strEst = new ArrayRealVector(new double[] {0.0});
-		strEst = strEst.append(result.getPoint());
-		return strEst.getData();		
+		// Due to Optimization exception for default of 100
+		PointValuePair result = optim.optimize(500, logLKfunc, GoalType.MINIMIZE, start);
+				
+		RealVector strEst = new ArrayRealVector(new double[] {0.0}, result.getPoint());
+		
+		return strEst.toArray();		
 	}
 
 }

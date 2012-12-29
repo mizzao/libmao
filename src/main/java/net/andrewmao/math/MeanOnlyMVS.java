@@ -2,10 +2,10 @@ package net.andrewmao.math;
 
 import org.apache.commons.lang.NotImplementedException;
 
-import org.apache.commons.math.linear.RealMatrix;
-import org.apache.commons.math.stat.descriptive.StatisticalMultivariateSummary;
-import org.apache.commons.math.stat.descriptive.StorelessUnivariateStatistic;
-import org.apache.commons.math.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.stat.descriptive.StatisticalMultivariateSummary;
+import org.apache.commons.math3.stat.descriptive.StorelessUnivariateStatistic;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
 
 public final class MeanOnlyMVS implements StatisticalMultivariateSummary { 
 	

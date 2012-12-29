@@ -1,4 +1,4 @@
-package net.andrewmao.math;
+package net.andrewmao.stat;
 
 /**
  * Binomial distribution

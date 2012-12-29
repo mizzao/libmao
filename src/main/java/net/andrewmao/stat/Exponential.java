@@ -1,7 +1,7 @@
 /**
  * An exponential distribution
  */
-package net.andrewmao.math;
+package net.andrewmao.stat;
 
 import java.util.Random;
 

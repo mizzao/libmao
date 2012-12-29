@@ -2,20 +2,15 @@ package net.andrewmao.models.randomutility;
 
 import java.util.Arrays;
 
-import org.apache.commons.math.FunctionEvaluationException;
-import org.apache.commons.math.MathException;
-import org.apache.commons.math.analysis.DifferentiableMultivariateRealFunction;
-import org.apache.commons.math.analysis.MultivariateRealFunction;
-import org.apache.commons.math.analysis.MultivariateVectorialFunction;
-import org.apache.commons.math.distribution.NormalDistribution;
-import org.apache.commons.math.distribution.NormalDistributionImpl;
-import org.apache.commons.math.linear.Array2DRowRealMatrix;
-import org.apache.commons.math.linear.ArrayRealVector;
-import org.apache.commons.math.linear.MatrixIndexException;
-import org.apache.commons.math.linear.MatrixVisitorException;
-import org.apache.commons.math.linear.RealMatrix;
-import org.apache.commons.math.linear.RealMatrixChangingVisitor;
-import org.apache.commons.math.linear.RealVector;
+import org.apache.commons.math3.analysis.DifferentiableMultivariateFunction;
+import org.apache.commons.math3.analysis.MultivariateFunction;
+import org.apache.commons.math3.analysis.MultivariateVectorFunction;
+import org.apache.commons.math3.distribution.NormalDistribution;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealMatrixChangingVisitor;
+import org.apache.commons.math3.linear.RealVector;
 
 /**
  * Thurstone-Mosteller log likelihood with first parameter fixed to 0 
@@ -24,9 +19,9 @@ import org.apache.commons.math.linear.RealVector;
  * @author Mao
  *
  */
-public class TMLogLikelihood implements DifferentiableMultivariateRealFunction {
+public class TMLogLikelihood implements DifferentiableMultivariateFunction {
 	
-	private NormalDistribution normdist = new NormalDistributionImpl();
+	private NormalDistribution normdist = new NormalDistribution();
 	
 	private RealMatrix mat;
 	
@@ -37,30 +32,24 @@ public class TMLogLikelihood implements DifferentiableMultivariateRealFunction {
 	/**
 	 * Calculate the log likelihood of matrix @mat given strength estimate @point
 	 */
+	@Override
 	public double value(final double[] point)
-			throws FunctionEvaluationException, IllegalArgumentException {
+			throws IllegalArgumentException {
 
 		// Add 0 to the front of the array
 		int actualLength = point.length + 1;
-		RealVector pointNewVector = new ArrayRealVector(new double[] { 0.0 });
-		pointNewVector = pointNewVector.append(point);
-		double[] pointNew = pointNewVector.getData();
+		RealVector pointNew = new ArrayRealVector(new double[] { 0.0 }, point);		
 
 		double l = 0;
-		try {
-			for (int i = 0; i < actualLength; i++) {
-				for (int j = 0; j < actualLength; j++) {
-					if (i == j)
-						continue;
-					l -= mat.getEntry(i, j)	* Math.log(normdist
-							.cumulativeProbability(pointNew[i] - pointNew[j]));
-				}
+		
+		for (int i = 0; i < actualLength; i++) {
+			for (int j = 0; j < actualLength; j++) {
+				if (i == j)	continue;
+				
+				l -= mat.getEntry(i, j)	* Math.log(normdist
+						.cumulativeProbability(pointNew.getEntry(i) - pointNew.getEntry(j)));
 			}
-		} catch (MatrixIndexException e) {
-			e.printStackTrace();
-		} catch (MathException e) {
-			e.printStackTrace();
-		}
+		}		
 
 		return l;
 	}
@@ -68,32 +57,27 @@ public class TMLogLikelihood implements DifferentiableMultivariateRealFunction {
 	/**
 	 * Compute the partial derivative of the log likelihood function
 	 */
-	public MultivariateRealFunction partialDerivative(final int i) {
-		return new MultivariateRealFunction() {
-			public double value(double[] point)	
-					throws FunctionEvaluationException,	IllegalArgumentException {
+	public MultivariateFunction partialDerivative(final int i) {
+		return new MultivariateFunction() {
+			@Override
+			public double value(double[] point)	throws IllegalArgumentException {
 				
 				// Add 0 to the front of the array
 				int actualLength = point.length + 1;
-				RealVector pointNewVector = new ArrayRealVector(new double[] {0.0});
-				pointNewVector = pointNewVector.append(point);
-				double[] pointNew = pointNewVector.getData();
+				RealVector pointNew = new ArrayRealVector(new double[] { 0.0 }, point);								
 
 				double value = 0;
 				
 				for (int j = 0; j < actualLength; j++) {
-					try {
-						value += mat.getEntry(i, j)
-								* normdist.density(pointNew[i] - pointNew[j])
-								/ normdist.cumulativeProbability(pointNew[i]- pointNew[j]);
-						value -= mat.getEntry(j, i)
-								* normdist.density(pointNew[j] - pointNew[i])
-								/ normdist.cumulativeProbability(pointNew[j]- pointNew[i]);
-					} catch (MatrixIndexException e) {
-						e.printStackTrace();
-					} catch (MathException e) {
-						e.printStackTrace();
-					}
+					double i_minus_j = pointNew.getEntry(i) - pointNew.getEntry(j);
+					double j_minus_i = pointNew.getEntry(j) - pointNew.getEntry(i);
+					
+					value += mat.getEntry(i, j)
+							* normdist.density(i_minus_j)
+							/ normdist.cumulativeProbability(i_minus_j);
+					value -= mat.getEntry(j, i)
+							* normdist.density(j_minus_i)
+							/ normdist.cumulativeProbability(j_minus_i);
 				}
 				return (-1)*value;
 			}
@@ -103,16 +87,15 @@ public class TMLogLikelihood implements DifferentiableMultivariateRealFunction {
 	/**
 	 * Compute the gradient of the log likelihood function
 	 */
-	public MultivariateVectorialFunction gradient() {
-		return new MultivariateVectorialFunction() {
+	public MultivariateVectorFunction gradient() {
+		return new MultivariateVectorFunction() {
+			@Override
 			public double[] value(double[] point) 
-					throws FunctionEvaluationException, IllegalArgumentException {
+					throws IllegalArgumentException {
 
 				// Add 0 to the front of the array
 				int actualLength = point.length + 1;
-				RealVector pointNewVector = new ArrayRealVector(new double[] {0.0});
-				pointNewVector = pointNewVector.append(point);
-				double[] pointNew = pointNewVector.getData();
+				RealVector pointNew = new ArrayRealVector(new double[] { 0.0 }, point);
 
 				
 				double[] values = new double[actualLength];
@@ -121,19 +104,17 @@ public class TMLogLikelihood implements DifferentiableMultivariateRealFunction {
 				for (int i = 0; i < actualLength; i++) {
 					for (int j = 0; j < actualLength; j++) {
 						if (i == j) continue;
-						try {
-							values[i] += mat.getEntry(i, j)
-										* normdist.density(pointNew[i] - pointNew[j])
-										/ normdist.cumulativeProbability(pointNew[i]- pointNew[j]);
-							values[i] -= mat.getEntry(j, i)
-										* normdist.density(pointNew[j] - pointNew[i])
-										/ normdist.cumulativeProbability(pointNew[j]- pointNew[i]);
+						
+						double i_minus_j = pointNew.getEntry(i) - pointNew.getEntry(j);
+						double j_minus_i = pointNew.getEntry(j) - pointNew.getEntry(i);
 
-						} catch (MatrixIndexException e) {
-							e.printStackTrace();
-						} catch (MathException e) {
-							e.printStackTrace();
-						}
+						values[i] += mat.getEntry(i, j)
+								* normdist.density(i_minus_j)
+								/ normdist.cumulativeProbability(i_minus_j);
+						values[i] -= mat.getEntry(j, i)
+								* normdist.density(j_minus_i)
+								/ normdist.cumulativeProbability(j_minus_i);
+
 					}
 					values[i] = (-1)* values[i];
 				}
@@ -147,7 +128,7 @@ public class TMLogLikelihood implements DifferentiableMultivariateRealFunction {
 	/**
 	 * Compute the 2nd order derivatives of the log likelihood function
 	 */
-	public RealMatrix hessian(RealVector est) throws MathException {
+	public RealMatrix hessian(RealVector est) {
 		int actualLength = est.getDimension() + 1;
 		RealVector estNew = new ArrayRealVector(new double[] {0.0});
 		estNew = estNew.append(est);
@@ -181,8 +162,7 @@ public class TMLogLikelihood implements DifferentiableMultivariateRealFunction {
 			public void start(int arg0, int arg1, int arg2, int arg3, int arg4,
 					int arg5) {			
 			}
-			public double visit(int row, int column, double value)
-					throws MatrixVisitorException {
+			public double visit(int row, int column, double value) {
 				return (-1)*value;
 			}
 		});

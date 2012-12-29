@@ -1,11 +1,12 @@
 /**
  * 
  */
-package net.andrewmao.math;
+package net.andrewmao.stat;
 
 import junit.framework.TestCase;
 
-import org.apache.commons.math.stat.descriptive.moment.*;
+
+import org.apache.commons.math3.stat.descriptive.moment.*;
 
 /**
  * @author mao
