@@ -1,7 +1,5 @@
 package net.andrewmao.math;
 
-import org.apache.commons.lang.NotImplementedException;
-
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.stat.descriptive.StatisticalMultivariateSummary;
 import org.apache.commons.math3.stat.descriptive.StorelessUnivariateStatistic;
@@ -40,46 +38,46 @@ public final class MeanOnlyMVS implements StatisticalMultivariateSummary {
 
 	@Override
 	public RealMatrix getCovariance() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
 	public double[] getStandardDeviation() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
 	public double[] getMax() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
 	public double[] getMin() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
 	public long getN() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
 	public double[] getGeometricMean() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
 	public double[] getSum() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
 	public double[] getSumSq() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 
 	@Override
 	public double[] getSumLog() {
-		throw new NotImplementedException();
+		throw new RuntimeException("not implemented");
 	}
 }

@@ -6,11 +6,12 @@ package net.andrewmao.stat;
 import junit.framework.TestCase;
 
 
+import org.apache.commons.math3.distribution.ExponentialDistribution;
 import org.apache.commons.math3.stat.descriptive.moment.*;
 
 /**
  * @author mao
- *
+ * Used to be my own test, but was converted for commons math 3
  */
 public class ExponentialTest extends TestCase {
 
@@ -21,9 +22,9 @@ public class ExponentialTest extends TestCase {
 		
 		// Exponential dist params
 		double lambda = 2;
-		double ilambda = 1 / lambda;		
+		double ilambda = 1 / lambda;
 		
-		Exponential exp = new Exponential(lambda);
+		ExponentialDistribution exp = new ExponentialDistribution(ilambda);
 		
 		double[] nums = new double[sampleSize];
 		
