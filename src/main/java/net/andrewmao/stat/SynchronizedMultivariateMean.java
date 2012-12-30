@@ -5,7 +5,12 @@ public class SynchronizedMultivariateMean extends MultivariateMean {
 	public SynchronizedMultivariateMean(int dimension) {
 		super(dimension);		
 	}
-	
+		
+	@Override
+	public synchronized void clear() {		
+		super.clear();
+	}
+
 	@Override
 	public synchronized void addValue(int[] value) {
 		super.addValue(value);

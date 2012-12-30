@@ -15,6 +15,10 @@ public class MultivariateMean {
         for (int i = 0; i < k; ++i) meanImpl[i] = new Mean();	        
 	}
 
+	public void clear() {
+		for( Mean m : meanImpl ) m.clear();
+	}
+
 	public void addValue(int[] value) {
 		for (int i = 0; i < k; ++i) meanImpl[i].increment(value[i]);
 	}

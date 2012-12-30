@@ -8,12 +8,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import net.andrewmao.stat.MultivariateMean;
+import net.andrewmao.stat.SynchronizedMultivariateMean;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.stat.descriptive.MultivariateSummaryStatistics;
-import org.apache.commons.math3.stat.descriptive.SynchronizedMultivariateSummaryStatistics;
 
 /**
  * Implementation of Azari, Parkes, Xia paper on RUM
@@ -30,8 +29,8 @@ public class NormalMCEM<T> extends RandomUtilityModel<T> {
 	int iterations;
 	double[] start;
 	
-	final MultivariateSummaryStatistics m1Stats;
-	final MultivariateSummaryStatistics m2Stats;
+	final MultivariateMean m1Stats;
+	final MultivariateMean m2Stats;
 	CountDownLatch latch;
 	
 	protected NormalMCEM(List<T> items) {
@@ -39,8 +38,9 @@ public class NormalMCEM<T> extends RandomUtilityModel<T> {
 				
 		rankings = new ArrayList<int[]>();
 		
-		m1Stats = new SynchronizedMultivariateSummaryStatistics(items.size(), false);
-		m2Stats = new SynchronizedMultivariateSummaryStatistics(items.size(), false);		
+		// Concurrent thread accessed
+		m1Stats = new SynchronizedMultivariateMean(items.size());
+		m2Stats = new SynchronizedMultivariateMean(items.size());		
 	}
 	
 	public void addData(List<T> ranking) {
