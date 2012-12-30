@@ -1,7 +1,7 @@
 /**
  * 
  */
-package net.andrewmao.stat;
+package net.andrewmao.probability;
 
 import junit.framework.TestCase;
 

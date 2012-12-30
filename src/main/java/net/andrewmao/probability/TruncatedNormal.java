@@ -1,4 +1,4 @@
-package net.andrewmao.stat;
+package net.andrewmao.probability;
 
 import org.apache.commons.math3.distribution.AbstractRealDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;

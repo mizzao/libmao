@@ -1,8 +1,18 @@
 package net.andrewmao.models.randomutility;
 
-public interface RandomUtilityModel<T> {
+import java.util.Collections;
+import java.util.List;
 
-	void addData(T winner, T loser, int count);
+public abstract class RandomUtilityModel<T> {
 	
-	double[] getParameters();	
+	protected final List<T> items;
+	
+	protected RandomUtilityModel(List<T> items) {
+		this.items = Collections.unmodifiableList(items);
+	}
+	
+	public List<T> getItems() { return items; }
+	
+	public abstract double[] getParameters();	
+	
 }

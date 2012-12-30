@@ -12,16 +12,15 @@ import org.apache.commons.math3.optimization.GoalType;
 import org.apache.commons.math3.optimization.PointValuePair;
 import org.apache.commons.math3.optimization.direct.PowellOptimizer;
 
-public class ThurstoneMostellerModel<T> implements RandomUtilityModel<T> {
-	
-	private List<T> items;
+public class ThurstoneMostellerModel<T> extends RandomUtilityModel<T> {
+		
 	private RealMatrix mat;
 	
 	private TMLogLikelihood logLKfunc;
 	private PowellOptimizer optim;
 	
 	public ThurstoneMostellerModel(List<T> items) {
-		this.items = items;				
+		super(items);			
 		
 		mat = new Array2DRowRealMatrix(items.size(), items.size());		
 		mat.walkInRowOrder(new DefaultRealMatrixChangingVisitor() {
@@ -37,8 +36,7 @@ public class ThurstoneMostellerModel<T> implements RandomUtilityModel<T> {
 		
 		logLKfunc = new TMLogLikelihood(mat);
 	}
-	
-	@Override
+		
 	public void addData(T winner, T loser, int count) {
 		int winIdx = items.indexOf(winner);
 		int loseIdx = items.indexOf(loser);

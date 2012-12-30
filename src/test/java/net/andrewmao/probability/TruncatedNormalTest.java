@@ -1,6 +1,8 @@
-package net.andrewmao.stat;
+package net.andrewmao.probability;
 
 import static org.junit.Assert.*;
+
+import net.andrewmao.probability.TruncatedNormal;
 
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.analysis.integration.LegendreGaussIntegrator;
