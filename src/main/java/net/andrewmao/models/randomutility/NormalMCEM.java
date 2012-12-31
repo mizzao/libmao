@@ -1,6 +1,7 @@
 package net.andrewmao.models.randomutility;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -10,6 +11,7 @@ import java.util.concurrent.Executors;
 import net.andrewmao.stat.MultivariateMean;
 import net.andrewmao.stat.SynchronizedMultivariateMean;
 
+import org.apache.commons.math3.analysis.function.Abs;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
@@ -64,9 +66,9 @@ public class NormalMCEM<T> extends RandomUtilityModel<T> {
 		ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 				
 		RealVector delta = new ArrayRealVector(start);		
-		// TODO: hossein set the variance to different things...
+		// Can either initialize variance randomly or fixed 
 		double[] randomVars = new NormalDistribution().sample(items.size());
-		RealVector variance = new ArrayRealVector(randomVars).mapAddToSelf(1);	
+		RealVector variance = new ArrayRealVector(randomVars).mapToSelf(new Abs()).mapAddToSelf(1);	
 		
 		for( int i = 0; i < iterations; i++ ) {
 			// TODO: where this number come from and why it depends on # iterations?
@@ -80,8 +82,7 @@ public class NormalMCEM<T> extends RandomUtilityModel<T> {
 			latch = new CountDownLatch(rankings.size());
 			
 			for( int[] ranking : rankings ) {				
-				// TODO proper initialization value here
-				exec.submit(new NormalGibbsSampler(samples, ranking, ranking));
+				exec.submit(new NormalGibbsSampler(samples, ranking, delta, variance));
 			}
 			
 			// Wait for sampling to finish
@@ -95,13 +96,15 @@ public class NormalMCEM<T> extends RandomUtilityModel<T> {
 			 */
 			delta = new ArrayRealVector(m1Stats.getMean());
 			variance = new ArrayRealVector(m2Stats.getMean()).subtract(delta.ebeMultiply(delta));
-			
-			// TODO: what does this do?
+						
+			/* TODO: fix one of the mean values to prevent drift
+			 * adjust the variances
+			 */
 			delta.setEntry(0, 1);
 			variance.setEntry(0, 1);
 			
 			// Compute new parameters and log likelihood
-			// TODO use range value
+			// TODO use range value for integration
 			logLikelihood(delta, variance);			
 		}
 		
@@ -119,18 +122,17 @@ public class NormalMCEM<T> extends RandomUtilityModel<T> {
 		Random rnd = new Random();
 		
 		int samples, ignored;
-		int[] start, ranking;
+		int[] ranking;
 		
 		MultivariateMean means;
 		MultivariateMean meanSqs;		
 		
-		NormalGibbsSampler(int samples, int[] start, int[] ranking) {
+		NormalGibbsSampler(int samples, int[] ranking, RealVector mu, RealVector variance) {
 			this.samples = samples;
-			this.start = start;
-			this.ranking = ranking;
+			this.ranking = ranking;			
 			
-			means = new MultivariateMean(start.length);
-			meanSqs = new MultivariateMean(start.length);			
+			means = new MultivariateMean(items.size());
+			meanSqs = new MultivariateMean(items.size());	
 			
 			// 10% of initial values ignored?
 			this.ignored = (int) Math.round(1.0 * samples / 10);
@@ -138,7 +140,18 @@ public class NormalMCEM<T> extends RandomUtilityModel<T> {
 	
 		@Override
 		public void run() {
-			int[] current = start.clone();
+			/* Initialize sampler with consistent random x_t
+			 * Draw uniforms and sort according to initial index
+			 */
+			double[] current = new double[items.size()];
+			
+			double[] rands = new double[ranking.length];			
+			for( int i = 0; i < rands.length; i++ )
+				rands[i] = rnd.nextDouble();
+			// TODO assign randoms in reverse order
+			Arrays.sort(rands);			
+			for( int i : ranking ) current[i] = rands[i];
+			
 			
 			for( int i = 0; i < samples; i++ ) {
 				int r = 1 + rnd.nextInt(current.length);
@@ -160,7 +173,7 @@ public class NormalMCEM<T> extends RandomUtilityModel<T> {
 			latch.countDown();
 		}
 
-		private int[] sample(int r, int[] current, int[] ranking) {
+		private double[] sample(int r, double[] current, int[] ranking) {
 			// TODO One step of the gibbs sampling
 			return null;
 		}	
