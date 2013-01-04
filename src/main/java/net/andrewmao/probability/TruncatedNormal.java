@@ -30,6 +30,10 @@ public class TruncatedNormal extends AbstractRealDistribution {
 	private final double bb;
 	
 	public TruncatedNormal(double mean, double sd, double lb, double ub) {
+		if( mean == Double.NaN || sd == Double.NaN ||
+				lb == Double.NaN || ub == Double.NaN ) 
+			throw new IllegalArgumentException("Cannot take NaN as an argument");
+		
 		normal = new NormalDistribution(mean, sd);
 		
 		mu = mean;
