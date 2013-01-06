@@ -67,10 +67,20 @@ public class NormalMCEM<T> extends MCEMModel<T> {
 		 * first subtract means so that first value is 0
 		 * TODO then scale variance to 1
 		 */
-		
-		delta.mapSubtractToSelf(delta.getEntry(0));
-//		delta.setEntry(0, 1); // Dunno what hossein was thinking with this
+				
+		// Dunno what hossein was thinking with this, doesn't seem to work well
+//		delta.setEntry(0, 1); 
 //		variance.setEntry(0, 1);
+		
+		/* The below adjusts all variables so that
+		 * first mean is 0, first var is 1 
+		 */
+		double var = variance.getEntry(0);
+		double sd = Math.sqrt(var);
+		
+		variance.mapDivideToSelf(var);
+		delta.mapDivideToSelf(sd);		
+		delta.mapSubtractToSelf(delta.getEntry(0));
 		
 		System.out.println(delta);
 		System.out.println(variance);

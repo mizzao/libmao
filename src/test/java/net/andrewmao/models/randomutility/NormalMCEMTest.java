@@ -29,13 +29,13 @@ public class NormalMCEMTest {
 
 	@Test
 	public void test() {
-		int n = 50;
+		int n = 500;
 		int iters = 10;
 		
 		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
 		final List<Character> stuffList = Arrays.asList(stuff);
 		
-		double[] means = new double[] {0, 0.5, 1, 1.5};
+		double[] means = new double[] {0, -1, -2, -3};
 		double[] sds = new double[] {1, 1, 1, 1};
 		
 		NormalMCEM<Character> model = new NormalMCEM<Character>(stuffList);
