@@ -31,8 +31,8 @@ public class NormalMCEMTest {
 	public void test() {
 		int n = 500;
 		int iters = 30;
-		double abseps = 1e-8;
-		double releps = 1e-5;
+		double abseps = 1e-8; // Double.NEGATIVE_INFINITY;
+		double releps = 1e-5; // Double.NEGATIVE_INFINITY;
 		
 		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
 		final List<Character> stuffList = Arrays.asList(stuff);

@@ -1,7 +1,6 @@
 package net.andrewmao.probability;
 
 import org.apache.commons.math3.distribution.AbstractRealDistribution;
-import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.exception.OutOfRangeException;
 
 /**
@@ -16,8 +15,6 @@ public class TruncatedNormal extends AbstractRealDistribution {
 
 	private static final long serialVersionUID = 3279850685379757823L;
 
-	private final NormalDistribution normal;
-	
 	private final double mu;
 	private final double sigma;	
 	private final double cdf_a;
@@ -32,14 +29,12 @@ public class TruncatedNormal extends AbstractRealDistribution {
 	public TruncatedNormal(double mean, double sd, double lb, double ub) {
 		if( mean == Double.NaN || sd == Double.NaN ||
 				lb == Double.NaN || ub == Double.NaN ) 
-			throw new IllegalArgumentException("Cannot take NaN as an argument");
-		
-		normal = new NormalDistribution(mean, sd);
+			throw new IllegalArgumentException("Cannot take NaN as an argument");		
 		
 		mu = mean;
 		sigma = sd;
-		cdf_a = normal.cumulativeProbability(lb);
-		cdf_b = normal.cumulativeProbability(ub);
+		cdf_a = NormalDist.cdf01((lb - mu)/sigma);
+		cdf_b = NormalDist.cdf01((ub - mu)/sigma);
 		Z = cdf_b - cdf_a;
 		
 		alpha = (lb - mu) / sigma;
@@ -57,7 +52,7 @@ public class TruncatedNormal extends AbstractRealDistribution {
 	public double density(double x) {
 		if( x <= aa || x >= bb ) return 0;
 		
-		return normal.density(x) / (sigma * Z);
+		return NormalDist.density01((x - mu)/sigma) / (sigma * Z);
 	}
 
 	@Override
@@ -66,7 +61,6 @@ public class TruncatedNormal extends AbstractRealDistribution {
 		else if( x >= bb ) return 1;
 			
 		double u = NormalDist.cdf01((x - mu)/sigma);
-//		double u = normal.cumulativeProbability(x); 
 		return (u - cdf_a) / Z;
 	}
 
@@ -77,18 +71,22 @@ public class TruncatedNormal extends AbstractRealDistribution {
 		double val = p * Z + cdf_a;
 		
 		return mu + sigma * NormalDist.inverseF01(val);
-//		return normal.inverseCumulativeProbability(val);
 	}
 
 	@Override
-	public double getNumericalMean() {		
-		return mu + (normal.density(aa) - normal.density(bb)) * sigma / Z;
+	public double getNumericalMean() {
+		double phi_a = NormalDist.density01(alpha);
+		double phi_b = NormalDist.density01(alpha);
+		
+		return mu + (phi_a - phi_b) * sigma / Z;
 	}
 
 	@Override
 	public double getNumericalVariance() {
-		double sq = ( normal.density(aa) - normal.density(bb) ) / Z;
-		double br = 1 + ( alpha * normal.density(aa) - beta * normal.density(bb) ) / Z - sq * sq;  
+		double phi_a = NormalDist.density01(alpha);
+		double phi_b = NormalDist.density01(alpha);
+		double sq = ( phi_a - phi_b ) / Z;
+		double br = 1 + ( alpha * phi_a - beta * phi_b ) / Z - sq * sq;  
 		return sigma * sigma * br;
 	}
 
@@ -97,7 +95,6 @@ public class TruncatedNormal extends AbstractRealDistribution {
 		double val = randomData.nextUniform(0, 1) * Z + cdf_a;
 		
 		return mu + sigma * NormalDist.inverseF01(val);
-//		return normal.inverseCumulativeProbability(val);
 	}
 
 	@Override

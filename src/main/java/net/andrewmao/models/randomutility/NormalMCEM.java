@@ -74,6 +74,9 @@ public class NormalMCEM<T> extends MCEMModel<T> {
 //		delta.setEntry(0, 1); 
 //		variance.setEntry(0, 1);
 		
+		// Testing to see if parameters converge
+//		variance.set(1);		
+		
 		/* The below adjusts all variables so that
 		 * first mean is 0, first var is 1 
 		 */

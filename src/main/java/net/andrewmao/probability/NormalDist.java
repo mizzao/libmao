@@ -6,6 +6,8 @@ package net.andrewmao.probability;
  */
 
 public class NormalDist {
+	protected static final double RAC2PI = 2.50662827463100050; // Sqrt(2*Pi)
+	
 	protected static final double XBIG = 100.0;
 
 	/*
@@ -62,6 +64,15 @@ public class NormalDist {
 	    -2.0e-30
 		 */
 	};
+	
+	public static double density01(double x) {
+		return Math.exp(-0.5*x*x)/(RAC2PI);
+	}
+	
+	public static double density (double mu, double sigma, double x) {
+	      double z = (x - mu)/sigma;
+	      return Math.exp (-0.5*z*z)/ (RAC2PI*sigma);
+	}
 
 	public static double cdf01 (double x) {
 		/*
