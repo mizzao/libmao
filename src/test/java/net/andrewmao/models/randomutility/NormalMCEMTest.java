@@ -30,7 +30,9 @@ public class NormalMCEMTest {
 	@Test
 	public void test() {
 		int n = 500;
-		int iters = 10;
+		int iters = 30;
+		double abseps = 1e-8;
+		double releps = 1e-5;
 		
 		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
 		final List<Character> stuffList = Arrays.asList(stuff);
@@ -57,12 +59,14 @@ public class NormalMCEMTest {
 			model.addData(copy);
 		}
 		
-		model.setup(iters, new NormalDistribution(0,1).sample(4));
+		model.setup(new NormalDistribution(0,1).sample(4), iters, abseps, releps);
+		
 		double[] fitted = model.getParameters();
 		
 		System.out.println(Arrays.toString(fitted));
 		
-		fail("Add parameter check");
+		// This assertion must have first element of means be 0, and variances adjusted to 1
+		assertArrayEquals(means, fitted, 1e-1);
 	}
 	
 }

@@ -20,7 +20,9 @@ public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
 	
 	List<int[]> rankings;
 		
-	int iterations;
+	int maxIter;
+	double abseps;
+	double releps;
 	double[] start;
 	
 	ExecutorService exec;
@@ -48,8 +50,10 @@ public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
 		System.out.println("Added " + Arrays.toString(ranking));
 	}
 	
-	public void setup(int iterations, double[] startPoint) {
-		this.iterations = iterations;
+	public void setup(double[] startPoint, int maxIter, double abseps, double releps) {
+		this.maxIter = maxIter;
+		this.abseps = abseps;
+		this.releps = releps;
 		this.start = startPoint;
 	}
 	
@@ -60,14 +64,16 @@ public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
 	protected abstract void eStep(int iter);	
 	protected abstract void mStep();
 	protected abstract double[] getCurrentParameters();
+	protected abstract double getLogLikelihood();
 	
 	@Override
 	public synchronized double[] getParameters() {
 		exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		
 		initialize();
+		double ll = Double.NEGATIVE_INFINITY;
 		
-		for( int i = 0; i < iterations; i++ ) {
+		for( int i = 0; i < maxIter; i++ ) {
 			eStep(i);
 			
 			// Wait for sampling to finish
@@ -77,6 +83,22 @@ public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
 			}
 			
 			mStep();
+			
+			double newLL = getLogLikelihood();
+			System.out.printf("Likelihood: %f\n", newLL);
+			double absImpr = newLL - ll;
+			double relImpr = -absImpr / ll;
+			
+			if( absImpr < abseps ) {
+				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
+				break;
+			}
+			if( relImpr < releps ) {
+				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
+				break;
+			}
+			
+			ll = newLL;
 		}
 		
 		exec.shutdown();

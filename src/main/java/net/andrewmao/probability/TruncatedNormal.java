@@ -65,14 +65,19 @@ public class TruncatedNormal extends AbstractRealDistribution {
 		if( x <= aa ) return 0;
 		else if( x >= bb ) return 1;
 			
-		return (normal.cumulativeProbability(x) - cdf_a) / Z;
+		double u = NormalDist.cdf01((x - mu)/sigma);
+//		double u = normal.cumulativeProbability(x); 
+		return (u - cdf_a) / Z;
 	}
 
 	@Override
 	public double inverseCumulativeProbability(double p) throws OutOfRangeException {		
 		if (p < 0.0 || p > 1.0) throw new OutOfRangeException(p, 0, 1);        
 		
-		return normal.inverseCumulativeProbability(p * Z + cdf_a);
+		double val = p * Z + cdf_a;
+		
+		return mu + sigma * NormalDist.inverseF01(val);
+//		return normal.inverseCumulativeProbability(val);
 	}
 
 	@Override
@@ -91,7 +96,8 @@ public class TruncatedNormal extends AbstractRealDistribution {
 	public double sample() {			
 		double val = randomData.nextUniform(0, 1) * Z + cdf_a;
 		
-		return normal.inverseCumulativeProbability(val);
+		return mu + sigma * NormalDist.inverseF01(val);
+//		return normal.inverseCumulativeProbability(val);
 	}
 
 	@Override

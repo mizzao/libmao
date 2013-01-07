@@ -10,6 +10,8 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
+import net.andrewmao.probability.BiNormalGenzDist;
+import net.andrewmao.probability.NormalDist;
 import net.andrewmao.probability.TruncatedNormal;
 import net.andrewmao.stat.MultivariateMean;
 import net.andrewmao.stat.SynchronizedMultivariateMean;
@@ -58,7 +60,7 @@ public class NormalMCEM<T> extends MCEMModel<T> {
 	@Override
 	protected void mStep() {
 		/*
-		 * M-step: update ranking
+		 * M-step: re-compute parameters
 		 */
 		delta = new ArrayRealVector(m1Stats.getMean());
 		variance = new ArrayRealVector(m2Stats.getMean()).subtract(delta.ebeMultiply(delta));
@@ -83,11 +85,7 @@ public class NormalMCEM<T> extends MCEMModel<T> {
 		delta.mapSubtractToSelf(delta.getEntry(0));
 		
 		System.out.println(delta);
-		System.out.println(variance);
-		
-		// Compute new parameters and log likelihood
-		// TODO use range value for integration
-		logLikelihood(delta, variance);	
+		System.out.println(variance);		
 	}
 	
 
@@ -96,13 +94,65 @@ public class NormalMCEM<T> extends MCEMModel<T> {
 		return delta.toArray();
 	}
 
-	private double logLikelihood(RealVector delta, RealVector variance) {
-		/* TODO hossein's log likelihood with dynamic programming
-		 * log probability of observing such a ranking given the parameters 
-		 */
-		return 0;
+	public double getLogLikelihood() {		
+		double ll = 0;		
+		for( int[] ranking : rankings )	ll += logLikelihood(ranking);				
+		return ll;
 	}
 	
+	private double logLikelihood(int[] ranking) {		
+		// Special case when ranking is only 2 items long
+		if( ranking.length == 2 ) {
+			double m1 = delta.getEntry(ranking[0]-1);
+			double m2 = delta.getEntry(ranking[1]-1);
+			double v1 = variance.getEntry(ranking[0]-1);
+			double v2 = variance.getEntry(ranking[1]-1);			
+			// prob of x_1 - x_2 > 0 or x_2 - x_1 < 0
+			double prob = NormalDist.cdf01((m1 - m2) / Math.sqrt(v1 + v2));  // (0 - (m2 - m1)) / sigma 
+			return Math.log(prob);
+		}
+		
+		/* log likelihood as computed using
+		 * http://math.stackexchange.com/questions/270745/compute-probability-of-a-particular-ordering-of-normal-random-variables  
+		 */
+		double ll = 0;
+		
+		// add all bivariate triples
+		for( int i = 0; i < ranking.length - 2; i++ ) {
+			/* joint probability of (x_i > x_i+1, x_i+1 > x_i+2 )
+			 * equal to (x_i+1 - x_i < 0, x_i+2 - x_i+1 < 0)
+			 */
+			double m1 = delta.getEntry(ranking[i]-1);
+			double m2 = delta.getEntry(ranking[i+1]-1);
+			double m3 = delta.getEntry(ranking[i+2]-1);
+			double v1 = variance.getEntry(ranking[i]-1);
+			double v2 = variance.getEntry(ranking[i+1]-1);
+			double v3 = variance.getEntry(ranking[i+2]-1);
+						
+			double mu1 = m2 - m1;
+			double mu2 = m3 - m2;
+			double sigma1 = Math.sqrt(v1 + v2);
+			double sigma2 = Math.sqrt(v2 + v3);
+			double rho = -v2 / (sigma1 * sigma2);
+			
+			double prob = BiNormalGenzDist.cdf(-mu1/sigma1, -mu2/sigma2, rho);
+			ll += Math.log(prob);
+		}
+		
+		// subtract all pairs that are not at the beginning of end
+		for( int i = 1; i < ranking.length - 2; i++ ) {
+			double m1 = delta.getEntry(ranking[i]-1);
+			double m2 = delta.getEntry(ranking[i+1]-1);
+			double v1 = variance.getEntry(ranking[i]-1);
+			double v2 = variance.getEntry(ranking[i+1]-1);			
+			// prob of x_1 - x_2 > 0 or x_2 - x_1 < 0
+			double prob = NormalDist.cdf01((m1 - m2) / Math.sqrt(v1 + v2)); // (0 - (m2 - m1)) / sigma 
+			ll -= Math.log(prob);
+		}
+		
+		return ll;
+	}
+
 	class NormalGibbsSampler implements Callable<Void> {		
 		Random rnd = new Random();
 		
