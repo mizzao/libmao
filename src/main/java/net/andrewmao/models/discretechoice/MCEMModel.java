@@ -1,25 +1,24 @@
-package net.andrewmao.models.randomutility;
+package net.andrewmao.models.discretechoice;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealVector;
+
 /**
- * Implementation of Azari, Parkes, Xia paper on RUM
- * using multithreading
+ * Implementation of Azari, Parkes, Xia paper on RUM 
+ * via MC-EM, using multithreading
  * 
  * @author mao
  *
  * @param <T>
  */
 public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
-	
-	List<int[]> rankings;
-		
+			
 	int maxIter;
 	double abseps;
 	double releps;
@@ -29,25 +28,7 @@ public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
 	CountDownLatch latch;
 	
 	protected MCEMModel(List<T> items) {
-		super(items);		
-				
-		rankings = new ArrayList<int[]>();	
-	}
-	
-	public void addData(List<T> list) {
-		int[] ranking = new int[list.size()];		
-		int i = 0;
-		for( T item : list ) ranking[i++] = items.indexOf(item) + 1;		
-		rankings.add(ranking);
-	}
-	
-	public void addData(T[] arr) {
-		int[] ranking = new int[arr.length];		
-		int i = 0;
-		for( T item : arr ) ranking[i++] = items.indexOf(item) + 1;		
-		rankings.add(ranking);
-		
-		System.out.println("Added " + Arrays.toString(ranking));
+		super(items);						
 	}
 	
 	public void setup(double[] startPoint, int maxIter, double abseps, double releps) {
@@ -67,11 +48,14 @@ public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
 	protected abstract double getLogLikelihood();
 	
 	@Override
-	public synchronized double[] getParameters() {
+	public synchronized ScoredItems<T> getParameters() {
 		exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		
 		initialize();
-		double ll = Double.NEGATIVE_INFINITY;
+//		double ll = Double.NEGATIVE_INFINITY;
+		double absImpr = Double.POSITIVE_INFINITY;
+		
+		RealVector oldParams = null, params = null;
 		
 		for( int i = 0; i < maxIter; i++ ) {
 			eStep(i);
@@ -83,27 +67,32 @@ public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
 			}
 			
 			mStep();
+						
+			params = new ArrayRealVector(getCurrentParameters());
+			if( i > 0 )
+				absImpr = params.subtract(oldParams).getNorm();			
 			
-			double newLL = getLogLikelihood();
-			System.out.printf("Likelihood: %f\n", newLL);
-			double absImpr = newLL - ll;
-			double relImpr = -absImpr / ll;
+//			double newLL = getLogLikelihood();
+//			System.out.printf("Likelihood: %f\n", newLL);
+//			double absImpr = newLL - ll;
+//			double relImpr = -absImpr / ll;
 			
 			if( absImpr < abseps ) {
-				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
+//				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
 				break;
 			}
-			if( relImpr < releps ) {
-				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
-				break;
-			}
+//			if( relImpr < releps ) {
+////				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
+//				break;
+//			}
 			
-			ll = newLL;
+			oldParams = params;
+//			ll = newLL;
 		}
 		
 		exec.shutdown();
 		
-		return getCurrentParameters();
+		return new ScoredItems<T>(items, params.toArray());
 	}
 
 	void beginNumJobs(int size) {

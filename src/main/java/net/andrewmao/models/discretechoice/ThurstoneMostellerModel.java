@@ -1,4 +1,4 @@
-package net.andrewmao.models.randomutility;
+package net.andrewmao.models.discretechoice;
 
 import java.util.Arrays;
 import java.util.List;
@@ -12,12 +12,14 @@ import org.apache.commons.math3.optimization.GoalType;
 import org.apache.commons.math3.optimization.PointValuePair;
 import org.apache.commons.math3.optimization.direct.PowellOptimizer;
 
-public class ThurstoneMostellerModel<T> extends RandomUtilityModel<T> {
+public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceModel<T> {
 		
 	private RealMatrix mat;
 	
-	private TMLogLikelihood logLKfunc;
-	private PowellOptimizer optim;
+	private TMNLogLikelihood nll;
+	
+	PowellOptimizer optim;
+//	NonLinearConjugateGradientOptimizer optim, backup;
 	
 	public ThurstoneMostellerModel(List<T> items) {
 		super(items);			
@@ -31,12 +33,17 @@ public class ThurstoneMostellerModel<T> extends RandomUtilityModel<T> {
 					return 0.08;
 			}
 		});
-		
+		 
+		// TODO: switch to gradient optimizer (why is it broken?)
 		optim = new PowellOptimizer(1e-7, 1e-11); // From commons 2.2 defaults
 		
-		logLKfunc = new TMLogLikelihood(mat);
-	}
+//		optim = new NonLinearConjugateGradientOptimizer(ConjugateGradientFormula.POLAK_RIBIERE);
+//		backup = new NonLinearConjugateGradientOptimizer(ConjugateGradientFormula.FLETCHER_REEVES);
 		
+		nll = new TMNLogLikelihood(mat);
+	}
+	
+	@Override
 	public void addData(T winner, T loser, int count) {
 		int winIdx = items.indexOf(winner);
 		int loseIdx = items.indexOf(loser);
@@ -45,16 +52,15 @@ public class ThurstoneMostellerModel<T> extends RandomUtilityModel<T> {
 	}
 
 	@Override
-	public double[] getParameters() {
+	public ScoredItems<T> getParameters() {
 		double[] start = new double[items.size() - 1];
 		Arrays.fill(start, 0.0);
 		
-		// Due to Optimization exception for default of 100
-		PointValuePair result = optim.optimize(500, logLKfunc, GoalType.MINIMIZE, start);
-				
-		RealVector strEst = new ArrayRealVector(new double[] {0.0}, result.getPoint());
+		PointValuePair result = optim.optimize(1000, nll, GoalType.MINIMIZE, start);			
 		
-		return strEst.toArray();		
+		RealVector strEst = new ArrayRealVector(new double[] {0.0}, result.getPoint());
+				
+		return new ScoredItems<T>(items, strEst.toArray());
 	}
 
 }

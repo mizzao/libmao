@@ -1,4 +1,4 @@
-package net.andrewmao.models.randomutility;
+package net.andrewmao.models.discretechoice;
 
 import java.util.Arrays;
 import java.util.List;
@@ -16,14 +16,22 @@ import net.andrewmao.probability.TruncatedNormal;
 import net.andrewmao.stat.MultivariateMean;
 import net.andrewmao.stat.SynchronizedMultivariateMean;
 
-public class NormalMCEM<T> extends MCEMModel<T> {
+/**
+ * This is a general implementation of the probit model as described at
+ * https://wiki.ece.cmu.edu/ddl/index.php/Introduction_to_random_utility_discrete_choice_models
+ * 
+ * @author mao
+ *
+ * @param <T>
+ */
+public class OrderedNormalMCEM<T> extends MCEMModel<T> {
 
 	final MultivariateMean m1Stats;
 	final MultivariateMean m2Stats;
 	
 	RealVector delta, variance;
 	
-	protected NormalMCEM(List<T> items) {
+	public OrderedNormalMCEM(List<T> items) {
 		super(items);
 				
 		// Concurrent thread accessed
@@ -87,8 +95,8 @@ public class NormalMCEM<T> extends MCEMModel<T> {
 		delta.mapDivideToSelf(sd);		
 		delta.mapSubtractToSelf(delta.getEntry(0));
 		
-		System.out.println(delta);
-		System.out.println(variance);		
+//		System.out.println(delta);
+//		System.out.println(variance);		
 	}
 	
 
@@ -223,7 +231,7 @@ public class NormalMCEM<T> extends MCEMModel<T> {
 			m2Stats.addValue(meanSqs.getMean());
 			
 			// record values added
-			NormalMCEM.super.finishJob();
+			OrderedNormalMCEM.super.finishJob();
 			
 			return null;
 		}

@@ -1,4 +1,4 @@
-package net.andrewmao.models.randomutility;
+package net.andrewmao.models.discretechoice;
 
 import static org.junit.Assert.*;
 
@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Random;
 
 import net.andrewmao.math.RandomGeneration;
+import net.andrewmao.models.discretechoice.OrderedNormalMCEM;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.junit.After;
@@ -40,7 +41,7 @@ public class NormalMCEMTest {
 		double[] means = new double[] {0, -1, -2, -3};
 		double[] sds = new double[] {1, 1, 1, 1};
 		
-		NormalMCEM<Character> model = new NormalMCEM<Character>(stuffList);
+		OrderedNormalMCEM<Character> model = new OrderedNormalMCEM<Character>(stuffList);
 		
 		for( int i = 0; i < n; i++) {
 			final double[] vals = RandomGeneration.gaussianArray(means, sds, rnd);
@@ -61,12 +62,12 @@ public class NormalMCEMTest {
 		
 		model.setup(new NormalDistribution(0,1).sample(4), iters, abseps, releps);
 		
-		double[] fitted = model.getParameters();
+		ScoredItems<Character> fitted = model.getParameters();
 		
-		System.out.println(Arrays.toString(fitted));
+		System.out.println(fitted);
 		
 		// This assertion must have first element of means be 0, and variances adjusted to 1
-		assertArrayEquals(means, fitted, 1e-1);
+		assertArrayEquals(means, fitted.toArray(), 1e-1);
 	}
 	
 }
