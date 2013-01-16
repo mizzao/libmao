@@ -4,7 +4,6 @@ import static org.junit.Assert.*;
 
 import java.util.Random;
 
-import org.apache.commons.math3.analysis.DifferentiableMultivariateFunction;
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.apache.commons.math3.analysis.MultivariateVectorFunction;
 import org.junit.After;
@@ -32,7 +31,7 @@ public class BTNLogLikelihoodTest {
 		wins[0][1] = 1;
 		wins[1][0] = 0;
 		
-		DifferentiableMultivariateFunction btnll = new BTNLogLikelihood(wins);
+		BTNLogLikelihood btnll = new BTNLogLikelihood(wins);
 		
 		for( int i = 0; i < trials; i++ ) {
 			double theta_0 = 0;
@@ -52,7 +51,7 @@ public class BTNLogLikelihoodTest {
 		wins[0][1] = 1;
 		wins[1][2] = 1;
 		
-		DifferentiableMultivariateFunction btnll = new BTNLogLikelihood(wins);
+		BTNLogLikelihood btnll = new BTNLogLikelihood(wins);
 		
 		for( int i = 0; i < trials; i++ ) {
 			double theta_0 = 0;
@@ -78,7 +77,7 @@ public class BTNLogLikelihoodTest {
 			for( int j = 0; j < n; j++)
 				wins[i][j] = rnd.nextInt(max);
 		
-		DifferentiableMultivariateFunction btnll = new BTNLogLikelihood(wins);
+		BTNLogLikelihood btnll = new BTNLogLikelihood(wins);
 		
 		MultivariateVectorFunction g = btnll.gradient();		
 		
@@ -114,7 +113,7 @@ public class BTNLogLikelihoodTest {
 			for( int j = 0; j < n; j++)
 				wins[i][j] = rnd.nextInt(max);
 		
-		DifferentiableMultivariateFunction btnll = new BTNLogLikelihood(wins);
+		BTNLogLikelihood btnll = new BTNLogLikelihood(wins);
 		
 		MultivariateVectorFunction g = btnll.gradient();
 		MultivariateFunction[] partials = new MultivariateFunction[n-1];

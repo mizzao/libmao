@@ -23,6 +23,7 @@ import org.apache.commons.math3.linear.RealVector;
  * @author Mao
  *
  */
+@SuppressWarnings("deprecation")
 public class TMNLogLikelihood implements DifferentiableMultivariateFunction {	
 	
 	private RealMatrix mat;

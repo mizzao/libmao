@@ -2,6 +2,8 @@ package net.andrewmao.probability;
 
 import org.apache.commons.math3.distribution.AbstractRealDistribution;
 import org.apache.commons.math3.exception.OutOfRangeException;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.Well19937c;
 
 /**
  * Truncated normal distribution, mostly from
@@ -26,10 +28,11 @@ public class TruncatedNormal extends AbstractRealDistribution {
 	private final double aa;
 	private final double bb;
 	
-	public TruncatedNormal(double mean, double sd, double lb, double ub) {
+	public TruncatedNormal(RandomGenerator rng, double mean, double sd, double lb, double ub) {
+		super(rng);
 		if( mean == Double.NaN || sd == Double.NaN ||
 				lb == Double.NaN || ub == Double.NaN ) 
-			throw new IllegalArgumentException("Cannot take NaN as an argument");		
+			throw new IllegalArgumentException("Cannot take NaN as an argument");				
 		
 		mu = mean;
 		sigma = sd;
@@ -41,6 +44,10 @@ public class TruncatedNormal extends AbstractRealDistribution {
 		beta = (ub - mu) / sigma;
 		this.aa = lb;
 		this.bb = ub;
+	}
+	
+	public TruncatedNormal(double mean, double sd, double lb, double ub) { 
+		this(new Well19937c(), mean, sd, lb, ub);
 	}
 	
 	@Override
@@ -76,7 +83,7 @@ public class TruncatedNormal extends AbstractRealDistribution {
 	@Override
 	public double getNumericalMean() {
 		double phi_a = NormalDist.density01(alpha);
-		double phi_b = NormalDist.density01(alpha);
+		double phi_b = NormalDist.density01(beta);
 		
 		return mu + (phi_a - phi_b) * sigma / Z;
 	}
@@ -84,7 +91,7 @@ public class TruncatedNormal extends AbstractRealDistribution {
 	@Override
 	public double getNumericalVariance() {
 		double phi_a = NormalDist.density01(alpha);
-		double phi_b = NormalDist.density01(alpha);
+		double phi_b = NormalDist.density01(beta);
 		double sq = ( phi_a - phi_b ) / Z;
 		double br = 1 + ( alpha * phi_a - beta * phi_b ) / Z - sq * sq;  
 		return sigma * sigma * br;
@@ -92,7 +99,7 @@ public class TruncatedNormal extends AbstractRealDistribution {
 
 	@Override
 	public double sample() {			
-		double val = randomData.nextUniform(0, 1) * Z + cdf_a;
+		double val = super.random.nextDouble() * Z + cdf_a;
 		
 		return mu + sigma * NormalDist.inverseF01(val);
 	}

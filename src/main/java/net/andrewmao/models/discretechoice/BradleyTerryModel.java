@@ -2,14 +2,21 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.List;
 
-import org.apache.commons.math3.analysis.DifferentiableMultivariateFunction;
 import org.apache.commons.math3.exception.MathIllegalStateException;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
-import org.apache.commons.math3.optimization.GoalType;
-import org.apache.commons.math3.optimization.PointValuePair;
-import org.apache.commons.math3.optimization.general.ConjugateGradientFormula;
-import org.apache.commons.math3.optimization.general.NonLinearConjugateGradientOptimizer;
+import org.apache.commons.math3.optim.ConvergenceChecker;
+import org.apache.commons.math3.optim.InitialGuess;
+import org.apache.commons.math3.optim.MaxEval;
+import org.apache.commons.math3.optim.MaxIter;
+import org.apache.commons.math3.optim.OptimizationData;
+import org.apache.commons.math3.optim.PointValuePair;
+import org.apache.commons.math3.optim.SimplePointChecker;
+import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
+import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
+import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunctionGradient;
+import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer;
+import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer.Formula;
 
 public class BradleyTerryModel<T> extends PairwiseDiscreteChoiceModel<T> {
 
@@ -20,8 +27,11 @@ public class BradleyTerryModel<T> extends PairwiseDiscreteChoiceModel<T> {
 	public BradleyTerryModel(List<T> items) {
 		super(items);
 		
-		optim = new NonLinearConjugateGradientOptimizer(ConjugateGradientFormula.POLAK_RIBIERE);
-		backup = new NonLinearConjugateGradientOptimizer(ConjugateGradientFormula.FLETCHER_REEVES);
+		ConvergenceChecker<PointValuePair> checker = 
+				new SimplePointChecker<PointValuePair>(1e-5, 1e-8);
+		
+		optim = new NonLinearConjugateGradientOptimizer(Formula.POLAK_RIBIERE, checker);
+		backup = new NonLinearConjugateGradientOptimizer(Formula.FLETCHER_REEVES, checker);
 		
 		wins = new int[items.size()][items.size()];
 	}
@@ -33,19 +43,24 @@ public class BradleyTerryModel<T> extends PairwiseDiscreteChoiceModel<T> {
 		
 		wins[idxWinner][idxLoser] += count;
 	}
-
+	
 	@Override
-	public ScoredItems<T> getParameters() {
-		double[] start = new double[items.size() - 1];
-		DifferentiableMultivariateFunction nll = new BTNLogLikelihood(wins);
+	public ScoredItems<T> getParameters() {				
+		BTNLogLikelihood nll = new BTNLogLikelihood(wins);
+		
+		OptimizationData func = new ObjectiveFunction(nll);
+		OptimizationData grad = new ObjectiveFunctionGradient(nll.gradient());		
+		OptimizationData start = new InitialGuess(new double[items.size() - 1]);
 				
 		PointValuePair result = null;
 		// use Polak-Ribiere unless fails to converge; then switch to Fletcher-Reeves
 		try {
-			result = optim.optimize(100, nll, GoalType.MINIMIZE, start);
+			OptimizationData maxIter = new MaxIter(100);
+			result = optim.optimize(func, grad, GoalType.MINIMIZE, start, maxIter);
 		}
 		catch( MathIllegalStateException e ) {
-			result = backup.optimize(500, nll, GoalType.MINIMIZE, start);
+			OptimizationData maxEval = new MaxEval(500);
+			result = backup.optimize(func, grad, GoalType.MINIMIZE, start, maxEval);
 		}				
 		
 		RealVector strEst = new ArrayRealVector(new double[] {0.0}, result.getPoint());

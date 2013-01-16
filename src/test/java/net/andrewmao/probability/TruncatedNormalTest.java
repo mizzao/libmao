@@ -5,7 +5,7 @@ import static org.junit.Assert.*;
 import net.andrewmao.probability.TruncatedNormal;
 
 import org.apache.commons.math3.analysis.UnivariateFunction;
-import org.apache.commons.math3.analysis.integration.LegendreGaussIntegrator;
+import org.apache.commons.math3.analysis.integration.IterativeLegendreGaussIntegrator;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.junit.After;
 import org.junit.Before;
@@ -33,7 +33,7 @@ public class TruncatedNormalTest {
 		TruncatedNormal tn = new TruncatedNormal(0, 1, -2, 2);
 		
 		assertEquals(0.5, tn.cumulativeProbability(0), 1e-10);
-		assertEquals(0.5, tn.cumulativeProbability(0, 2), 1e-10);
+		assertEquals(0.5, tn.probability(0, 2), 1e-10);
 		
 		assertEquals(0, tn.inverseCumulativeProbability(0.5), 1e-10);
 		assertEquals(-2, tn.inverseCumulativeProbability(0), 1e-10);
@@ -43,7 +43,7 @@ public class TruncatedNormalTest {
 	@Test
 	public void testDensity() {
 		final TruncatedNormal tn = new TruncatedNormal(0, 1, -2, 2);
-		LegendreGaussIntegrator intg = new LegendreGaussIntegrator(5, 1e-7, 1e-11);
+		IterativeLegendreGaussIntegrator intg = new IterativeLegendreGaussIntegrator(5, 1e-7, 1e-11);
 		
 		UnivariateFunction density = new UnivariateFunction() {
 			@Override
@@ -71,7 +71,7 @@ public class TruncatedNormalTest {
 	@Test
 	public void test2() {		
 		TruncatedNormal tn = new TruncatedNormal(0, 1, 0, 4);		
-				
+						
 		for( int i = 0; i < samples; i++ )
 			stats.addValue(tn.sample());
 				

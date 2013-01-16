@@ -65,12 +65,13 @@ public class OrderedNormalMCEM<T> extends MCEMModel<T> {
 		}		
 	}
 
+	@SuppressWarnings("deprecation")
 	@Override
 	protected void mStep() {
 		/*
 		 * M-step: re-compute parameters
 		 */
-		delta = new ArrayRealVector(m1Stats.getMean());
+		delta = new ArrayRealVector(m1Stats.getMean());		
 		variance = new ArrayRealVector(m2Stats.getMean()).subtract(delta.ebeMultiply(delta));
 					
 		/* adjust the mean and variance values to prevent drift:

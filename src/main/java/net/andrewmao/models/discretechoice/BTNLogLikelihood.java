@@ -12,6 +12,7 @@ import org.apache.commons.math3.linear.RealVector;
  * @author mao
  *
  */
+@SuppressWarnings("deprecation")
 public class BTNLogLikelihood implements DifferentiableMultivariateFunction {
 	
 	int[][] wins;
