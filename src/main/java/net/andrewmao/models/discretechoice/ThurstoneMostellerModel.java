@@ -1,6 +1,7 @@
 package net.andrewmao.models.discretechoice;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.exception.MathIllegalStateException;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
@@ -23,17 +24,20 @@ import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjuga
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.PowellOptimizer;
 
 public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceModel<T> {
-		
+	
+	public static final AtomicInteger cgUses = new AtomicInteger();
+	public static final AtomicInteger powellUses = new AtomicInteger();
+	
 	private RealMatrix mat;	
 	private TMNLogLikelihood nll;
 	
 	final boolean useGradient;
-	
-	PowellOptimizer powellOptim;
-	NonLinearConjugateGradientOptimizer optim, backup;
+		
+	NonLinearConjugateGradientOptimizer optim;
+	PowellOptimizer backup;
 	
 	public ThurstoneMostellerModel(List<T> items, boolean useGradient) {
-		super(items);
+		super(items);		
 		this.useGradient = useGradient;
 		
 		mat = new Array2DRowRealMatrix(items.size(), items.size());		
@@ -48,20 +52,16 @@ public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceModel<T> {
 				
 		nll = new TMNLogLikelihood(mat);
 		
-		if( useGradient ) {
-			ConvergenceChecker<PointValuePair> checker = 
-					new SimplePointChecker<PointValuePair>(1e-5, 1e-8);		
-			optim = new NonLinearConjugateGradientOptimizer(Formula.POLAK_RIBIERE, checker);
-			backup = new NonLinearConjugateGradientOptimizer(Formula.FLETCHER_REEVES, checker);	
-		}
-		else {
-			// TODO: gradient optimizer (why is it broken?)
-			powellOptim = new PowellOptimizer(1e-7, 1e-11); // From commons 2.2 defaults
-		}			
+		ConvergenceChecker<PointValuePair> checker = 
+				new SimplePointChecker<PointValuePair>(1e-5, 1e-8);
+		optim = new NonLinearConjugateGradientOptimizer(Formula.POLAK_RIBIERE, checker);
+
+		// TODO: fix gradient optimizer (why is it broken ~20% of the time?)
+		backup = new PowellOptimizer(1e-7, 1e-11); // From commons 2.2 defaults
 	}
 	
 	public ThurstoneMostellerModel(List<T> items) {
-		this(items, false);					
+		this(items, true);
 	}
 	
 	@Override
@@ -74,7 +74,17 @@ public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceModel<T> {
 
 	@Override
 	public ScoredItems<T> getParameters() {
-		double[] params = useGradient ? gradientParameters() : powellParameters();
+		double[] params = null;
+		if( useGradient ) {
+			try {
+				params = gradientParameters();
+				cgUses.incrementAndGet();			
+			} catch(MathIllegalStateException e ) {}	
+		}		
+		if( params == null ) {
+			params = powellParameters();
+			powellUses.incrementAndGet();
+		}
 		
 		RealVector strEst = new ArrayRealVector(new double[] {0.0}, params);
 				
@@ -86,16 +96,8 @@ public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceModel<T> {
 		OptimizationData grad = new ObjectiveFunctionGradient(nll.gradient());		
 		OptimizationData start = new InitialGuess(new double[items.size() - 1]);
 		
-		PointValuePair result = null;
-		// use Polak-Ribiere unless fails to converge; then switch to Fletcher-Reeves
-		try {
-			OptimizationData maxIter = new MaxIter(100);
-			result = optim.optimize(func, grad, GoalType.MINIMIZE, start, maxIter);
-		}
-		catch( MathIllegalStateException e ) {
-			OptimizationData maxEval = new MaxEval(500);
-			result = backup.optimize(func, grad, GoalType.MINIMIZE, start, maxEval);
-		}	
+		PointValuePair result = optim.optimize(func, grad, GoalType.MINIMIZE, start, 
+				new MaxIter(500), new MaxEval(500));
 		
 		return result.getPointRef();
 	}
@@ -103,10 +105,10 @@ public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceModel<T> {
 	private double[] powellParameters() {
 		OptimizationData func = new ObjectiveFunction(nll);
 		OptimizationData grad = new ObjectiveFunctionGradient(nll.gradient());		
-		OptimizationData start = new InitialGuess(new double[items.size() - 1]);
-		OptimizationData maxEval = new MaxEval(1000);
+		OptimizationData start = new InitialGuess(new double[items.size() - 1]);		
 		
-		PointValuePair result = powellOptim.optimize(func, grad, GoalType.MINIMIZE, start, maxEval);
+		PointValuePair result = backup.optimize(func, grad, GoalType.MINIMIZE, start,
+				new MaxEval(5000), new MaxIter(1000));
 		
 		return result.getPointRef();
 	}

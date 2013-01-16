@@ -1,6 +1,7 @@
 package net.andrewmao.models.discretechoice;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.math3.exception.MathIllegalStateException;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -17,12 +18,17 @@ import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunctionGradient;
 import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer;
 import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer.Formula;
+import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.PowellOptimizer;
 
 public class BradleyTerryModel<T> extends PairwiseDiscreteChoiceModel<T> {
 
+	public static final AtomicInteger cgUses = new AtomicInteger();
+	public static final AtomicInteger powellUses = new AtomicInteger();
+	
 	int[][] wins;
 	
-	NonLinearConjugateGradientOptimizer optim, backup;	
+	NonLinearConjugateGradientOptimizer optim;
+	PowellOptimizer backup;	
 	
 	public BradleyTerryModel(List<T> items) {
 		super(items);
@@ -31,7 +37,8 @@ public class BradleyTerryModel<T> extends PairwiseDiscreteChoiceModel<T> {
 				new SimplePointChecker<PointValuePair>(1e-5, 1e-8);
 		
 		optim = new NonLinearConjugateGradientOptimizer(Formula.POLAK_RIBIERE, checker);
-		backup = new NonLinearConjugateGradientOptimizer(Formula.FLETCHER_REEVES, checker);
+//		backup = new NonLinearConjugateGradientOptimizer(Formula.FLETCHER_REEVES, checker);
+		backup = new PowellOptimizer(1e-5, 1e-8);
 		
 		wins = new int[items.size()][items.size()];
 	}
@@ -53,15 +60,18 @@ public class BradleyTerryModel<T> extends PairwiseDiscreteChoiceModel<T> {
 		OptimizationData start = new InitialGuess(new double[items.size() - 1]);
 				
 		PointValuePair result = null;
-		// use Polak-Ribiere unless fails to converge; then switch to Fletcher-Reeves
-		try {
-			OptimizationData maxIter = new MaxIter(100);
-			result = optim.optimize(func, grad, GoalType.MINIMIZE, start, maxIter);
+		// use Polak-Ribiere unless fails to converge
+		try {			
+			result = optim.optimize(func, grad, GoalType.MINIMIZE, start, 
+					new MaxIter(500), new MaxEval(500));
+			cgUses.incrementAndGet();
 		}
 		catch( MathIllegalStateException e ) {
-			OptimizationData maxEval = new MaxEval(500);
-			result = backup.optimize(func, grad, GoalType.MINIMIZE, start, maxEval);
-		}				
+			// TODO: Default value of 50 iterations in BracketFinder here seems to cause problems
+			result = backup.optimize(func, GoalType.MINIMIZE, start, 
+					new MaxEval(5000), new MaxIter(1000));
+			powellUses.incrementAndGet();
+		}
 		
 		RealVector strEst = new ArrayRealVector(new double[] {0.0}, result.getPoint());
 		
