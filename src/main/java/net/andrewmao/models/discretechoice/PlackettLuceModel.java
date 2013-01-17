@@ -43,12 +43,13 @@ public class PlackettLuceModel<T> extends RandomUtilityModel<T> {
 			double[][] g = new double[n][m];
 			for( int j = 0; j < n; j++ ) {
 				int[] ranking = rankings.get(j);
+				
 				double gsum = 0;
-				for( int i = 0; i < m-1; i++ ) {
-					gsum += gamma.getEntry(ranking[i]-1);
+				for( int i = m-1; i >= 0; i-- ) {
+					gsum += gamma.getEntry(ranking[i]-1);					
+					if( i == m-1 ) continue;
 					g[j][i] = 1/gsum;
-				}
-				g[j][m-1] = 0;				
+				}				
 			}
 			/*
 			 * At this point, g[j][i] should be the reciprocal of the
