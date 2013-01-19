@@ -17,7 +17,8 @@ import org.apache.commons.math3.linear.RealVector;
  * @param <T>
  */
 public class PlackettLuceModel<T> extends RandomUtilityModel<T> {
-
+	
+	static final double PL_MAX_ITERS = 500;
 	static final double tolerance = 1e-9;
 	
 	public PlackettLuceModel(List<T> items) {
@@ -39,7 +40,11 @@ public class PlackettLuceModel<T> extends RandomUtilityModel<T> {
 		for(int[] ranking : rankings)
 			w.addToEntry(ranking[m-1]-1, -1.0);		
 		
+		int iter = 0;
 		do {
+			if( iter++ > PL_MAX_ITERS ) 
+				throw new RuntimeException("MM failed to converge...check for MM assumption satisfied.");
+			
 			double[][] g = new double[n][m];
 			for( int j = 0; j < n; j++ ) {
 				int[] ranking = rankings.get(j);

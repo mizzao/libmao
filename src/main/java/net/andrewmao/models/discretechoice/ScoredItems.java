@@ -13,6 +13,8 @@ public class ScoredItems<T> extends LinkedHashMap<T, MutableDouble> {
 
 	private static final long serialVersionUID = -6171230363427632120L;
 
+	public ScoredItems() {}
+
 	public ScoredItems(List<T> items, double[] scores) {
 		super();
 		
