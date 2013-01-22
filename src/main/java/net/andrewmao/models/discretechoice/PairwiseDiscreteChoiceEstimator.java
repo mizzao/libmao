@@ -2,9 +2,9 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.List;
 
-public abstract class PairwiseDiscreteChoiceModel<T> extends DiscreteChoiceModel<T> {
+public abstract class PairwiseDiscreteChoiceEstimator<T> extends DiscreteChoiceEstimator<T> {
 
-	protected PairwiseDiscreteChoiceModel(List<T> items) {
+	protected PairwiseDiscreteChoiceEstimator(List<T> items) {
 		super(items);		
 	}
 	

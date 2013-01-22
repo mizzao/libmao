@@ -9,8 +9,8 @@ import java.util.Random;
 import org.junit.Test;
 
 import net.andrewmao.models.discretechoice.ScoredItems;
-import net.andrewmao.socialchoice.preferences.PreferenceGenerator;
-import net.andrewmao.socialchoice.preferences.ThurstoneNoiseGenerator;
+import net.andrewmao.models.noise.NoiseModel;
+import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import net.andrewmao.socialchoice.rules.ThurstoneMostellerRule;
 
@@ -22,9 +22,9 @@ public class ThurstoneMostellerTest {
 		
 		List<Integer> stuff = Arrays.asList(new Integer[] {1, 2, 3, 4});
 		
-		PreferenceGenerator<Integer> rfg = new ThurstoneNoiseGenerator<Integer>(stuff, new Random(), 0.2);
+		NoiseModel<Integer> rfg = new NormalNoiseModel<Integer>(stuff, new Random(), 0.2);
 		
-		PreferenceProfile<Integer> generated = rfg.getRandomProfile(1000);
+		PreferenceProfile<Integer> generated = rfg.sampleProfile(1000);
 		
 		ThurstoneMostellerRule tmr = new ThurstoneMostellerRule(true);
 		

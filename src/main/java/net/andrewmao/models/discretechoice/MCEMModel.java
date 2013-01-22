@@ -17,7 +17,7 @@ import org.apache.commons.math3.linear.RealVector;
  *
  * @param <T>
  */
-public abstract class MCEMModel<T> extends RandomUtilityModel<T> {
+public abstract class MCEMModel<T> extends RandomUtilityEstimator<T> {
 			
 	int maxIter;
 	double abseps;

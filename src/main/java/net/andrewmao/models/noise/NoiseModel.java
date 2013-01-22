@@ -1,4 +1,4 @@
-package net.andrewmao.socialchoice.preferences;
+package net.andrewmao.models.noise;
 
 import java.lang.reflect.Array;
 import java.util.List;
@@ -6,13 +6,12 @@ import java.util.Random;
 
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
-
-public abstract class PreferenceGenerator<T> {
+public abstract class NoiseModel<T> {
 
 	protected List<T> candidates;
 	protected Random rnd;
 	
-	public PreferenceGenerator(List<T> candidates, Random rnd) {
+	public NoiseModel(List<T> candidates, Random rnd) {
 		this.candidates = candidates;
 		this.rnd = rnd;
 	}
@@ -24,14 +23,15 @@ public abstract class PreferenceGenerator<T> {
 		return (T[][]) Array.newInstance(candidates.get(0).getClass(), dimensions);
 	}
 	
-	public T[][] getProfileArrayInitialized(int size) {
+	protected T[][] getProfileArrayInitialized(int size) {
 		T[][] profile = getProfileArray(size);
 		
-		for(T[] ranking : profile) candidates.toArray(ranking);
-		
+		for(T[] ranking : profile) candidates.toArray(ranking);		
 		return profile;
-	}
+	}	
 
-	public abstract PreferenceProfile<T> getRandomProfile(int size);
+	public abstract PreferenceProfile<T> sampleProfile(int size);
+	
+	public abstract double logLikelihood(PreferenceProfile<T> profile);
 
 }

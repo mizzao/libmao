@@ -16,7 +16,7 @@ import org.apache.commons.math3.linear.RealVector;
  *
  * @param <T>
  */
-public class PlackettLuceModel<T> extends RandomUtilityModel<T> {
+public class PlackettLuceModel<T> extends RandomUtilityEstimator<T> {
 	
 	static final double PL_MAX_ITERS = 500;
 	static final double tolerance = 1e-9;

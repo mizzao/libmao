@@ -11,11 +11,11 @@ import java.util.List;
  *
  * @param <T>
  */
-public abstract class DiscreteChoiceModel<T> {
+public abstract class DiscreteChoiceEstimator<T> {
 	
 	protected final List<T> items;
 	
-	protected DiscreteChoiceModel(List<T> items) {
+	protected DiscreteChoiceEstimator(List<T> items) {
 		this.items = Collections.unmodifiableList(items);
 	}
 	

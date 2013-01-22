@@ -3,11 +3,11 @@ package net.andrewmao.models.discretechoice;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class RandomUtilityModel<T> extends DiscreteChoiceModel<T> {
+public abstract class RandomUtilityEstimator<T> extends DiscreteChoiceEstimator<T> {
 
 	List<int[]> rankings;
 	
-	protected RandomUtilityModel(List<T> items) {
+	protected RandomUtilityEstimator(List<T> items) {
 		super(items);		
 		
 		rankings = new ArrayList<int[]>();	

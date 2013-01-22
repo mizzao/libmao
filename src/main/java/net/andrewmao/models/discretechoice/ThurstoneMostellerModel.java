@@ -23,7 +23,7 @@ import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjuga
 import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer.Formula;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.PowellOptimizer;
 
-public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceModel<T> {
+public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceEstimator<T> {
 	
 	public static final AtomicInteger cgUses = new AtomicInteger();
 	public static final AtomicInteger powellUses = new AtomicInteger();

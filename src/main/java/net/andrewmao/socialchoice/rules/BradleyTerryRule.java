@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.andrewmao.models.discretechoice.BradleyTerryModel;
-import net.andrewmao.models.discretechoice.PairwiseDiscreteChoiceModel;
+import net.andrewmao.models.discretechoice.PairwiseDiscreteChoiceEstimator;
 import net.andrewmao.models.discretechoice.ScoredItems;
 
 public class BradleyTerryRule extends ScoredVotingRule {
@@ -26,7 +26,7 @@ public class BradleyTerryRule extends ScoredVotingRule {
 		return tm.getParameters();		
 	}
 
-	protected <T> void addPairs(PairwiseDiscreteChoiceModel<T> tm,
+	protected <T> void addPairs(PairwiseDiscreteChoiceEstimator<T> tm,
 			PreferenceProfile<T> profile) {
 		if( useAllPairs ) {
 			// Add in all pairwise wins for each ranking

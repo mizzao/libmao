@@ -1,9 +1,9 @@
-package net.andrewmao.socialchoice.preferences;
+package net.andrewmao.models.noise;
 
 import java.util.List;
 import java.util.Random;
 
-import net.andrewmao.socialchoice.preferences.PreferenceGenerator;
+import net.andrewmao.models.noise.NoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 
@@ -15,7 +15,7 @@ import net.andrewmao.socialchoice.rules.PreferenceProfile;
  *
  * @param <T>
  */
-public class RandomFlipGenerator<T> extends PreferenceGenerator<T> {
+public class RandomFlipGenerator<T> extends NoiseModel<T> {
 	
 	private final double prob;
 	
@@ -26,7 +26,7 @@ public class RandomFlipGenerator<T> extends PreferenceGenerator<T> {
 	}
 		
 	@Override
-	public PreferenceProfile<T> getRandomProfile(int size) {
+	public PreferenceProfile<T> sampleProfile(int size) {
 		T[][] profile = super.getProfileArray(size);
 		
 		for( int i = 0; i < size; i++ ) {
@@ -44,6 +44,11 @@ public class RandomFlipGenerator<T> extends PreferenceGenerator<T> {
 		}
 		
 		return new PreferenceProfile<T>(profile);
+	}
+
+	@Override
+	public double logLikelihood(PreferenceProfile<T> profile) {
+		throw new UnsupportedOperationException();
 	}
 
 }

@@ -1,0 +1,64 @@
+package net.andrewmao.models.noise;
+
+import java.util.List;
+import java.util.Random;
+
+import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.optim.MaxEval;
+import org.apache.commons.math3.optim.nonlinear.scalar.GoalType;
+import org.apache.commons.math3.optim.univariate.BrentOptimizer;
+import org.apache.commons.math3.optim.univariate.SearchInterval;
+import org.apache.commons.math3.optim.univariate.UnivariateObjectiveFunction;
+import org.apache.commons.math3.optim.univariate.UnivariatePointValuePair;
+
+import net.andrewmao.socialchoice.rules.Kemeny;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
+
+
+public class CondorcetEstimator implements Estimator<CondorcetModel<?>> {
+
+	BrentOptimizer brent;
+	
+	public CondorcetEstimator() {
+		brent = new BrentOptimizer(1e-7, 1e-11);
+	}
+	
+	@Override
+	public <T> CondorcetModel<T> fitModel(final PreferenceProfile<T> profile) {
+		// Find optimal kemeny rankings
+		Kemeny k = new Kemeny();
+		
+		List<List<T>> bestRankings = k.getAllRankings(profile);
+		
+		double bestLL = Double.POSITIVE_INFINITY;
+		double bestPhi = 0;
+		List<T> bestRanking = null;
+		
+		// Optimize p over each ranking and pick the one with the best likelihood
+		for( final List<T> ranking : bestRankings ) {
+			UnivariateFunction logLk = new UnivariateFunction() {
+				@Override public double value(double phi) {					
+					return CondorcetModel.profileLogLikelihood(profile, ranking, phi);
+				}				
+			};
+			
+			UnivariatePointValuePair result = 
+					brent.optimize(
+					new UnivariateObjectiveFunction(logLk),
+					new SearchInterval(0, 1),
+					new MaxEval(1000),
+					GoalType.MAXIMIZE
+					);
+			
+			double ll = result.getValue();
+			if( ll < bestLL ) {
+				bestLL = ll;
+				bestPhi = result.getPoint();
+				bestRanking = ranking;
+			}							
+		}
+		
+		return new CondorcetModel<T>(bestRanking, new Random(), 1/(1+bestPhi));
+	}
+
+}

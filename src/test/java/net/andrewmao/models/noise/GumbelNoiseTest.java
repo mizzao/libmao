@@ -1,4 +1,4 @@
-package net.andrewmao.socialchoice.preferences;
+package net.andrewmao.models.noise;
 
 import static org.junit.Assert.*;
 
@@ -9,7 +9,7 @@ import java.util.Random;
 
 import net.andrewmao.models.discretechoice.PlackettLuceModel;
 import net.andrewmao.models.discretechoice.ScoredItems;
-import net.andrewmao.socialchoice.preferences.GumbelNoiseGenerator;
+import net.andrewmao.models.noise.GumbelNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.distribution.ExponentialDistribution;
@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class GumbelNoiseGeneratorTest {
+public class GumbelNoiseTest {
 
 	Character[] ls = new Character[] { 'a', 'b', 'c', 'd' };
 	List<Character> letters = Arrays.asList(ls);
@@ -73,9 +73,9 @@ public class GumbelNoiseGeneratorTest {
 		double tol = 1e-2;
 		double strDiff = 0.2;				
 		
-		GumbelNoiseGenerator<Character> gen = new GumbelNoiseGenerator<Character>(letters, new Random(), strDiff);
+		GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(letters, new Random(), strDiff);
 						
-		PreferenceProfile<Character> prefs = gen.getRandomProfile(size);	
+		PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
 		
 		System.out.println(1.0 * prefs.getNumCorrect('a', 'b', comp) / size);
 		System.out.println(1/(1+Math.exp(-strDiff)));
@@ -108,9 +108,9 @@ public class GumbelNoiseGeneratorTest {
 		for( int a = 0; a < trials; a++ ) {
 			double strDiff = Math.random();
 
-			GumbelNoiseGenerator<Character> gen = new GumbelNoiseGenerator<Character>(letters, new Random(), strDiff);
+			GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(letters, new Random(), strDiff);
 
-			PreferenceProfile<Character> prefs = gen.getRandomProfile(size);	
+			PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
 
 			PlackettLuceModel<Character> plmm = new PlackettLuceModel<Character>(letters);
 

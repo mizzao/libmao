@@ -1,4 +1,4 @@
-package net.andrewmao.socialchoice.preferences;
+package net.andrewmao.models.noise;
 
 import static org.junit.Assert.*;
 
@@ -7,7 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-import net.andrewmao.socialchoice.preferences.ThurstoneNoiseGenerator;
+import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -16,7 +16,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 
-public class ThurstoneNoiseGeneratorTest {
+public class ThurstoneNoiseTest {
 	
 	Character[] ls = new Character[] { 'a', 'b', 'c', 'd' };
 	List<Character> letters = Arrays.asList(ls);
@@ -44,9 +44,9 @@ public class ThurstoneNoiseGeneratorTest {
 		
 		NormalDistribution dist = new NormalDistribution(0, 1);
 		
-		ThurstoneNoiseGenerator<Character> gen = new ThurstoneNoiseGenerator<Character>(letters, new Random(), strDiff);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(letters, new Random(), strDiff);
 						
-		PreferenceProfile<Character> prefs = gen.getRandomProfile(size);
+		PreferenceProfile<Character> prefs = gen.sampleProfile(size);
 		
 		System.out.println(1.0 * prefs.getNumCorrect('a', 'b', comp) / size);
 		System.out.println(dist.cumulativeProbability(strDiff));

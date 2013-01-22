@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Random;
 
 import net.andrewmao.models.discretechoice.ScoredItems;
-import net.andrewmao.socialchoice.preferences.PreferenceGenerator;
-import net.andrewmao.socialchoice.preferences.ThurstoneNoiseGenerator;
+import net.andrewmao.models.noise.NoiseModel;
+import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.socialchoice.rules.BradleyTerryRule;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
@@ -32,9 +32,9 @@ public class BradleyTerryTest {
 		
 		List<Integer> stuff = Arrays.asList(new Integer[] {1, 2, 3, 4});
 		
-		PreferenceGenerator<Integer> rfg = new ThurstoneNoiseGenerator<Integer>(stuff, new Random(), 0.2);
+		NoiseModel<Integer> rfg = new NormalNoiseModel<Integer>(stuff, new Random(), 0.2);
 		
-		PreferenceProfile<Integer> generated = rfg.getRandomProfile(100);
+		PreferenceProfile<Integer> generated = rfg.sampleProfile(100);
 		
 		BradleyTerryRule tmr = new BradleyTerryRule(true);
 		
