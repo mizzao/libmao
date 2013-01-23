@@ -1,8 +1,5 @@
 package net.andrewmao.socialchoice.rules;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.apache.commons.lang.mutable.MutableDouble;
 
 import net.andrewmao.models.discretechoice.PlackettLuceModel;
@@ -41,16 +38,11 @@ public class PlackettLuceRule extends ScoredVotingRule {
 			}
 		}
 		
-		List<T> candidates = Arrays.asList(profile.getSortedCandidates());
-		
-		PlackettLuceModel<T> model = new PlackettLuceModel<T>(candidates);
-		
-		for( T[] ranking : profile.profile )
-			model.addData(ranking);		
+		PlackettLuceModel model = new PlackettLuceModel();
 		
 		ScoredItems<T> params = null;
 		try {
-			params = model.getParameters();
+			params = model.fitModel(profile).getValueMap();			
 		}
 		catch( RuntimeException e ) {
 			// In this case, need to divide the profile in half and fit each piece separately
@@ -59,16 +51,10 @@ public class PlackettLuceRule extends ScoredVotingRule {
 			
 //			System.out.println(firstHalf);
 //			System.out.println(secondHalf);
-			
-			PlackettLuceModel<T> model1 = new PlackettLuceModel<T>(Arrays.asList(firstHalf.getSortedCandidates()));
-			for( T[] ranking : firstHalf.profile )
-				model1.addData(ranking);	
-			ScoredItems<T> firstParams = model1.getParameters();
-			
-			PlackettLuceModel<T> model2 = new PlackettLuceModel<T>(Arrays.asList(secondHalf.getSortedCandidates()));
-			for( T[] ranking : secondHalf.profile )
-				model2.addData(ranking);	
-			ScoredItems<T> secondParams = model2.getParameters();
+							
+			ScoredItems<T> firstParams = model.fitModel(firstHalf).getValueMap();
+						
+			ScoredItems<T> secondParams = model.fitModel(secondHalf).getValueMap();
 			// Put a large negative number into second params and combine
 			for( MutableDouble val : secondParams.values() )
 				val.add(-LARGE_SPACER);

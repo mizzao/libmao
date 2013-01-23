@@ -6,6 +6,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import net.andrewmao.models.noise.NoiseModel;
+
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -17,8 +19,10 @@ import org.apache.commons.math3.linear.RealVector;
  *
  * @param <T>
  */
-public abstract class MCEMModel<T> extends RandomUtilityEstimator<T> {
-			
+public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEstimator<M> {
+	
+	final int maxThreads;
+	
 	int maxIter;
 	double abseps;
 	double releps;
@@ -27,8 +31,12 @@ public abstract class MCEMModel<T> extends RandomUtilityEstimator<T> {
 	ExecutorService exec;
 	CountDownLatch latch;
 	
-	protected MCEMModel(List<T> items) {
-		super(items);						
+	public MCEMModel(int maxThreads) {
+		this.maxThreads = Math.min(maxThreads, Runtime.getRuntime().availableProcessors());
+	}
+	
+	public MCEMModel() {
+		this(Runtime.getRuntime().availableProcessors());
 	}
 	
 	public void setup(double[] startPoint, int maxIter, double abseps, double releps) {
@@ -41,17 +49,21 @@ public abstract class MCEMModel<T> extends RandomUtilityEstimator<T> {
 	/*
 	 * Implemented by subclasses
 	 */
-	protected abstract void initialize();	
+	protected abstract void initialize(List<int[]> rankings, int numItems);	
 	protected abstract void eStep(int iter);	
 	protected abstract void mStep();
 	protected abstract double[] getCurrentParameters();
 	protected abstract double getLogLikelihood();
-	
-	@Override
-	public synchronized ScoredItems<T> getParameters() {
-		exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		
-		initialize();
+	@Override
+	public double[] getParameters(List<int[]> rankings, int numItems) {
+		/*
+		 * NOT reentrant. Don't call this from multiple threads.
+		 */
+		
+		exec = Executors.newFixedThreadPool(maxThreads);
+		
+		initialize(rankings, numItems);
 //		double ll = Double.NEGATIVE_INFINITY;
 		double absImpr = Double.POSITIVE_INFINITY;
 		
@@ -92,7 +104,7 @@ public abstract class MCEMModel<T> extends RandomUtilityEstimator<T> {
 		
 		exec.shutdown();
 		
-		return new ScoredItems<T>(items, params.toArray());
+		return (params.toArray());
 	}
 
 	void beginNumJobs(int size) {

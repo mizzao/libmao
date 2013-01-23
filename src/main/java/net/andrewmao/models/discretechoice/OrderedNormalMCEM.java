@@ -6,13 +6,16 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.math3.analysis.function.Abs;
+import org.apache.commons.math3.analysis.function.Sqrt;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
+import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.probability.BiNormalGenzDist;
 import net.andrewmao.probability.NormalDist;
 import net.andrewmao.probability.TruncatedNormal;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import net.andrewmao.stat.MultivariateMean;
 import net.andrewmao.stat.SynchronizedMultivariateMean;
 
@@ -24,26 +27,27 @@ import net.andrewmao.stat.SynchronizedMultivariateMean;
  *
  * @param <T>
  */
-public class OrderedNormalMCEM<T> extends MCEMModel<T> {
+public class OrderedNormalMCEM extends MCEMModel<NormalNoiseModel<?>> {
 
-	final MultivariateMean m1Stats;
-	final MultivariateMean m2Stats;
+	MultivariateMean m1Stats;
+	MultivariateMean m2Stats;
 	
 	RealVector delta, variance;
 	
-	public OrderedNormalMCEM(List<T> items) {
-		super(items);
-				
-		// Concurrent thread accessed
-		m1Stats = new SynchronizedMultivariateMean(items.size());
-		m2Stats = new SynchronizedMultivariateMean(items.size());	
-	}
+	List<int[]> rankings;
+	int numItems;
 
 	@Override
-	protected void initialize() {		
+	protected void initialize(List<int[]> rankings, int m) {
+		this.rankings = rankings;
+		this.numItems = m;
+		
+		m1Stats = new SynchronizedMultivariateMean(m);
+		m2Stats = new SynchronizedMultivariateMean(m);
+		
 		delta = new ArrayRealVector(start);		
 		// Can either initialize variance randomly or fixed 
-		double[] randomVars = new NormalDistribution().sample(items.size());
+		double[] randomVars = new NormalDistribution().sample(m);
 		variance = new ArrayRealVector(randomVars).mapToSelf(new Abs()).mapAddToSelf(1);	
 	}
 
@@ -178,8 +182,8 @@ public class OrderedNormalMCEM<T> extends MCEMModel<T> {
 			this.samples = samples;
 			this.ranking = ranking;			
 			
-			means = new MultivariateMean(items.size());
-			meanSqs = new MultivariateMean(items.size());	
+			means = new MultivariateMean(numItems);
+			meanSqs = new MultivariateMean(numItems);	
 			
 			// 10% of initial values ignored?
 			this.ignored = (int) Math.round(samples / 10.0d);
@@ -192,7 +196,7 @@ public class OrderedNormalMCEM<T> extends MCEMModel<T> {
 			 * 
 			 * current is a sorted parameter array, not the same ordering as delta 
 			 */
-			double[] current = new double[items.size()];
+			double[] current = new double[numItems];
 			
 			int c = ranking.length;
 			double[] rands = new double[c];			
@@ -259,6 +263,17 @@ public class OrderedNormalMCEM<T> extends MCEMModel<T> {
 			if( i < current.length - 1 ) current[i] = Math.max(current[i], 
 					Math.nextUp(current[i+1]));				
 		}	
+	}
+
+	@Override
+	public <T> NormalNoiseModel<T> fitModel(PreferenceProfile<T> profile) {
+		List<T> ordering = Arrays.asList(profile.getSortedCandidates());
+		List<int[]> rankings = super.getIndices(profile, ordering);
+		
+		double[] strParams = getParameters(rankings, ordering.size());
+		double[] sds = variance.map(new Sqrt()).toArray();
+		
+		return new NormalNoiseModel<T>(ordering, new Random(), strParams, sds);		
 	}
 
 }

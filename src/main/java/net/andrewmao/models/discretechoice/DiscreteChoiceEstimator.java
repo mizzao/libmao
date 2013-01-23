@@ -1,7 +1,7 @@
 package net.andrewmao.models.discretechoice;
 
-import java.util.Collections;
-import java.util.List;
+import net.andrewmao.models.noise.Estimator;
+import net.andrewmao.models.noise.NoiseModel;
 
 /**
  * Base class for a group of models that assign hidden underlying strengths 
@@ -11,15 +11,6 @@ import java.util.List;
  *
  * @param <T>
  */
-public abstract class DiscreteChoiceEstimator<T> {
-	
-	protected final List<T> items;
-	
-	protected DiscreteChoiceEstimator(List<T> items) {
-		this.items = Collections.unmodifiableList(items);
-	}
-	
-	public List<T> getItems() { return items; }
-	
-	public abstract ScoredItems<T> getParameters();	
+public abstract class DiscreteChoiceEstimator<M extends NoiseModel<?>> implements Estimator<M> {		
+		
 }

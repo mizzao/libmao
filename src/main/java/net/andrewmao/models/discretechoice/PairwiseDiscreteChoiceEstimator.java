@@ -2,26 +2,51 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.List;
 
-public abstract class PairwiseDiscreteChoiceEstimator<T> extends DiscreteChoiceEstimator<T> {
+import net.andrewmao.models.noise.NoiseModel;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
-	protected PairwiseDiscreteChoiceEstimator(List<T> items) {
-		super(items);		
-	}
+public abstract class PairwiseDiscreteChoiceEstimator<M extends NoiseModel<?>> extends DiscreteChoiceEstimator<M> {		
 	
-	public abstract void addData(T winner, T loser, int count);
-	
-	public void addAdjacentPairs(T[] ranking) {
-		for( int i = 0; i < ranking.length - 1; i++ ) {				
-			addData(ranking[i], ranking[i+1], 1);				
-		}
-	}
-	
-	public void addAllPairs(T[] ranking) {		
-		for( int i = 0; i < ranking.length; i++ ) {
-			for( int j = i+1; j < ranking.length; j++ ) {
-				addData(ranking[i], ranking[j], 1);
+	protected <T> double[][] addAdjacentPairs(PreferenceProfile<T> profile, List<T> ordering) {
+		int m = ordering.size();		
+		double[][] wins = new double[m][m];
+		
+		for( T[] ranking : profile.getProfile() ) {
+			for( int i = 0; i < ranking.length - 1; i++ ) {
+				int idxWinner = ordering.indexOf(ranking[i]);
+				int idxLoser = ordering.indexOf(ranking[i+1]);
+				
+				wins[idxWinner][idxLoser] += 1;
 			}
 		}
+		
+		return wins;
+	}
+	
+	protected <T> double[][] addAllPairs(PreferenceProfile<T> profile, List<T> ordering) {		
+		int m = ordering.size();		
+		double[][] wins = new double[m][m];
+		
+		for( T[] ranking : profile.getProfile() ) {
+			for( int i = 0; i < ranking.length; i++ ) {
+				for( int j = i+1; j < ranking.length; j++ ) {
+					int idxWinner = ordering.indexOf(ranking[i]);
+					int idxLoser = ordering.indexOf(ranking[j]);
+					
+					wins[idxWinner][idxLoser] += 1;					
+				}
+			}
+		}
+		
+		return wins;
+	}
+	
+	@Override
+	public <T> M fitModel(PreferenceProfile<T> profile) {
+		return this.fitModel(profile, true);
 	}
 
+	public abstract <T> M fitModel(PreferenceProfile<T> profile, boolean useAllPairs);
+	
+	public abstract double[] getParameters(double[][] winMatrix);
 }

@@ -112,12 +112,11 @@ public class GumbelNoiseTest {
 
 			PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
 
-			PlackettLuceModel<Character> plmm = new PlackettLuceModel<Character>(letters);
-
-			for( Character[] ranking : prefs.getProfile() )
-				plmm.addData(ranking);
-
-			ScoredItems<Character> params = plmm.getParameters(); 
+			PlackettLuceModel plmm = new PlackettLuceModel();
+			
+			GumbelNoiseModel<Character> model = plmm.fitModel(prefs);
+			ScoredItems<Character> params = model.getValueMap();
+			
 			System.out.println(params);
 
 			for( int i = 0; i < ls.length; i++ ) {

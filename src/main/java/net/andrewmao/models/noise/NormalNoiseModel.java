@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.Random;
 
 import net.andrewmao.math.RandomGeneration;
-import net.andrewmao.models.discretechoice.ScoredItems;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
-
 
 /**
  * Generates rankings with pairwise noise according to the Thurstone model,
@@ -23,13 +21,21 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	
 	private final double[] sds;
 	
-	public NormalNoiseModel(ScoredItems<T> scoreMap, Random rnd) {
-		super(scoreMap, rnd);
+	public NormalNoiseModel(List<T> candidates, Random rnd, double[] strengths) {
+		super(candidates, rnd, strengths);
 		
 		sds = new double[candidates.size()];		
 		for( int j = 0; j < candidates.size(); j++ ) 
 			sds[j] = THURSTONE_SIGMA;
 	}
+	
+//	public NormalNoiseModel(ScoredItems<T> scoreMap, Random rnd) {
+//		super(scoreMap, rnd);
+//		
+//		sds = new double[candidates.size()];		
+//		for( int j = 0; j < candidates.size(); j++ ) 
+//			sds[j] = THURSTONE_SIGMA;
+//	}
 	
 	public NormalNoiseModel(List<T> candidates, Random rnd, double[] strengths, double[] sds) {
 		super(candidates, rnd, strengths);

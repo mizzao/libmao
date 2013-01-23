@@ -2,8 +2,7 @@ package net.andrewmao.models.discretechoice;
 
 import static org.junit.Assert.*;
 
-import java.util.Arrays;
-import java.util.List;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.Well19937c;
@@ -31,9 +30,7 @@ public class LogitModelsTest {
 		 * Tests the equivalency of BT and PL on data for two alternatives.
 		 */
 		
-		Character[] items = new Character[] { '0', '1' };		
-		List<Character> itemsList = Arrays.asList(items);
-		Character[] items_rev = new Character[] {'1', '0'};
+		Character[] items = new Character[] { '0', '1' };				
 		
 		RandomGenerator rnd = new Well19937c();		
 		
@@ -42,17 +39,27 @@ public class LogitModelsTest {
 			int wins_0 = 1 + rnd.nextInt(maxWins);
 			int wins_1 = 1 + rnd.nextInt(maxWins);
 			
-			BradleyTerryModel<Character> bt = new BradleyTerryModel<Character>(itemsList);
-			PlackettLuceModel<Character> pl = new PlackettLuceModel<Character>(itemsList);
+			BradleyTerryModel bt = new BradleyTerryModel();
+			PlackettLuceModel pl = new PlackettLuceModel();
 			
-			bt.addData('0', '1', wins_0);
-			bt.addData('1', '0', wins_1);
+			int n = wins_0 + wins_1;
+			Character[][] profile = new Character[n][2];
 			
-			for( int j = 0; j < wins_0; j++ ) pl.addData(items);
-			for( int j = 0; j < wins_1; j++ ) pl.addData(items_rev);
+			int j = 0;
+			for( ; j < wins_0; j++ ) {
+				profile[j][0] = items[0];
+				profile[j][1] = items[1];
+			}
 			
-			double[] btParams = bt.getParameters().toArray();			
-			double[] plParams = pl.getParameters().toArray();
+			for( ; j < n; j++ ) {
+				profile[j][0] = items[1];
+				profile[j][1] = items[0];				
+			}							
+			
+			PreferenceProfile<Character> prefs = new PreferenceProfile<Character>(profile);
+			
+			double[] btParams = bt.fitModel(prefs).getValueMap().toArray();			
+			double[] plParams = pl.fitModel(prefs).getValueMap().toArray();
 			
 			double btDiff = btParams[0] - btParams[1];
 			double plDiff = plParams[0] - plParams[1];

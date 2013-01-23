@@ -1,7 +1,12 @@
 package net.andrewmao.models.discretechoice;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import net.andrewmao.models.noise.GumbelNoiseModel;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.exception.MathIllegalStateException;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -20,44 +25,31 @@ import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjuga
 import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer.Formula;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.PowellOptimizer;
 
-public class BradleyTerryModel<T> extends PairwiseDiscreteChoiceEstimator<T> {
+public class BradleyTerryModel extends PairwiseDiscreteChoiceEstimator<GumbelNoiseModel<?>> {
 
 	public static final AtomicInteger cgUses = new AtomicInteger();
 	public static final AtomicInteger powellUses = new AtomicInteger();
-	
-	int[][] wins;
-	
+			
 	NonLinearConjugateGradientOptimizer optim;
 	PowellOptimizer backup;	
 	
-	public BradleyTerryModel(List<T> items) {
-		super(items);
-		
+	public BradleyTerryModel() {		
 		ConvergenceChecker<PointValuePair> checker = 
 				new SimplePointChecker<PointValuePair>(1e-5, 1e-8);
 		
 		optim = new NonLinearConjugateGradientOptimizer(Formula.POLAK_RIBIERE, checker);
 //		backup = new NonLinearConjugateGradientOptimizer(Formula.FLETCHER_REEVES, checker);
 		backup = new PowellOptimizer(1e-5, 1e-8);
-		
-		wins = new int[items.size()][items.size()];
-	}
-
-	@Override
-	public void addData(T winner, T loser, int count) {
-		int idxWinner = items.indexOf(winner);
-		int idxLoser = items.indexOf(loser);
-		
-		wins[idxWinner][idxLoser] += count;
+				
 	}
 	
 	@Override
-	public ScoredItems<T> getParameters() {				
+	public double[] getParameters(double[][] wins) {				
 		BTNLogLikelihood nll = new BTNLogLikelihood(wins);
 		
 		OptimizationData func = new ObjectiveFunction(nll);
 		OptimizationData grad = new ObjectiveFunctionGradient(nll.gradient());		
-		OptimizationData start = new InitialGuess(new double[items.size() - 1]);
+		OptimizationData start = new InitialGuess(new double[wins.length - 1]);
 				
 		PointValuePair result = null;
 		// use Polak-Ribiere unless fails to converge
@@ -73,9 +65,21 @@ public class BradleyTerryModel<T> extends PairwiseDiscreteChoiceEstimator<T> {
 			powellUses.incrementAndGet();
 		}
 		
-		RealVector strEst = new ArrayRealVector(new double[] {0.0}, result.getPoint());
+		RealVector strEst = new ArrayRealVector(new double[] {0.0}, result.getPoint());		
+		return strEst.toArray();
+	}
+
+	@Override
+	public <T> GumbelNoiseModel<T> fitModel(PreferenceProfile<T> profile, boolean useAllPairs) {
+		List<T> ordering = Arrays.asList(profile.getSortedCandidates());
 		
-		return new ScoredItems<T>(items, strEst.toArray());
+		double[][] wins = useAllPairs ? 
+				super.addAllPairs(profile, ordering) : 
+					super.addAdjacentPairs(profile, ordering);
+		
+		double[] strParams = getParameters(wins);
+		
+		return new GumbelNoiseModel<T>(ordering, new Random(), strParams);
 	}
 
 }

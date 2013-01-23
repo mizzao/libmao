@@ -26,7 +26,7 @@ public class BTNLogLikelihoodTest {
 
 	@Test
 	public void testOneWin() {
-		int[][] wins = new int[2][2];
+		double[][] wins = new double[2][2];
 		
 		wins[0][1] = 1;
 		wins[1][0] = 0;
@@ -46,7 +46,7 @@ public class BTNLogLikelihoodTest {
 	
 	@Test
 	public void testCompound() {
-		int[][] wins = new int[3][3];
+		double[][] wins = new double[3][3];
 		
 		wins[0][1] = 1;
 		wins[1][2] = 1;
@@ -72,7 +72,7 @@ public class BTNLogLikelihoodTest {
 		
 		Random rnd = new Random();
 		
-		int[][] wins = new int[n][n];
+		double[][] wins = new double[n][n];
 		for( int i = 0; i < n; i++ ) 
 			for( int j = 0; j < n; j++)
 				wins[i][j] = rnd.nextInt(max);
@@ -108,7 +108,7 @@ public class BTNLogLikelihoodTest {
 		
 		Random rnd = new Random();
 		
-		int[][] wins = new int[n][n];
+		double[][] wins = new double[n][n];
 		for( int i = 0; i < n; i++ ) 
 			for( int j = 0; j < n; j++)
 				wins[i][j] = rnd.nextInt(max);

@@ -3,28 +3,24 @@ package net.andrewmao.models.discretechoice;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class RandomUtilityEstimator<T> extends DiscreteChoiceEstimator<T> {
+import net.andrewmao.models.noise.NoiseModel;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
-	List<int[]> rankings;
+public abstract class RandomUtilityEstimator<M extends NoiseModel<?>> extends DiscreteChoiceEstimator<M> {	
 	
-	protected RandomUtilityEstimator(List<T> items) {
-		super(items);		
+	protected <T> List<int[]> getIndices(PreferenceProfile<T> profile, List<T> ordering) {		
+		List<int[]> rankings = new ArrayList<int[]>();
 		
-		rankings = new ArrayList<int[]>();	
-	}
+		for( T[] preference : profile.getProfile()) {
+			int[] ranking = new int[preference.length];		
+			int i = 0;
+			for( T item : preference ) ranking[i++] = ordering.indexOf(item) + 1;		
+			rankings.add(ranking);		
+		}
 		
-	public final void addData(List<T> list) {
-		int[] ranking = new int[list.size()];		
-		int i = 0;
-		for( T item : list ) ranking[i++] = items.indexOf(item) + 1;		
-		rankings.add(ranking);
+		return rankings;
 	}
-		
-	public final void addData(T[] arr) {
-		int[] ranking = new int[arr.length];		
-		int i = 0;
-		for( T item : arr ) ranking[i++] = items.indexOf(item) + 1;		
-		rankings.add(ranking);		
-	}
+	
+	public abstract double[] getParameters(List<int[]> rankings, int numItems);
 	
 }

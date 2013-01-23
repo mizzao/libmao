@@ -1,7 +1,12 @@
 package net.andrewmao.models.discretechoice;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import net.andrewmao.models.noise.NormalNoiseModel;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.exception.MathIllegalStateException;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
@@ -23,34 +28,18 @@ import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjuga
 import org.apache.commons.math3.optim.nonlinear.scalar.gradient.NonLinearConjugateGradientOptimizer.Formula;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.PowellOptimizer;
 
-public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceEstimator<T> {
+public class ThurstoneMostellerModel extends PairwiseDiscreteChoiceEstimator<NormalNoiseModel<?>> {
 	
 	public static final AtomicInteger cgUses = new AtomicInteger();
-	public static final AtomicInteger powellUses = new AtomicInteger();
-	
-	private RealMatrix mat;	
-	private TMNLogLikelihood nll;
+	public static final AtomicInteger powellUses = new AtomicInteger();		
 	
 	final boolean useGradient;
 		
 	NonLinearConjugateGradientOptimizer optim;
 	PowellOptimizer backup;
 	
-	public ThurstoneMostellerModel(List<T> items, boolean useGradient) {
-		super(items);		
-		this.useGradient = useGradient;
-		
-		mat = new Array2DRowRealMatrix(items.size(), items.size());		
-		mat.walkInRowOrder(new DefaultRealMatrixChangingVisitor() {
-			public double visit(int row, int column, double value) {
-				if (row == column)
-					return 0;
-				else
-					return 0.08;
-			}
-		});
-				
-		nll = new TMNLogLikelihood(mat);
+	public ThurstoneMostellerModel(boolean useGradient) {			
+		this.useGradient = useGradient;		
 		
 		ConvergenceChecker<PointValuePair> checker = 
 				new SimplePointChecker<PointValuePair>(1e-5, 1e-8);
@@ -60,41 +49,46 @@ public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceEstimator<
 		backup = new PowellOptimizer(1e-7, 1e-11); // From commons 2.2 defaults
 	}
 	
-	public ThurstoneMostellerModel(List<T> items) {
-		this(items, true);
-	}
-	
-	@Override
-	public void addData(T winner, T loser, int count) {
-		int winIdx = items.indexOf(winner);
-		int loseIdx = items.indexOf(loser);
-		
-		mat.setEntry(winIdx, loseIdx, mat.getEntry(winIdx, loseIdx) + count);		
+	public ThurstoneMostellerModel() {
+		this(true);
 	}
 
 	@Override
-	public ScoredItems<T> getParameters() {
+	public double[] getParameters(double[][] wins) {
+		RealMatrix winMat = new Array2DRowRealMatrix(wins, false);
+		
+		// Thomas' original perturbation to make sure the matrix is positive or whatever
+		winMat.walkInRowOrder(new DefaultRealMatrixChangingVisitor() {
+			public double visit(int row, int column, double value) {
+				if (row == column)
+					return value;
+				else
+					return value + 0.08;
+			}
+		});		
+		
+		TMNLogLikelihood nll = new TMNLogLikelihood(winMat);
+		
 		double[] params = null;
 		if( useGradient ) {
 			try {
-				params = gradientParameters();
+				params = gradientParameters(nll);
 				cgUses.incrementAndGet();			
 			} catch(MathIllegalStateException e ) {}	
 		}		
 		if( params == null ) {
-			params = powellParameters();
+			params = powellParameters(nll);
 			powellUses.incrementAndGet();
 		}
 		
 		RealVector strEst = new ArrayRealVector(new double[] {0.0}, params);
-				
-		return new ScoredItems<T>(items, strEst.toArray());
+		return strEst.toArray();
 	}
 
-	private double[] gradientParameters() {
+	private double[] gradientParameters(TMNLogLikelihood nll) {
 		OptimizationData func = new ObjectiveFunction(nll);
 		OptimizationData grad = new ObjectiveFunctionGradient(nll.gradient());		
-		OptimizationData start = new InitialGuess(new double[items.size() - 1]);
+		OptimizationData start = new InitialGuess(new double[nll.mat.getRowDimension() - 1]);
 		
 		PointValuePair result = optim.optimize(func, grad, GoalType.MINIMIZE, start, 
 				new MaxIter(500), new MaxEval(500));
@@ -102,15 +96,28 @@ public class ThurstoneMostellerModel<T> extends PairwiseDiscreteChoiceEstimator<
 		return result.getPointRef();
 	}
 
-	private double[] powellParameters() {
+	private double[] powellParameters(TMNLogLikelihood nll) {
 		OptimizationData func = new ObjectiveFunction(nll);
 		OptimizationData grad = new ObjectiveFunctionGradient(nll.gradient());		
-		OptimizationData start = new InitialGuess(new double[items.size() - 1]);		
+		OptimizationData start = new InitialGuess(new double[nll.mat.getRowDimension() - 1]);		
 		
 		PointValuePair result = backup.optimize(func, grad, GoalType.MINIMIZE, start,
 				new MaxEval(5000), new MaxIter(1000));
 		
 		return result.getPointRef();
+	}
+
+	@Override
+	public <T> NormalNoiseModel<T> fitModel(PreferenceProfile<T> profile, boolean useAllPairs) {
+		List<T> ordering = Arrays.asList(profile.getSortedCandidates());
+		
+		double[][] wins = useAllPairs ? 
+				super.addAllPairs(profile, ordering) : 
+					super.addAdjacentPairs(profile, ordering);
+		
+		double[] strParams = getParameters(wins);
+		
+		return new NormalNoiseModel<T>(ordering, new Random(), strParams);		
 	}
 
 }

@@ -14,7 +14,11 @@ import org.apache.commons.math3.optim.univariate.UnivariatePointValuePair;
 import net.andrewmao.socialchoice.rules.Kemeny;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
-
+/**
+ * Estimator for the Condorcet or Mallows model
+ * @author mao
+ *
+ */
 public class CondorcetEstimator implements Estimator<CondorcetModel<?>> {
 
 	BrentOptimizer brent;

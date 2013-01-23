@@ -1,6 +1,11 @@
 package net.andrewmao.models.discretechoice;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
+
+import net.andrewmao.models.noise.GumbelNoiseModel;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.analysis.function.Log;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -16,18 +21,14 @@ import org.apache.commons.math3.linear.RealVector;
  *
  * @param <T>
  */
-public class PlackettLuceModel<T> extends RandomUtilityEstimator<T> {
+public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?>> {
 	
 	static final double PL_MAX_ITERS = 500;
-	static final double tolerance = 1e-9;
-	
-	public PlackettLuceModel(List<T> items) {
-		super(items);		
-	}
+	static final double tolerance = 1e-9;	
 
 	@Override
-	public ScoredItems<T> getParameters() {
-		int m = items.size(); // # of items, indexed by i
+	public double[] getParameters(List<int[]> rankings, int numItems) {
+		int m = numItems; // # of items, indexed by i
 		int n = rankings.size(); // # of contests, indexed by j
 		
 		RealVector diff = null, gamma = new ArrayRealVector(m, 1);		
@@ -95,8 +96,18 @@ public class PlackettLuceModel<T> extends RandomUtilityEstimator<T> {
 		} while( diff.getNorm() > tolerance );
 		
 		// Return scaled and with log
-		double scalar = gamma.getEntry(0);		
-		return new ScoredItems<T>(items, gamma.mapDivide(scalar).map(new Log()).toArray());
+		double scalar = gamma.getEntry(0);
+		return gamma.mapDivide(scalar).map(new Log()).toArray();
+	}
+
+	@Override
+	public <T> GumbelNoiseModel<T> fitModel(PreferenceProfile<T> profile) {
+		List<T> ordering = Arrays.asList(profile.getSortedCandidates());				
+		List<int[]> rankings = super.getIndices(profile, ordering);		
+		
+		double[] strParams = getParameters(rankings, ordering.size());
+		
+		return new GumbelNoiseModel<T>(ordering, new Random(), strParams);		
 	}
 
 }

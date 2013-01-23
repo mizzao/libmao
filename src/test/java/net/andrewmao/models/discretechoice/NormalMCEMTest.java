@@ -9,6 +9,7 @@ import java.util.Random;
 
 import net.andrewmao.math.RandomGeneration;
 import net.andrewmao.models.discretechoice.OrderedNormalMCEM;
+import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.junit.After;
@@ -30,24 +31,26 @@ public class NormalMCEMTest {
 
 	@Test
 	public void test() {
-		int n = 500;
+		int n = 500;		
 		int iters = 30;
 		double abseps = 1e-8; // Double.NEGATIVE_INFINITY;
 		double releps = 1e-5; // Double.NEGATIVE_INFINITY;
 		
 		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
 		final List<Character> stuffList = Arrays.asList(stuff);
+		int m = stuff.length;
 		
 		double[] means = new double[] {0, -1, -2, -3};
 		double[] sds = new double[] {1, 1, 1, 1};
 		
-		OrderedNormalMCEM<Character> model = new OrderedNormalMCEM<Character>(stuffList);
+		OrderedNormalMCEM model = new OrderedNormalMCEM();
 		
+		Character[][] profile = new Character[n][m];
 		for( int i = 0; i < n; i++) {
 			final double[] vals = RandomGeneration.gaussianArray(means, sds, rnd);
-			Character[] copy = Arrays.copyOf(stuff, stuff.length);
+			profile[i] = Arrays.copyOf(stuff, stuff.length);
 			
-			Arrays.sort(copy, new Comparator<Character>() {
+			Arrays.sort(profile[i], new Comparator<Character>() {
 				@Override
 				public int compare(Character o1, Character o2) {
 					int i1 = stuffList.indexOf(o1);
@@ -56,13 +59,13 @@ public class NormalMCEMTest {
 					return Double.compare(vals[i2], vals[i1]);
 				}				
 			});
-			
-			model.addData(copy);
 		}
+		
+		PreferenceProfile<Character> prefs = new PreferenceProfile<Character>(profile);
 		
 		model.setup(new NormalDistribution(0,1).sample(4), iters, abseps, releps);
 		
-		ScoredItems<Character> fitted = model.getParameters();
+		ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();
 		
 		System.out.println(fitted);
 		
