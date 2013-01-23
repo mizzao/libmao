@@ -12,57 +12,58 @@
 *          Pullman, WA 99164-3113
 *          Email : alangenz@wsu.edu
 *
-      PROGRAM TSTNRM
-*
-*     Test program for MVNDST
-*
-      DOUBLE PRECISION ABSEPS, RELEPS, VAL, ERR
-      INTEGER N, NN, I, J, K, IJ, MAXPTS, IFT
-      PARAMETER ( N = 5, NN = ( N - 1 )*N/2, MAXPTS = 5000*N*N*N )
-      PARAMETER ( ABSEPS = 0.00005, RELEPS = 0 )
-      DOUBLE PRECISION CORREL(NN), LOW(N), UP(N)
-      INTEGER INFIN(N)
-*          Chen Problem
-      DATA ( UP(I), I=1,N)  /.0, 1.5198, 1.7817, 1.4755, 1.5949/
-      DATA (LOW(I), I=1,N)  /.0,  .0   , 1.7817, 1.4755, 1.5949/
-      DATA (INFIN(I), I=1,N)/ 1, 2     , 1     , 1     , 0     /
-      DATA (CORREL(I),I=1,NN)/-0.707107,0.0,0.5,0.0,2*0.5,0.0,3*0.5/
-      PRINT '(''               Test of MVNDST'')'
-      PRINT '(12X, ''Requested Accuracy '',F8.5)', MAX(ABSEPS,RELEPS)
-      PRINT '(''           Number of Dimensions is '',I2)', N
-      PRINT '(''     Maximum # of Function Values is '',I7)', MAXPTS
-*
-      DO K = 1, 3
-         PRINT '(/'' I     Limits'')'
-         PRINT '(4X,''Lower  Upper  Lower Left of Correlation Matrix'')'
-         IJ = 0
-         DO I = 1, N
-            IF ( INFIN(I) .LT. 0 ) THEN 
-               PRINT '(I2, '' -infin  infin '', 7F9.5)',
-     &              I, ( CORREL(IJ+J), J = 1,I-1 ), 1.0
-            ELSE IF ( INFIN(I) .EQ. 0 ) THEN 
-               PRINT '(I2, '' -infin'', F7.4, 1X, 7F9.5)',
-     &              I, UP(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
-            ELSE IF ( INFIN(I) .EQ. 1 ) THEN 
-               PRINT '(I2, F7.4, ''  infin '', 7F9.5)',
-     &              I, LOW(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
-            ELSE 
-               PRINT '(I2, 2F7.4, 1X, 7F9.5)', 
-     &              I, LOW(I), UP(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
-            ENDIF
-            IJ = IJ + I-1
-         END DO
-         CALL MVNDST( N, LOW, UP, INFIN, CORREL, 
-     &                MAXPTS, ABSEPS, RELEPS, ERR, VAL, IFT )
-         PRINT '('' Results for:  MVNDST'')'
-         PRINT '( ''      Value      :   '', F12.6, I5 )', VAL, IFT
-         PRINT '( ''  Error Estimate :      ('',F8.6,'')'' )', ERR
-         INFIN(1) = INFIN(1) - 1
-      END DO
-      END
+c$$$      PROGRAM TSTNRM
+c$$$*
+c$$$*     Test program for MVNDST
+c$$$*
+c$$$      DOUBLE PRECISION ABSEPS, RELEPS, VAL, ERR
+c$$$      INTEGER N, NN, I, J, K, IJ, MAXPTS, IFT
+c$$$      PARAMETER ( N = 5, NN = ( N - 1 )*N/2, MAXPTS = 5000*N*N*N )
+c$$$      PARAMETER ( ABSEPS = 0.00005, RELEPS = 0 )
+c$$$      DOUBLE PRECISION CORREL(NN), LOW(N), UP(N)
+c$$$      INTEGER INFIN(N)
+c$$$*          Chen Problem
+c$$$      DATA ( UP(I), I=1,N)  /.0, 1.5198, 1.7817, 1.4755, 1.5949/
+c$$$      DATA (LOW(I), I=1,N)  /.0,  .0   , 1.7817, 1.4755, 1.5949/
+c$$$      DATA (INFIN(I), I=1,N)/ 1, 2     , 1     , 1     , 0     /
+c$$$      DATA (CORREL(I),I=1,NN)/-0.707107,0.0,0.5,0.0,2*0.5,0.0,3*0.5/
+c$$$      PRINT '(''               Test of MVNDST'')'
+c$$$      PRINT '(12X, ''Requested Accuracy '',F8.5)', MAX(ABSEPS,RELEPS)
+c$$$      PRINT '(''           Number of Dimensions is '',I2)', N
+c$$$      PRINT '(''     Maximum # of Function Values is '',I7)', MAXPTS
+c$$$*
+c$$$      DO K = 1, 3
+c$$$         PRINT '(/'' I     Limits'')'
+c$$$         PRINT '(4X,''Lower  Upper  Lower Left of Correlation Matrix'')'
+c$$$         IJ = 0
+c$$$         DO I = 1, N
+c$$$            IF ( INFIN(I) .LT. 0 ) THEN 
+c$$$               PRINT '(I2, '' -infin  infin '', 7F9.5)',
+c$$$     &              I, ( CORREL(IJ+J), J = 1,I-1 ), 1.0
+c$$$            ELSE IF ( INFIN(I) .EQ. 0 ) THEN 
+c$$$               PRINT '(I2, '' -infin'', F7.4, 1X, 7F9.5)',
+c$$$     &              I, UP(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
+c$$$            ELSE IF ( INFIN(I) .EQ. 1 ) THEN 
+c$$$               PRINT '(I2, F7.4, ''  infin '', 7F9.5)',
+c$$$     &              I, LOW(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
+c$$$            ELSE 
+c$$$               PRINT '(I2, 2F7.4, 1X, 7F9.5)', 
+c$$$     &              I, LOW(I), UP(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
+c$$$            ENDIF
+c$$$            IJ = IJ + I-1
+c$$$         END DO
+c$$$         CALL MVNDST( N, LOW, UP, INFIN, CORREL, 
+c$$$     &                MAXPTS, ABSEPS, RELEPS, ERR, VAL, IFT )
+c$$$         PRINT '('' Results for:  MVNDST'')'
+c$$$         PRINT '( ''      Value      :   '', F12.6, I5 )', VAL, IFT
+c$$$         PRINT '( ''  Error Estimate :      ('',F8.6,'')'' )', ERR
+c$$$         INFIN(1) = INFIN(1) - 1
+c$$$      END DO
+c$$$      END
 *
       SUBROUTINE MVNDST( N, LOWER, UPPER, INFIN, CORREL, MAXPTS,
      &                   ABSEPS, RELEPS, ERROR, VALUE, INFORM )
+     & BIND(C, name='mvndst')
 *
 *     A subroutine for computing multivariate normal probabilities.
 *     This subroutine uses an algorithm given in the paper
@@ -590,7 +591,7 @@
      & 2*247, 338, 366, 847, 2*753, 236, 2*334, 461, 711, 652,
      & 3*381, 652, 7*381, 226, 7*326, 126, 10*326, 2*195, 19*55,
      & 7*195, 11*132, 13*387/
-      DATA P(12),(C(12,I),I = 1,99)/  3079, 1189, 888, 259, 1082, 725,      
+      DATA P(12),(C(12,I),I = 1,99)/  3079, 1189, 888, 259, 1082, 725,
      & 811, 636, 965, 2*497, 2*1490, 392, 1291, 2*508, 2*1291, 508,
      & 1291, 2*508, 4*867, 934, 7*867, 9*1284, 4*563, 3*1010, 208,
      & 838, 3*563, 2*759, 564, 2*759, 4*801, 5*759, 8*563, 22*226/
@@ -666,27 +667,27 @@
      & 2*282859, 211587, 242821, 3*256865, 122203, 291915, 122203,
      & 2*291915, 122203, 2*25639, 291803, 245397, 284047,
      & 7*245397, 94241, 2*66575, 19*217673, 10*210249, 15*94453/
-      DATA P(26),(C(26,I),I = 1,99)/902933, 333459, 375354, 102417,            
+      DATA P(26),(C(26,I),I = 1,99)/902933, 333459, 375354, 102417,     
      & 383544, 292630, 41147, 374614, 48032, 435453, 281493, 358168, 
      & 114121, 346892, 238990, 317313, 164158, 35497, 2*70530, 434839,  
      & 3*24754, 393656, 2*118711, 148227, 271087, 355831, 91034, 
      & 2*417029, 2*91034, 417029, 91034, 2*299843, 2*413548, 308300,  
-     & 3*413548, 3*308300, 413548, 5*308300, 4*15311, 2*176255, 6*23613, 
+     & 3*413548, 3*308300, 413548, 5*308300, 4*15311, 2*176255, 6*23613,
      & 172210, 4* 204328, 5*121626, 5*200187, 2*121551, 12*248492, 
      & 5*13942/
       DATA P(27), (C(27,I), I = 1,99)/ 1354471, 500884, 566009, 399251,
      & 652979, 355008, 430235, 328722, 670680, 2*405585, 424646, 
-     & 2*670180, 641587, 215580, 59048, 633320, 81010, 20789, 2*389250,  
+     & 2*670180, 641587, 215580, 59048, 633320, 81010, 20789, 2*389250,
      & 2*638764, 2*389250, 398094, 80846, 2*147776, 296177, 2*398094,  
      & 2*147776, 396313, 3*578233, 19482, 620706, 187095, 620706, 
      & 187095, 126467, 12*241663, 321632, 2*23210, 3*394484, 3*78101, 
      & 19*542095, 3*277743, 12*457259/
-      DATA P(28), (C(28,I), I = 1, 99)/ 2031713, 858339, 918142, 501970, 
-     & 234813, 460565, 31996, 753018, 256150, 199809, 993599, 245149,      
+      DATA P(28), (C(28,I), I = 1, 99)/ 2031713, 858339, 918142, 501970,
+     & 234813, 460565, 31996, 753018, 256150, 199809, 993599, 245149,   
      & 794183, 121349, 150619, 376952, 2*809123, 804319, 67352, 969594, 
      & 434796, 969594, 804319, 391368, 761041, 754049, 466264, 2*754049,
-     & 466264, 2*754049, 282852, 429907, 390017, 276645, 994856, 250142, 
-     & 144595, 907454, 689648, 4*687580, 978368, 687580, 552742, 105195, 
+     & 466264, 2*754049, 282852, 429907, 390017, 276645, 994856, 250142,
+     & 144595, 907454, 689648, 4*687580, 978368, 687580, 552742, 105195,
      & 942843, 768249, 4*307142, 7*880619, 11*117185, 11*60731,  
      & 4*178309, 8*74373, 3*214965/
 *
@@ -738,7 +739,7 @@
      &   -4.321119385567293818599864968D-3, 
      &    8.54216676887098678819832055D-4, 
      &   -1.27155090609162742628893940D-4,
-     &    1.1248167243671189468847072D-5, 3.13063885421820972630152D-7,      
+     &    1.1248167243671189468847072D-5, 3.13063885421820972630152D-7,
      &   -2.70988068537762022009086D-7, 3.0737622701407688440959D-8,
      &    2.515620384817622937314D-9, -1.028929921320319127590D-9,
      &    2.9944052119949939363D-11, 2.6051789687266936290D-11,
@@ -1036,7 +1037,7 @@
             BVN = -BVN/TWOPI
          ENDIF
          IF ( R .GT. 0 ) BVN =  BVN + MVNPHI( -MAX( H, K ) )
-         IF ( R .LT. 0 ) BVN = -BVN + MAX( ZERO, MVNPHI(-H)-MVNPHI(-K) )     
+         IF ( R .LT. 0 ) BVN = -BVN + MAX( ZERO, MVNPHI(-H)-MVNPHI(-K) )
       ENDIF
       BVU = BVN
       END
@@ -1063,7 +1064,7 @@
 *                 INVMP1 = 1/(M1+1)
       SAVE X10, X11, X12, X20, X21, X22
       DATA       X10,      X11,      X12,      X20,      X21,      X22  
-     &    / 15485857, 17329489, 36312197, 55911127, 75906931, 96210113 /      
+     &    / 15485857, 17329489, 36312197, 55911127, 75906931, 96210113 /
 *
 *     Component 1
 *

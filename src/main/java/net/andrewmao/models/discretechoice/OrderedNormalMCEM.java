@@ -11,9 +11,8 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
+import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.NormalNoiseModel;
-import net.andrewmao.probability.BiNormalGenzDist;
-import net.andrewmao.probability.NormalDist;
 import net.andrewmao.probability.TruncatedNormal;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import net.andrewmao.stat.MultivariateMean;
@@ -33,9 +32,10 @@ public class OrderedNormalMCEM extends MCEMModel<NormalNoiseModel<?>> {
 	MultivariateMean m2Stats;
 	
 	RealVector delta, variance;
+	NormalLogLikelihood ll;
 	
 	List<int[]> rankings;
-	int numItems;
+	int numItems;	
 
 	@Override
 	protected void initialize(List<int[]> rankings, int m) {
@@ -48,7 +48,9 @@ public class OrderedNormalMCEM extends MCEMModel<NormalNoiseModel<?>> {
 		delta = new ArrayRealVector(start);		
 		// Can either initialize variance randomly or fixed 
 		double[] randomVars = new NormalDistribution().sample(m);
-		variance = new ArrayRealVector(randomVars).mapToSelf(new Abs()).mapAddToSelf(1);	
+		variance = new ArrayRealVector(randomVars).mapToSelf(new Abs()).mapAddToSelf(1);
+		
+		ll = new NormalLogLikelihood(delta, variance);
 	}
 
 	@Override
@@ -101,7 +103,12 @@ public class OrderedNormalMCEM extends MCEMModel<NormalNoiseModel<?>> {
 		delta.mapSubtractToSelf(delta.getEntry(0));
 		
 //		System.out.println(delta);
-//		System.out.println(variance);		
+//		System.out.println(variance);
+		
+		/* Right now we have to re-initialize the LL due to re-defining delta, variance
+		 * TODO: reduce continued initialization of this
+		 */
+		ll = new NormalLogLikelihood(delta, variance);
 	}
 	
 
@@ -111,63 +118,8 @@ public class OrderedNormalMCEM extends MCEMModel<NormalNoiseModel<?>> {
 	}
 
 	public double getLogLikelihood() {		
-		double ll = 0;		
-		for( int[] ranking : rankings )	ll += logLikelihood(ranking);				
-		return ll;
-	}
-	
-	private double logLikelihood(int[] ranking) {		
-		// Special case when ranking is only 2 items long
-		if( ranking.length == 2 ) {
-			double m1 = delta.getEntry(ranking[0]-1);
-			double m2 = delta.getEntry(ranking[1]-1);
-			double v1 = variance.getEntry(ranking[0]-1);
-			double v2 = variance.getEntry(ranking[1]-1);			
-			// prob of x_1 - x_2 > 0 or x_2 - x_1 < 0
-			double prob = NormalDist.cdf01((m1 - m2) / Math.sqrt(v1 + v2));  // (0 - (m2 - m1)) / sigma 
-			return Math.log(prob);
-		}
-		
-		/* log likelihood as computed using
-		 * http://math.stackexchange.com/questions/270745/compute-probability-of-a-particular-ordering-of-normal-random-variables  
-		 */
-		double ll = 0;
-		
-		// add all bivariate triples
-		for( int i = 0; i < ranking.length - 2; i++ ) {
-			/* joint probability of (x_i > x_i+1, x_i+1 > x_i+2 )
-			 * equal to (x_i+1 - x_i < 0, x_i+2 - x_i+1 < 0)
-			 */
-			double m1 = delta.getEntry(ranking[i]-1);
-			double m2 = delta.getEntry(ranking[i+1]-1);
-			double m3 = delta.getEntry(ranking[i+2]-1);
-			double v1 = variance.getEntry(ranking[i]-1);
-			double v2 = variance.getEntry(ranking[i+1]-1);
-			double v3 = variance.getEntry(ranking[i+2]-1);
-						
-			double mu1 = m2 - m1;
-			double mu2 = m3 - m2;
-			double sigma1 = Math.sqrt(v1 + v2);
-			double sigma2 = Math.sqrt(v2 + v3);
-			double rho = -v2 / (sigma1 * sigma2);
-			
-			double prob = BiNormalGenzDist.cdf(-mu1/sigma1, -mu2/sigma2, rho);
-			ll += Math.log(prob);
-		}
-		
-		// subtract all pairs that are not at the beginning of end
-		for( int i = 1; i < ranking.length - 2; i++ ) {
-			double m1 = delta.getEntry(ranking[i]-1);
-			double m2 = delta.getEntry(ranking[i+1]-1);
-			double v1 = variance.getEntry(ranking[i]-1);
-			double v2 = variance.getEntry(ranking[i+1]-1);			
-			// prob of x_1 - x_2 > 0 or x_2 - x_1 < 0
-			double prob = NormalDist.cdf01((m1 - m2) / Math.sqrt(v1 + v2)); // (0 - (m2 - m1)) / sigma 
-			ll -= Math.log(prob);
-		}
-		
-		return ll;
-	}
+		return ll.logLikelihood(rankings);
+	}	
 
 	class NormalGibbsSampler implements Callable<Void> {		
 		Random rnd = new Random();
@@ -268,7 +220,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalNoiseModel<?>> {
 	@Override
 	public <T> NormalNoiseModel<T> fitModel(PreferenceProfile<T> profile) {
 		List<T> ordering = Arrays.asList(profile.getSortedCandidates());
-		List<int[]> rankings = super.getIndices(profile, ordering);
+		List<int[]> rankings = profile.getIndices(ordering);
 		
 		double[] strParams = getParameters(rankings, ordering.size());
 		double[] sds = variance.map(new Sqrt()).toArray();

@@ -56,7 +56,7 @@ public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEs
 	protected abstract double getLogLikelihood();
 		
 	@Override
-	public double[] getParameters(List<int[]> rankings, int numItems) {
+	public synchronized double[] getParameters(List<int[]> rankings, int numItems) {
 		/*
 		 * NOT reentrant. Don't call this from multiple threads.
 		 */
@@ -64,10 +64,11 @@ public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEs
 		exec = Executors.newFixedThreadPool(maxThreads);
 		
 		initialize(rankings, numItems);
-//		double ll = Double.NEGATIVE_INFINITY;
-		double absImpr = Double.POSITIVE_INFINITY;
+		double ll = Double.NEGATIVE_INFINITY;
+//		double absImpr = Double.POSITIVE_INFINITY;
 		
-		RealVector oldParams = null, params = null;
+//		RealVector oldParams = null; 
+		RealVector params = null;
 		
 		for( int i = 0; i < maxIter; i++ ) {
 			eStep(i);
@@ -81,25 +82,25 @@ public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEs
 			mStep();
 						
 			params = new ArrayRealVector(getCurrentParameters());
-			if( i > 0 )
-				absImpr = params.subtract(oldParams).getNorm();			
+//			if( i > 0 )
+//				absImpr = params.subtract(oldParams).getNorm();			
 			
-//			double newLL = getLogLikelihood();
-//			System.out.printf("Likelihood: %f\n", newLL);
-//			double absImpr = newLL - ll;
-//			double relImpr = -absImpr / ll;
+			double newLL = getLogLikelihood();
+			System.out.printf("Likelihood: %f\n", newLL);
+			double absImpr = newLL - ll;
+			double relImpr = -absImpr / ll;
 			
 			if( absImpr < abseps ) {
-//				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
+				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
 				break;
 			}
-//			if( relImpr < releps ) {
-////				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
-//				break;
-//			}
+			if( relImpr < releps ) {
+				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
+				break;
+			}
 			
-			oldParams = params;
-//			ll = newLL;
+//			oldParams = params;
+			ll = newLL;
 		}
 		
 		exec.shutdown();

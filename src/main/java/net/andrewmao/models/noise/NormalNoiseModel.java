@@ -81,8 +81,8 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	}
 
 	@Override
-	public double logLikelihood(PreferenceProfile<T> profile) {
-		throw new UnsupportedOperationException();
+	public double logLikelihood(PreferenceProfile<T> profile) {		
+		return new NormalLogLikelihood(super.strParams, sds).logLikelihood(profile, candidates);		
 	}
 
 }

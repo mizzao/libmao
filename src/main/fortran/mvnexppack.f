@@ -11,55 +11,56 @@
 *          Pullman, WA 99164-3113
 *          Email : alangenz@wsu.edu
 *
-      PROGRAM TSTMVN
-*
-*     Test program for MVNEXP
-*
-      DOUBLE PRECISION ABSEPS, RELEPS
-      INTEGER N, NN, I, J, K, IJ, MAXPTS, IFTK
-      PARAMETER ( N = 6, NN = ((N-1)*N)/2, MAXPTS = 5000*N*N*N )
-      PARAMETER ( ABSEPS = 0, RELEPS = 0.005 )
-      DOUBLE PRECISION VALK(0:N), ERRK(0:N)
-      DOUBLE PRECISION CORREL(NN), LOW(N), UP(N)
-      INTEGER INFIN(N)
-*          Evans/Swartz Problem, N = 6
-      DATA (CORREL(I),I=1,NN)/ -0.86557994439447D0, -0.76453948395932D0,
-     &   0.5D0, -0.73085933048094D0, 2*0.5D0, -0.71401925374174D0,
-     & 3*0.5D0, -0.70391520769823D0, 4*0.5D0/
-*
-      PRINT '(''                  Test of MVNEXP'')'
-      PRINT '(12X, ''Requested Accuracy '',F8.5)', MAX(ABSEPS,RELEPS)
-      PRINT '(''           Number of Dimensions is '',I2)', N
-      PRINT '(''     Maximum # of Function Values is '',I7)', MAXPTS
-*
-         PRINT '('' I     Limits'')'
-         PRINT '(4X,''Lower  Upper  Lower Left of Correlation Matrix'')'
-         IJ = 0
-         DO I = 1, N
-            LOW(I) = -1D0/I
-            UP(I)  =  1D0/I
-            INFIN(I) = MOD( I, 3 )
-            IF ( INFIN(I) .EQ. 0 ) THEN
-               PRINT '(I2, '' -infty'', F7.4, 1X, 7F9.5)',
-     *              I, UP(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
-            ELSE IF ( INFIN(I) .EQ. 1 ) THEN
-               PRINT '(I2, F7.4, ''  infty '', 7F9.5)',
-     *              I, LOW(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
-            ELSE
-               PRINT '(I2, 2F7.4, 1X, 7F9.5)',
-     *              I, LOW(I), UP(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
-            ENDIF
-            IJ = IJ + I-1
-         END DO
-         CALL MVNEXP( N, LOW, UP, INFIN, CORREL, 
-     *        MAXPTS, ABSEPS, RELEPS, ERRK, VALK, IFTK )
-         PRINT '('' Results for MVNEXP, with Inform ='', I2 )', IFTK
-         PRINT '(''        Values        Errors'' / (I2, 2E14.6))',
-     *        ( I, VALK(I), ERRK(I), I = 0, N )
-      END
+c$$$      PROGRAM TSTMVN
+c$$$*
+c$$$*     Test program for MVNEXP
+c$$$*
+c$$$      DOUBLE PRECISION ABSEPS, RELEPS
+c$$$      INTEGER N, NN, I, J, K, IJ, MAXPTS, IFTK
+c$$$      PARAMETER ( N = 6, NN = ((N-1)*N)/2, MAXPTS = 5000*N*N*N )
+c$$$      PARAMETER ( ABSEPS = 0, RELEPS = 0.005 )
+c$$$      DOUBLE PRECISION VALK(0:N), ERRK(0:N)
+c$$$      DOUBLE PRECISION CORREL(NN), LOW(N), UP(N)
+c$$$      INTEGER INFIN(N)
+c$$$*          Evans/Swartz Problem, N = 6
+c$$$      DATA (CORREL(I),I=1,NN)/ -0.86557994439447D0, -0.76453948395932D0,
+c$$$     &   0.5D0, -0.73085933048094D0, 2*0.5D0, -0.71401925374174D0,
+c$$$     & 3*0.5D0, -0.70391520769823D0, 4*0.5D0/
+c$$$*
+c$$$      PRINT '(''                  Test of MVNEXP'')'
+c$$$      PRINT '(12X, ''Requested Accuracy '',F8.5)', MAX(ABSEPS,RELEPS)
+c$$$      PRINT '(''           Number of Dimensions is '',I2)', N
+c$$$      PRINT '(''     Maximum # of Function Values is '',I7)', MAXPTS
+c$$$*
+c$$$         PRINT '('' I     Limits'')'
+c$$$         PRINT '(4X,''Lower  Upper  Lower Left of Correlation Matrix'')'
+c$$$         IJ = 0
+c$$$         DO I = 1, N
+c$$$            LOW(I) = -1D0/I
+c$$$            UP(I)  =  1D0/I
+c$$$            INFIN(I) = MOD( I, 3 )
+c$$$            IF ( INFIN(I) .EQ. 0 ) THEN
+c$$$               PRINT '(I2, '' -infty'', F7.4, 1X, 7F9.5)',
+c$$$     *              I, UP(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
+c$$$            ELSE IF ( INFIN(I) .EQ. 1 ) THEN
+c$$$               PRINT '(I2, F7.4, ''  infty '', 7F9.5)',
+c$$$     *              I, LOW(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
+c$$$            ELSE
+c$$$               PRINT '(I2, 2F7.4, 1X, 7F9.5)',
+c$$$     *              I, LOW(I), UP(I), ( CORREL(IJ+J), J = 1,I-1 ), 1.0
+c$$$            ENDIF
+c$$$            IJ = IJ + I-1
+c$$$         END DO
+c$$$         CALL MVNEXP( N, LOW, UP, INFIN, CORREL, 
+c$$$     *        MAXPTS, ABSEPS, RELEPS, ERRK, VALK, IFTK )
+c$$$         PRINT '('' Results for MVNEXP, with Inform ='', I2 )', IFTK
+c$$$         PRINT '(''        Values        Errors'' / (I2, 2E14.6))',
+c$$$     *        ( I, VALK(I), ERRK(I), I = 0, N )
+c$$$      END
 *
       SUBROUTINE MVNEXP( N, LOWER, UPPER, INFIN, CORREL, MAXPTS, 
      *                      ABSEPS, RELEPS, ERROR, VALUE, INFORM )
+     & BIND(C, name='mvnexp')
 *
 *     A subroutine for computing expected values for MVN variables.
 *     This subroutine uses an algorithm given in the paper

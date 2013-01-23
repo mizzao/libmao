@@ -1,8 +1,10 @@
 package net.andrewmao.socialchoice.rules;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -37,6 +39,24 @@ public class PreferenceProfile<T> {
 	
 	public int getNumRankings() {		
 		return profile.length;
+	}
+	
+	/**
+	 * Get the indices of preferences with respect to some ordering
+	 * @param ordering
+	 * @return
+	 */
+	public List<int[]> getIndices(List<T> ordering) {
+		List<int[]> rankings = new ArrayList<int[]>();
+		
+		for( T[] preference : profile) {
+			int[] ranking = new int[preference.length];		
+			int i = 0;
+			for( T item : preference ) ranking[i++] = ordering.indexOf(item) + 1;		
+			rankings.add(ranking);		
+		}
+		
+		return rankings;
 	}
 
 	public Map<T, int[]> getCounts() {

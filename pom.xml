@@ -63,7 +63,7 @@
   		<plugin>
   			<groupId>com.googlecode.addjars-maven-plugin</groupId>
   			<artifactId>addjars-maven-plugin</artifactId>
-  			<version>1.0.4</version>
+  			<version>1.0.5</version>
   			<executions>
         		<execution>
             		<goals>
@@ -79,7 +79,36 @@
         		</execution>
     		</executions>
   		</plugin>
-  				
+
+		<!-- possible compilation of f77 using native plugin for later
+  		<plugin>
+  			<groupId>org.codehaus.mojo</groupId>
+  			<artifactId>native-maven-plugin</artifactId>
+  			<version>[1.0-alpha-7,)</version>
+  			<extensions>true</extensions>
+			<configuration>           
+				<sources>             		
+             		<source>
+               		<directory>src/main/fortran</directory> 
+               		<fileNames>
+                 		<fileName>mvndstpack.f</fileName>
+                 		<fileName>mvnexppack.f</fileName>                 		
+               		</fileNames>
+             		</source>           
+           		</sources>
+           		<compilerProvider>generic</compilerProvider>
+           		<compilerExecutable>gfortran</compilerExecutable>
+           		
+           		<compilerStartOptions>
+          			<compilerStartOption>-shared -Wall -fPIC</compilerStartOption>
+          		</compilerStartOptions>
+           		<linkerStartOptions>
+            		<linkerStartOption></linkerStartOption> 
+           		</linkerStartOptions>
+         	</configuration>  			
+  		</plugin>
+  		-->
+  		
   	</plugins>
   	
   	<pluginManagement>
