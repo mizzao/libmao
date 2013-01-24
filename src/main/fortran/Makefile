@@ -1,11 +1,17 @@
 CC=gfortran
-CFLAGS=-shared -Wall -fPIC
+SOURCES=mvndstpack.f mvnexppack.f
+OBJECTS=$(SOURCES:.f=.o)
+LDFLAGS=-Wall -shared
+CFLAGS=-Wall -fPIC
 
 all: mvnpack.so
 
-mvnpack.so: mvndstpack.f mvnexppack.f
-	$(CC) $(CFLAGS) mvndstpack.f mvnexppack.f -o mvnpack.so
+mvnpack.so: $(OBJECTS)
+	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
 	cp mvnpack.so ../../../target/classes/
 
+.f.o:
+	$(CC) $(CFLAGS) -c $<
+
 clean:
-	rm -f mvnpack.so
+	rm -f *.o mvnpack.so

@@ -10,12 +10,12 @@ public interface MvnPackGenz extends Library {
 	MvnPackGenz lib = (MvnPackGenz) Native.loadLibrary(
 			MvnPackGenz.class.getClassLoader().getResource("mvnpack.so").getPath(), MvnPackGenz.class);
 	
-	void mvndst(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
+	void mvndst_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
 			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps, 
 			DoubleByReference error, DoubleByReference value, IntByReference inform);
 	
-	void mvnexp(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
+	void mvnexp_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
 			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps,
-			DoubleByReference error, double[] value, IntByReference inform);
+			double[] errors, double[] value, IntByReference inform);
 
 }

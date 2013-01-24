@@ -60,7 +60,7 @@ c$$$      END
 *
       SUBROUTINE MVNEXP( N, LOWER, UPPER, INFIN, CORREL, MAXPTS, 
      *                      ABSEPS, RELEPS, ERROR, VALUE, INFORM )
-     & BIND(C, name='mvnexp')
+     & BIND(C, name='mvnexp_')
 *
 *     A subroutine for computing expected values for MVN variables.
 *     This subroutine uses an algorithm given in the paper

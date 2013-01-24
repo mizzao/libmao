@@ -63,7 +63,7 @@ c$$$      END
 *
       SUBROUTINE MVNDST( N, LOWER, UPPER, INFIN, CORREL, MAXPTS,
      &                   ABSEPS, RELEPS, ERROR, VALUE, INFORM )
-     & BIND(C, name='mvndst')
+     & BIND(C, name='mvndst_')
 *
 *     A subroutine for computing multivariate normal probabilities.
 *     This subroutine uses an algorithm given in the paper

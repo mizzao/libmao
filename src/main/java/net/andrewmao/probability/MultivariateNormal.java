@@ -21,7 +21,7 @@ public class MultivariateNormal {
 		DoubleByReference value = new DoubleByReference(0);
 		IntByReference inform = new IntByReference(0);
 		
-		MvnPackGenz.lib.mvndst(new IntByReference(n), lower, upper, infin, correl, 
+		MvnPackGenz.lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
 				maxpts, abseps, releps, error, value, inform);		
 		
 		int exitCode = inform.getValue();
@@ -37,20 +37,22 @@ public class MultivariateNormal {
 		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper);
 		int[] infin = getSetInfin(n, lower, upper);
 						
-		IntByReference maxpts = new IntByReference(2000*n);		
-		DoubleByReference error = new DoubleByReference(0);		
-		double[] value = new double[n+1];
-		IntByReference inform = new IntByReference(0);		
+		IntByReference maxpts = new IntByReference(2000*n);						
+		double[] errors = new double[n+1];
+		double[] values = new double[n+1];		
+		IntByReference inform = new IntByReference(0);										
 		
-		MvnPackGenz.lib.mvnexp(new IntByReference(n), lower, upper, infin, correl, 
-				maxpts, abseps, releps, error, value, inform);		
+		MvnPackGenz.lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
+				maxpts, abseps, releps, errors, values, inform);								
 		
 		int exitCode = inform.getValue();
 		if( exitCode > 0 ) 
 			System.out.println("Warning: exit code " + exitCode);
 		
 		double[] result = new double[n];
-		System.arraycopy(value, 1, result, 0, n);
+				
+		// get just the expected values
+		System.arraycopy(values, 1, result, 0, n);			
 		
 		return result;
 	}

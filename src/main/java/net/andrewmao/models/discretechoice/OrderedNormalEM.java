@@ -4,16 +4,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.NormalNoiseModel;
+import net.andrewmao.probability.MultivariateNormal;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import net.andrewmao.stat.MultivariateMean;
 
 /**
- * Numerical implementation of the probit model, does not use MCMC
+ * Numerical implementation of the ordered probit model, does not use MCMC
  * so it only supports a fixed variance.
  * 
  * @author mao
@@ -43,16 +46,19 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		
 		for(int i = 0; i < maxIter; i++ ) {
 			// E-step: compute conditional expectation
-			for( int[] ranking : rankings ) {
-				meanAccum.addValue(computeExpectation(mean, variance, ranking));
+			for( int[] ranking : rankings ) {				
+				meanAccum.addValue(expectedDiffs(mean, variance, ranking));
 			}
 			
-			// M-step: update mean
-			double[] newMean = meanAccum.getMean();
+			// M-step: update mean (currently recentered as above)
+			double[] newMean = meanAccum.getMean();			
 			for( int j = 0; j < m; j++ )
 				mean.setEntry(j, newMean[j]);
 			
-			// Check out how we did
+			/*
+			 * Check out how we did
+			 * TODO log likelihood for the old mean is given for free above 			 
+			 */
 			double newLL = logLk.logLikelihood(rankings);			
 			System.out.printf("Likelihood: %f\n", newLL);
 			double absImpr = newLL - ll;
@@ -74,16 +80,50 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	}
 
 	/**
-	 * Compute the conditional expectation for this ranking using the multivariate normal expectation 
+	 * Compute the conditional expectation for this ranking using the multivariate normal expectation
+	 * Equivalent to the MCMC Gibbs sampler with fixed mean 
 	 * 
 	 * @param mean
 	 * @param variance
 	 * @param ranking
 	 * @return
 	 */
-	public static double[] computeExpectation(RealVector mean, RealVector variance, int[] ranking) {
+	public static double[] expectedDiffs(RealVector mean, RealVector variance, int[] ranking) {		
+		int n = ranking.length;
 		
-		return null;
+		// Initialize diagonal variance matrix
+		RealMatrix d = new Array2DRowRealMatrix(n, n);
+		for( int i = 0; i < n; i++ ) 
+			d.setEntry(i, i, variance.getEntry(i));
+		
+		double[] lower = new double[n-1];
+		double[] upper = new double[n-1];
+		
+		/*
+		 * Compute means and covariances of normal RVs representing differences
+		 * We want the expected value in the positive quadrant		
+		 */
+		RealMatrix a = new Array2DRowRealMatrix(n-1, n);
+		for( int i = 0; i < n-1; i++ ) {
+			a.setEntry(i, ranking[i]-1, 1.0);
+			a.setEntry(i, ranking[i+1]-1, -1.0);
+						
+			upper[i] = Double.POSITIVE_INFINITY;
+		}
+				
+		RealVector mu = a.transpose().preMultiply(mean);
+		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
+		
+		double[] diffs = MultivariateNormal.exp(mu, sigma, lower, upper);		
+		
+		// First value is 0, rest follow differences
+		double[] vals = new double[n];
+		double str = 0;
+		for( int i = 1; i < n; i++ ) {
+			vals[i] = (str -= diffs[i-1]);
+		}
+		
+		return vals;
 	}
 
 	@Override
