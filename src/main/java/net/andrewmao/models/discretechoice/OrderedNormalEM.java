@@ -9,6 +9,11 @@ import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multiset.Entry;
+import com.google.common.primitives.Ints;
+
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.probability.MultivariateNormal;
@@ -47,10 +52,19 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		for(int i = 0; i < maxIter; i++ ) {
 			/* 
 			 * E-step: compute conditional expectation
-			 * TODO: only need to compute over unique rankings
+			 * only need to compute over unique rankings
 			 */
-			for( int[] ranking : rankings ) {				
-				meanAccum.addValue(conditionalExp(mean, variance, ranking));
+			Multiset<List<Integer>> counts = HashMultiset.create();			
+			for( int[] ranking : rankings )
+				counts.add(Ints.asList(ranking));	
+			
+			for( Entry<List<Integer>> e : counts.entrySet() ) {
+				int[] ranking = Ints.toArray(e.getElement());
+				double[] condMean = conditionalExp(mean, variance, ranking, 1, abseps);
+				// Add this expectation a number of times
+				for( int j = 0; j < e.getCount(); j++ ) {
+					meanAccum.addValue(condMean);	
+				}								
 			}
 			
 			// M-step: update mean, recenter first score to 0
@@ -93,16 +107,13 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @param ranking
 	 * @return
 	 */
-	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking) {		
+	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking, int maxTries, double eps) {		
 		int n = ranking.length;
 		
 		// Initialize diagonal variance matrix
 		RealMatrix d = new Array2DRowRealMatrix(n, n);
 		for( int i = 0; i < n; i++ ) 
-			d.setEntry(i, i, variance.getEntry(i));
-		
-		double[] lower = new double[n];
-		double[] upper = new double[n];
+			d.setEntry(i, i, variance.getEntry(i));		
 					
 		/*
 		 * Compute means and covariances of normal RVs
@@ -110,6 +121,8 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		 * We want the expected value in the positive quadrant		
 		 */
 		RealMatrix a = new Array2DRowRealMatrix(n, n);
+		double[] lower = new double[n];
+		double[] upper = new double[n];
 		
 		// Expected value of highest strength (top in ranking)
 		a.setEntry(0, ranking[0]-1, 1.0);
@@ -120,17 +133,14 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		for( int i = 1; i < n; i++ ) {
 			a.setEntry(i, ranking[i-1]-1, 1.0);
 			a.setEntry(i, ranking[i]-1, -1.0);
-			// lower[i] = 0 is already initialized
+			lower[i] = 0.0d; // already initialized by default...
 			upper[i] = Double.POSITIVE_INFINITY;
 		}
 				
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
 		
-		double[] result = MultivariateNormal.exp(mu, sigma, lower, upper);
-		
-//		System.out.println(Arrays.toString(ranking));
-//		System.out.println(Arrays.toString(result));		
+		double[] result = MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);		
 		
 		double[] vals = new double[n];
 		
@@ -142,7 +152,6 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		for( int i = 1; i < n; i++ ) {
 			vals[ranking[i]-1] = (str -= result[i]);
 		}
-//		System.out.println(Arrays.toString(vals));
 		
 		return vals;
 	}

@@ -22,6 +22,7 @@ class NormalGibbsSampler implements Callable<net.andrewmao.models.discretechoice
 			
 	int samples, ignored;
 	
+	final int weight;
 	final int[] ranking;
 	final int numItems;
 	
@@ -31,7 +32,8 @@ class NormalGibbsSampler implements Callable<net.andrewmao.models.discretechoice
 	MultivariateMean means;
 	MultivariateMean meanSqs;		
 	
-	NormalGibbsSampler(RealVector delta, RealVector variance, int[] ranking, int samples) {
+	NormalGibbsSampler(RealVector delta, RealVector variance, int[] ranking, int samples, int weight) {
+		this.weight = weight;
 		this.samples = samples;
 		this.ranking = ranking;						
 		this.numItems = ranking.length;
@@ -48,12 +50,18 @@ class NormalGibbsSampler implements Callable<net.andrewmao.models.discretechoice
 		this.ignored = (int) Math.round(samples / 10.0d);
 	}
 	
+	NormalGibbsSampler(RealVector delta, RealVector variance, int[] ranking, int samples) {
+		this(delta, variance, ranking, samples, 1);
+	}
+	
 	static class NormalMoments {
 		final double[] m1;
 		final double[] m2;
-		private NormalMoments(double[] m1, double[] m2) {
+		final int weight;
+		private NormalMoments(double[] m1, double[] m2, int weight) {
 			this.m1 = m1;
 			this.m2 = m2;
+			this.weight = weight;
 		}
 	}
 	
@@ -98,7 +106,7 @@ class NormalGibbsSampler implements Callable<net.andrewmao.models.discretechoice
 			meanSqs.addValue(sq);
 		}					
 		
-		return new NormalMoments(means.getMean(), meanSqs.getMean());
+		return new NormalMoments(means.getMean(), meanSqs.getMean(), weight);
 	}
 
 	private void sample(int i, double[] current, double mu, double sigma) {			

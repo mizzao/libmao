@@ -29,9 +29,12 @@ public class NormalEMTest {
 	@Test
 	public void testInference() {
 		int trials = 10;
-		int size = 10;
-		double tol = 0.1;
 		
+		int size = 1000;
+		double tol = 0.02;
+		
+		// TODO: this is still busted 
+				
 		for( int a = 0; a < trials; a++ ) {
 			double strDiff = Math.random();
 			System.out.println("Testing " + strDiff);

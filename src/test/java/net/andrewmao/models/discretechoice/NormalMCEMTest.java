@@ -30,7 +30,7 @@ public class NormalMCEMTest {
 	
 	@Test
 	public void testSpeed() {
-		int trials = 100;
+		int trials = 10;
 		int n = 10;		
 		int iters = 30;
 		double abseps = 1e-3; // Double.NEGATIVE_INFINITY;
@@ -57,7 +57,7 @@ public class NormalMCEMTest {
 		long stopTime = System.currentTimeMillis();
 		
 		double avgTime = (stopTime - startTime) / trials;
-		System.out.println("Avg time for 10x4 preference profiles: " + avgTime);		
+		System.out.printf("Avg time for 10x4 preference profiles: %.0f ms\n", avgTime);		
 	}
 
 	@Test

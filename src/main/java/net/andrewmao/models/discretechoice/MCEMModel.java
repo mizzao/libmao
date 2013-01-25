@@ -22,26 +22,18 @@ import org.apache.commons.math3.linear.RealVector;
  *
  * @param <T>
  */
-public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilityEstimator<M> {
+public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilityEstimator<M> {	
 	
-	final int maxThreads;
+	// Make all MCEMs share the same threadpool.
+	static final ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	
 	int maxIter;
 	double abseps;
 	double releps;
 	double[] start;
-	
-	ExecutorService exec;
+		
 	AtomicInteger submittedJobs;
 	CompletionService<T> ecs;
-	
-	public MCEMModel(int maxThreads) {
-		this.maxThreads = Math.min(maxThreads, Runtime.getRuntime().availableProcessors());
-	}
-	
-	public MCEMModel() {
-		this(Runtime.getRuntime().availableProcessors());
-	}
 	
 	public void setup(double[] startPoint, int maxIter, double abseps, double releps) {
 		this.maxIter = maxIter;
@@ -65,8 +57,6 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 		/*
 		 * NOT reentrant. Don't call this from multiple threads.
 		 */		
-		
-		exec = Executors.newFixedThreadPool(12);
 		
 		ecs = new ExecutorCompletionService<T>(exec);
 		submittedJobs = new AtomicInteger(0);
@@ -119,9 +109,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 			
 //			oldParams = params;
 			ll = newLL;
-		}
-				
-		exec.shutdown();
+		}		
 		
 		return (params.toArray());
 	}

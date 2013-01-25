@@ -21,7 +21,7 @@ public class MultivariateNormal {
 	public static double cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
 			int maxTries, Double abseps, Double releps) {				
 		int n = checkErrors(mean, sigma, lower, upper);
-		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper);
+		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, new double[n]);
 		int[] infin = getSetInfin(n, lower, upper);
 		
 		DoubleByReference abseps_ref = (abseps == null ) ? cdf_default_abseps : new DoubleByReference(abseps);
@@ -33,13 +33,14 @@ public class MultivariateNormal {
 		IntByReference inform = new IntByReference(0);
 		
 		int tries = 0;
-		int pts = 2 << 10;
+		int pts = (2 << 10) * n;
 		int exitCode;
 		do {
-			maxpts.setValue(pts <<= 1);			
+			maxpts.setValue(pts);			
 			MvnPackGenz.lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
 					maxpts, abseps_ref, releps_ref, error, value, inform);
 			exitCode = inform.getValue();
+			pts <<= 1;
 		} while( ++tries < maxTries && exitCode > 0 );				
 		
 		return value.getValue();
@@ -52,7 +53,8 @@ public class MultivariateNormal {
 	public static double[] exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
 			int maxTries, Double abseps, Double releps) {
 		int n = checkErrors(mean, sigma, lower, upper);
-		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper);
+		double[] sds = new double[n];
+		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, sds);
 		int[] infin = getSetInfin(n, lower, upper);
 		
 		DoubleByReference abseps_ref = (abseps == null ) ? exp_default_abseps : new DoubleByReference(abseps);
@@ -64,19 +66,23 @@ public class MultivariateNormal {
 		IntByReference inform = new IntByReference(0);										
 		
 		int tries = 0;
-		int pts = 2 << 10;
+		int pts = (2 << 10) * n;
 		int exitCode;
 		do {
-			maxpts.setValue(pts <<= 1);			
+			maxpts.setValue(pts);			
 			MvnPackGenz.lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
 					maxpts, abseps_ref, releps_ref, errors, values, inform);
-			exitCode = inform.getValue();			
+			exitCode = inform.getValue();
+			pts <<= 1;
 		} while(  ++tries < maxTries && exitCode > 0 );						
-		
-		double[] result = new double[n];
-				
+								
 		// get just the expected values
-		System.arraycopy(values, 1, result, 0, n);			
+		double[] result = new double[n];
+		System.arraycopy(values, 1, result, 0, n);	
+		
+		// Rescale the expected values! very important since the computation is on variance 1 normal!
+		for( int i = 0; i < n; i++ )
+			result[i] = result[i] * sds[i] + mean.getEntry(i);
 		
 		return result;
 	}
@@ -94,10 +100,8 @@ public class MultivariateNormal {
 	}
 
 	private static double[] getCorrelAdjustLimits(RealVector mean, RealMatrix sigma,
-			double[] lower, double[] upper) {
+			double[] lower, double[] upper, double[] sd) {
 		int n = mean.getDimension();
-		
-		double[] sd = new double[n];
 		
 		for( int i = 0; i < n; i++ ) { 
 			sd[i] = Math.sqrt(sigma.getEntry(i, i));
@@ -123,24 +127,24 @@ public class MultivariateNormal {
 		int[] infin = new int[n];
 		
 		for( int i = 0; i < n; i++ ) {
-			boolean lowerInf = lower[i] == Double.NEGATIVE_INFINITY;
-			boolean upperInf = upper[i] == Double.POSITIVE_INFINITY;
+			boolean lowerInf = (lower[i] == Double.NEGATIVE_INFINITY);
+			boolean upperInf = (upper[i] == Double.POSITIVE_INFINITY);
 			
 			if( upperInf && lowerInf ) {
 				lower[i] = 0;
 				upper[i] = 0;
-				infin[i] = -1;
+				infin[i] = -1;				
 			}
 			else if( lowerInf ) {
 				lower[i] = 0;
-				infin[i] = 0;
+				infin[i] = 0;				
 			}
 			else if( upperInf ) {
 				upper[i] = 0;
-				infin[i] = 1;
+				infin[i] = 1;				
 			}			
 			else {
-				infin[i] = 2;
+				infin[i] = 2;				
 			}
 		}
 		return infin;

@@ -10,6 +10,11 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multiset.Entry;
+import com.google.common.primitives.Ints;
+
 import net.andrewmao.models.discretechoice.NormalGibbsSampler.NormalMoments;
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.NormalNoiseModel;
@@ -61,17 +66,25 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		int samples = 2000+300*i;
 				
 		m1Stats.clear();
-		m2Stats.clear();		
+		m2Stats.clear();
 		
-		for( int[] ranking : rankings ) {				
-			super.addJob(new NormalGibbsSampler(delta, variance, ranking, samples));
-		}		
+		Multiset<List<Integer>> counts = HashMultiset.create();			
+		for( int[] ranking : rankings )
+			counts.add(Ints.asList(ranking));	
+		
+		for( Entry<List<Integer>> e : counts.entrySet() ) {
+			int[] ranking = Ints.toArray(e.getElement());			
+			super.addJob(new NormalGibbsSampler(delta, variance, ranking, samples, e.getCount()));								
+		}
+
 	}
 
 	@Override
-	protected void addData(NormalMoments data) {		
-		m1Stats.addValue(data.m1);
-		m2Stats.addValue(data.m2);
+	protected void addData(NormalMoments data) {
+		for( int i = 0; i < data.weight; i++ ) {
+			m1Stats.addValue(data.m1);
+			m2Stats.addValue(data.m2);	
+		}
 	}
 
 	@SuppressWarnings("deprecation")

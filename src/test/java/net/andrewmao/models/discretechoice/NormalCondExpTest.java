@@ -23,9 +23,9 @@ import org.junit.runners.Parameterized.Parameters;
 public class NormalCondExpTest {
 
 	static int trials = 10;		
-	static int gibbsSamples = 10000;
+	static int gibbsSamples = 100000;
 	
-	static double tol = 1e-2;
+	static double tol = 0.02;
 	
 	RealVector mean, var;
 	int[] ranking;
@@ -51,14 +51,28 @@ public class NormalCondExpTest {
 
 	@Test
 	public void testConditionalExpectation() {		
-		double[] condExpMVN = OrderedNormalEM.conditionalExp(mean, var, ranking);
-		
+		double[] condExpMVN = OrderedNormalEM.conditionalExp(mean, var, ranking, 4, 1e-8);		
 		double[] condExpGibbs = new NormalGibbsSampler(mean, var, ranking, gibbsSamples).call().m1;
 		
-		System.out.println("MVN: " + Arrays.toString(condExpMVN));
+		System.out.println(Arrays.toString(ranking));
+		System.out.println("MVN: " + Arrays.toString(condExpMVN));		
 		System.out.println("Gibbs: " + Arrays.toString(condExpGibbs));
 		
+		// check rankings are consistent
+		assertTrue("MVN conditional expectation is inconsistent", checkConsistency(condExpMVN));
+		assertTrue("Gibbs conditional expectation is inconsistent", checkConsistency(condExpGibbs));				
+		
 		assertArrayEquals(condExpMVN, condExpGibbs, tol);
+	}
+
+	private boolean checkConsistency(double[] condExp) {
+		for( int i = 1; i < ranking.length; i++ ) {
+			// It's wrong if the value(i) > value(i-1)
+			if( condExp[ranking[i]-1] > condExp[ranking[i-1]-1] ) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 }

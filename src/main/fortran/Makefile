@@ -8,7 +8,7 @@ all: mvnpack.so
 
 mvnpack.so: $(OBJECTS)
 	$(CC) $(LDFLAGS) $(OBJECTS) -o $@
-	cp mvnpack.so ../../../target/classes/
+	cp mvnpack.so ../resources
 
 .f.o:
 	$(CC) $(CFLAGS) -c $<
