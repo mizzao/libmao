@@ -45,19 +45,24 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		double ll = Double.NEGATIVE_INFINITY;
 		
 		for(int i = 0; i < maxIter; i++ ) {
-			// E-step: compute conditional expectation
+			/* 
+			 * E-step: compute conditional expectation
+			 * TODO: only need to compute over unique rankings
+			 */
 			for( int[] ranking : rankings ) {				
-				meanAccum.addValue(expectedDiffs(mean, variance, ranking));
+				meanAccum.addValue(conditionalExp(mean, variance, ranking));
 			}
 			
-			// M-step: update mean (currently recentered as above)
+			// M-step: update mean, recenter first score to 0
 			double[] newMean = meanAccum.getMean();			
+			double adj = newMean[0];
 			for( int j = 0; j < m; j++ )
-				mean.setEntry(j, newMean[j]);
+				mean.setEntry(j, newMean[j] - adj);
 			
 			/*
 			 * Check out how we did
-			 * TODO log likelihood for the old mean is given for free above 			 
+			 * TODO log likelihood for the old mean is given for free above 
+			 * use that for a 2x speedup, even if the new ll is old			 
 			 */
 			double newLL = logLk.logLikelihood(rankings);			
 			System.out.printf("Likelihood: %f\n", newLL);
@@ -88,7 +93,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @param ranking
 	 * @return
 	 */
-	public static double[] expectedDiffs(RealVector mean, RealVector variance, int[] ranking) {		
+	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking) {		
 		int n = ranking.length;
 		
 		// Initialize diagonal variance matrix
@@ -96,32 +101,48 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		for( int i = 0; i < n; i++ ) 
 			d.setEntry(i, i, variance.getEntry(i));
 		
-		double[] lower = new double[n-1];
-		double[] upper = new double[n-1];
-		
+		double[] lower = new double[n];
+		double[] upper = new double[n];
+					
 		/*
-		 * Compute means and covariances of normal RVs representing differences
+		 * Compute means and covariances of normal RVs
+		 * of the highest value, then representing differences
 		 * We want the expected value in the positive quadrant		
 		 */
-		RealMatrix a = new Array2DRowRealMatrix(n-1, n);
-		for( int i = 0; i < n-1; i++ ) {
-			a.setEntry(i, ranking[i]-1, 1.0);
-			a.setEntry(i, ranking[i+1]-1, -1.0);
-						
+		RealMatrix a = new Array2DRowRealMatrix(n, n);
+		
+		// Expected value of highest strength (top in ranking)
+		a.setEntry(0, ranking[0]-1, 1.0);
+		lower[0] = Double.NEGATIVE_INFINITY;
+		upper[0] = Double.POSITIVE_INFINITY;
+		
+		// Expected values of differences
+		for( int i = 1; i < n; i++ ) {
+			a.setEntry(i, ranking[i-1]-1, 1.0);
+			a.setEntry(i, ranking[i]-1, -1.0);
+			// lower[i] = 0 is already initialized
 			upper[i] = Double.POSITIVE_INFINITY;
 		}
 				
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
 		
-		double[] diffs = MultivariateNormal.exp(mu, sigma, lower, upper);		
+		double[] result = MultivariateNormal.exp(mu, sigma, lower, upper);
 		
-		// First value is 0, rest follow differences
+//		System.out.println(Arrays.toString(ranking));
+//		System.out.println(Arrays.toString(result));		
+		
 		double[] vals = new double[n];
-		double str = 0;
+		
+		// First value is 0
+		double str = result[0];
+		vals[ranking[0]-1] = str;
+		
+		// Rest of values assigned by differences
 		for( int i = 1; i < n; i++ ) {
-			vals[i] = (str -= diffs[i-1]);
+			vals[ranking[i]-1] = (str -= result[i]);
 		}
+//		System.out.println(Arrays.toString(vals));
 		
 		return vals;
 	}

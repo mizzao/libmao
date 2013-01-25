@@ -3,11 +3,9 @@ package net.andrewmao.models.discretechoice;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-import net.andrewmao.math.RandomGeneration;
 import net.andrewmao.models.noise.GumbelNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
@@ -17,6 +15,9 @@ import org.junit.Test;
 
 public class PlackettLuceTest {
 
+	Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
+	final List<Character> stuffList = Arrays.asList(stuff);
+	
 	@Before
 	public void setUp() throws Exception {
 	}
@@ -26,39 +27,19 @@ public class PlackettLuceTest {
 	}
 
 	@Test
-	public void test() {
-		int n = 50;			
-		int m = 4;
-		Random rnd = new Random();
+	public void testSimpleOrder() {
+		int n = 50;					
+		Random rnd = new Random();				
 		
-		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
-		final List<Character> stuffList = Arrays.asList(stuff);
+		double strDiff = 1;
 		
-		double[] means = new double[] {0, -1, -2, -3};
-		double[] sds = new double[] {1, 1, 1, 1};
+		GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(stuffList, rnd, strDiff);
+		PreferenceProfile<Character> prefs = gen.sampleProfile(n);		
 		
-		PlackettLuceModel plmm = new PlackettLuceModel();
+		PlackettLuceModel plmm = new PlackettLuceModel();					
 		
-		Character[][] profile = new Character[n][m];
-		for( int i = 0; i < n; i++) {
-			final double[] vals = RandomGeneration.gaussianArray(means, sds, rnd);
-			profile[i] = Arrays.copyOf(stuff, stuff.length);
-			
-			Arrays.sort(profile[i], new Comparator<Character>() {
-				@Override
-				public int compare(Character o1, Character o2) {
-					int i1 = stuffList.indexOf(o1);
-					int i2 = stuffList.indexOf(o2);
-					// Higher strength parameter comes earlier in the array
-					return Double.compare(vals[i2], vals[i1]);
-				}				
-			});			
-		}		
-		
-		PreferenceProfile<Character> prefs = new PreferenceProfile<Character>(profile);
-		
-		GumbelNoiseModel<Character> model = plmm.fitModel(prefs);
-		ScoredItems<Character> params = model.getValueMap();
+		GumbelNoiseModel<Character> fitted = plmm.fitModel(prefs);
+		ScoredItems<Character> params = fitted.getValueMap();
 				
 		List<Character> ranking = params.getRanking();
 		
@@ -68,4 +49,32 @@ public class PlackettLuceTest {
 		assertEquals(stuffList, ranking);
 	}
 
+	/*
+	 * Test that the Plackett-Luce model recovers the right parameter differences under the distribution
+	 */
+	@Test
+	public void testEstimation() {
+		int trials = 10;
+		int size = 100000;
+		double tol = 0.02;
+		
+		for( int a = 0; a < trials; a++ ) {
+			double strDiff = Math.random();
+
+			GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(stuffList, new Random(), strDiff);
+
+			PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
+
+			PlackettLuceModel plmm = new PlackettLuceModel();
+			
+			GumbelNoiseModel<Character> model = plmm.fitModel(prefs);
+			ScoredItems<Character> params = model.getValueMap();
+			
+			System.out.println(params);
+
+			for( int i = 0; i < stuff.length; i++ ) {
+				assertEquals(-i*strDiff, params.get(stuff[i]).doubleValue(), tol);
+			}
+		}		
+	}
 }

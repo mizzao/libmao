@@ -7,8 +7,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-import net.andrewmao.models.discretechoice.PlackettLuceModel;
-import net.andrewmao.models.discretechoice.ScoredItems;
 import net.andrewmao.models.noise.GumbelNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
@@ -94,35 +92,6 @@ public class GumbelNoiseTest {
 		assertEquals(1/(1+Math.exp(-2*strDiff)), 1.0 * prefs.getNumCorrect('b', 'd', comp) / size, tol);
 		
 		assertEquals(1/(1+Math.exp(-3*strDiff)), 1.0 * prefs.getNumCorrect('a', 'd', comp) / size, tol);		
-	}
-
-	/*
-	 * Test that the Plackett-Luce model recovers the right parameter differences under the distribution
-	 */
-	@Test
-	public void testPlackettLuce() {
-		int trials = 10;
-		int size = 100000;
-		double tol = 0.02;
-		
-		for( int a = 0; a < trials; a++ ) {
-			double strDiff = Math.random();
-
-			GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(letters, new Random(), strDiff);
-
-			PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
-
-			PlackettLuceModel plmm = new PlackettLuceModel();
-			
-			GumbelNoiseModel<Character> model = plmm.fitModel(prefs);
-			ScoredItems<Character> params = model.getValueMap();
-			
-			System.out.println(params);
-
-			for( int i = 0; i < ls.length; i++ ) {
-				assertEquals(-i*strDiff, params.get(ls[i]).doubleValue(), tol);
-			}
-		}		
 	}
 
 }

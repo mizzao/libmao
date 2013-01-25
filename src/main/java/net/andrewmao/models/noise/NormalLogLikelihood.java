@@ -12,6 +12,11 @@ import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Multiset.Entry;
+import com.google.common.primitives.Ints;
+
 public class NormalLogLikelihood {
 
 	RealVector mean;
@@ -46,7 +51,25 @@ public class NormalLogLikelihood {
 		return logLikelihood(indices);
 	}
 
+	/**
+	 * Computes log likelihood. Unique-ifies identical rankings for efficiency.
+	 * 
+	 * @param indices
+	 * @return
+	 */
 	public double logLikelihood(List<int[]> indices) {
+		Multiset<List<Integer>> counts = HashMultiset.create();
+		
+		for( int[] ranking : indices )
+			counts.add(Ints.asList(ranking));					
+		
+		double ll = 0;
+		for( Entry<List<Integer>> e : counts.entrySet() )
+			ll += e.getCount() * singleRankingLL(Ints.toArray(e.getElement()));					
+		return ll;
+	}
+	
+	public double logLikelihoodDumb(List<int[]> indices) {
 		double ll = 0;
 		for( int[] ranking : indices )
 			ll += singleRankingLL(ranking);

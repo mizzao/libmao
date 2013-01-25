@@ -17,19 +17,20 @@ public class TruncatedNormal extends AbstractRealDistribution {
 
 	private static final long serialVersionUID = 3279850685379757823L;
 
-	private final double mu;
-	private final double sigma;	
-	private final double cdf_a;
-	private final double cdf_b;
-	private final double Z;
+	protected final double mu;
+	protected final double sigma;	
+	protected final double cdf_a;
+	protected final double cdf_b;
+	protected final double Z;
 	
-	private final double alpha;
-	private final double beta;
-	private final double aa;
-	private final double bb;
+	protected final double alpha;
+	protected final double beta;
+	protected final double aa;
+	protected final double bb;
 	
 	public TruncatedNormal(RandomGenerator rng, double mean, double sd, double lb, double ub) {
 		super(rng);
+		
 		if( mean == Double.NaN || sd == Double.NaN ||
 				lb == Double.NaN || ub == Double.NaN ) 
 			throw new IllegalArgumentException("Cannot take NaN as an argument");				
@@ -42,6 +43,21 @@ public class TruncatedNormal extends AbstractRealDistribution {
 		
 		alpha = (lb - mu) / sigma;
 		beta = (ub - mu) / sigma;
+		this.aa = lb;
+		this.bb = ub;
+	}
+	
+	protected TruncatedNormal(double mean, double sd, double lb, double ub, double cdf_a, double cdf_b) {
+		super(new Well19937c());
+		
+		this.mu = mean;
+		this.sigma = sd;
+		this.cdf_a = cdf_a;
+		this.cdf_b = cdf_b;
+		this.Z = cdf_b - cdf_a;
+		
+		this.alpha = (lb - mu) / sigma;
+		this.beta = (ub - mu) / sigma;
 		this.aa = lb;
 		this.bb = ub;
 	}

@@ -3,12 +3,11 @@ package net.andrewmao.models.discretechoice;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
-import net.andrewmao.math.RandomGeneration;
 import net.andrewmao.models.discretechoice.OrderedNormalMCEM;
+import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -28,40 +27,56 @@ public class NormalMCEMTest {
 	@After
 	public void tearDown() throws Exception {
 	}
+	
+	@Test
+	public void testSpeed() {
+		int trials = 100;
+		int n = 10;		
+		int iters = 30;
+		double abseps = 1e-3; // Double.NEGATIVE_INFINITY;
+		double releps = 1e-3; // Double.NEGATIVE_INFINITY;
+		
+		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
+		final List<Character> stuffList = Arrays.asList(stuff);		
+		
+		double[] means = new double[] {0, -1, -2, -3};
+		double[] sds = new double[] {1, 1, 1, 1};
+		
+		OrderedNormalMCEM model = new OrderedNormalMCEM();
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, means, sds);
+		
+		long startTime = System.currentTimeMillis();
+		
+		for( int i = 0; i < trials; i++ ) {
+			PreferenceProfile<Character> prefs = gen.sampleProfile(n);			
+			model.setup(new NormalDistribution(0,1).sample(4), iters, abseps, releps);			
+			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
+			System.out.println(fitted);	
+		}		
+		
+		long stopTime = System.currentTimeMillis();
+		
+		double avgTime = (stopTime - startTime) / trials;
+		System.out.println("Avg time for 10x4 preference profiles: " + avgTime);		
+	}
 
 	@Test
-	public void test() {
+	public void testInference() {
 		int n = 500;		
 		int iters = 30;
 		double abseps = 1e-8; // Double.NEGATIVE_INFINITY;
 		double releps = 1e-5; // Double.NEGATIVE_INFINITY;
 		
 		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
-		final List<Character> stuffList = Arrays.asList(stuff);
-		int m = stuff.length;
+		final List<Character> stuffList = Arrays.asList(stuff);		
 		
 		double[] means = new double[] {0, -1, -2, -3};
 		double[] sds = new double[] {1, 1, 1, 1};
 		
-		OrderedNormalMCEM model = new OrderedNormalMCEM();
+		OrderedNormalMCEM model = new OrderedNormalMCEM();		
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, means, sds);
 		
-		Character[][] profile = new Character[n][m];
-		for( int i = 0; i < n; i++) {
-			final double[] vals = RandomGeneration.gaussianArray(means, sds, rnd);
-			profile[i] = Arrays.copyOf(stuff, stuff.length);
-			
-			Arrays.sort(profile[i], new Comparator<Character>() {
-				@Override
-				public int compare(Character o1, Character o2) {
-					int i1 = stuffList.indexOf(o1);
-					int i2 = stuffList.indexOf(o2);
-					// Higher strength parameter comes earlier in the array
-					return Double.compare(vals[i2], vals[i1]);
-				}				
-			});
-		}
-		
-		PreferenceProfile<Character> prefs = new PreferenceProfile<Character>(profile);
+		PreferenceProfile<Character> prefs = gen.sampleProfile(n);
 		
 		model.setup(new NormalDistribution(0,1).sample(4), iters, abseps, releps);
 		

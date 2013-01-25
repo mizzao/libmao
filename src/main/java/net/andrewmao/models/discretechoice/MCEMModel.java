@@ -2,9 +2,12 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import net.andrewmao.models.noise.NoiseModel;
 
@@ -19,7 +22,7 @@ import org.apache.commons.math3.linear.RealVector;
  *
  * @param <T>
  */
-public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEstimator<M> {
+public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilityEstimator<M> {
 	
 	final int maxThreads;
 	
@@ -29,7 +32,8 @@ public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEs
 	double[] start;
 	
 	ExecutorService exec;
-	CountDownLatch latch;
+	AtomicInteger submittedJobs;
+	CompletionService<T> ecs;
 	
 	public MCEMModel(int maxThreads) {
 		this.maxThreads = Math.min(maxThreads, Runtime.getRuntime().availableProcessors());
@@ -50,7 +54,8 @@ public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEs
 	 * Implemented by subclasses
 	 */
 	protected abstract void initialize(List<int[]> rankings, int numItems);	
-	protected abstract void eStep(int iter);	
+	protected abstract void eStep(int iter);
+	protected abstract void addData(T data);
 	protected abstract void mStep();
 	protected abstract double[] getCurrentParameters();
 	protected abstract double getLogLikelihood();
@@ -59,9 +64,12 @@ public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEs
 	public synchronized double[] getParameters(List<int[]> rankings, int numItems) {
 		/*
 		 * NOT reentrant. Don't call this from multiple threads.
-		 */
+		 */		
 		
-		exec = Executors.newFixedThreadPool(maxThreads);
+		exec = Executors.newFixedThreadPool(12);
+		
+		ecs = new ExecutorCompletionService<T>(exec);
+		submittedJobs = new AtomicInteger(0);
 		
 		initialize(rankings, numItems);
 		double ll = Double.NEGATIVE_INFINITY;
@@ -71,22 +79,32 @@ public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEs
 		RealVector params = null;
 		
 		for( int i = 0; i < maxIter; i++ ) {
-			eStep(i);
+			submittedJobs.set(0);
+			
+			eStep(i);						
 			
 			// Wait for sampling to finish
-			while( latch.getCount() > 0 ) {
-				try { latch.await();
-				} catch (InterruptedException e) {}				
-			}
+			int jobs = submittedJobs.get();
 			
-			mStep();
+			for( int j = 0; j < jobs; j++ ) {
+				try {
+					addData(ecs.take().get());
+				} catch (InterruptedException e) {					
+					e.printStackTrace();
+					j--;
+				} catch (ExecutionException e) {					
+					e.getCause().printStackTrace();					
+				}
+			}						
+									
+			mStep();			
 						
 			params = new ArrayRealVector(getCurrentParameters());
 //			if( i > 0 )
 //				absImpr = params.subtract(oldParams).getNorm();			
-			
+						
 			double newLL = getLogLikelihood();
-			System.out.printf("Likelihood: %f\n", newLL);
+//			System.out.printf("Likelihood: %f\n", newLL);
 			double absImpr = newLL - ll;
 			double relImpr = -absImpr / ll;
 			
@@ -102,21 +120,15 @@ public abstract class MCEMModel<M extends NoiseModel<?>> extends RandomUtilityEs
 //			oldParams = params;
 			ll = newLL;
 		}
-		
+				
 		exec.shutdown();
 		
 		return (params.toArray());
 	}
 
-	void beginNumJobs(int size) {
-		latch = new CountDownLatch(size);	
+	void addJob(Callable<T> job) {
+		submittedJobs.incrementAndGet();
+		ecs.submit(job);
 	}
 
-	void addJob(Callable<?> job) {
-		exec.submit(job);		
-	}
-
-	void finishJob() {
-		latch.countDown();
-	}
 }

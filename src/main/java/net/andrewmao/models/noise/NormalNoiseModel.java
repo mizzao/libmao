@@ -29,14 +29,6 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 			sds[j] = THURSTONE_SIGMA;
 	}
 	
-//	public NormalNoiseModel(ScoredItems<T> scoreMap, Random rnd) {
-//		super(scoreMap, rnd);
-//		
-//		sds = new double[candidates.size()];		
-//		for( int j = 0; j < candidates.size(); j++ ) 
-//			sds[j] = THURSTONE_SIGMA;
-//	}
-	
 	public NormalNoiseModel(List<T> candidates, Random rnd, double[] strengths, double[] sds) {
 		super(candidates, rnd, strengths);
 		
@@ -44,18 +36,31 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	}
 	
 	/**
+	 * Initialized a fixed-variance probit model with the same difference between adjacent candidates
+	 * After scaling, equivalent to Thurstone model.
+	 * 
+	 * @param stuffList
+	 * @param random
+	 * @param strDiff
+	 * @param stdev
+	 */
+	public NormalNoiseModel(List<T> candidates, Random rnd, double adjStrDiff, double stdev) {
+		super(candidates, rnd, adjStrDiff);
+		
+		sds = new double[candidates.size()];		
+		for( int j = 0; j < candidates.size(); j++ ) 
+			sds[j] = stdev;
+	}
+
+	/**
 	 * Initializes a Thurstone model with the same difference between adjacent candidates
 	 * @param candidates
 	 * @param rnd
 	 * @param adjStrDiff
 	 */
 	public NormalNoiseModel(List<T> candidates, Random rnd, double adjStrDiff) {
-		super(candidates, rnd, adjStrDiff);
-		
 		// Generate normal random variables with variance 0.5
-		sds = new double[candidates.size()];		
-		for( int j = 0; j < candidates.size(); j++ ) 
-			sds[j] = THURSTONE_SIGMA;
+		this(candidates, rnd, adjStrDiff, THURSTONE_SIGMA);
 	}
 
 	@Override

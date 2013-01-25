@@ -50,7 +50,7 @@ public class MultivariateNormalTest {
 		System.out.println("Obtained cdf:");
 		System.out.println(value);
 		
-		assertEquals(Math.pow(0.5, 4), value, MultivariateNormal.abseps.getValue());
+		assertEquals(Math.pow(0.5, 4), value, MultivariateNormal.cdf_default_abseps.getValue());
 	}
 	
 	@Test
@@ -79,7 +79,7 @@ public class MultivariateNormalTest {
 		System.out.println(Arrays.toString(values));		
 		
 		for( double d : values )
-			assertEquals(Math.sqrt(2.0/Math.PI), d, MultivariateNormal.releps.getValue());		
+			assertEquals(Math.sqrt(2.0/Math.PI), d, MultivariateNormal.cdf_default_releps.getValue());		
 	}
 
 }
