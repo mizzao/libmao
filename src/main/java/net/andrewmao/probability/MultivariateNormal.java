@@ -7,18 +7,45 @@ import com.sun.jna.ptr.DoubleByReference;
 import com.sun.jna.ptr.IntByReference;
 
 public class MultivariateNormal {	
+	// These value errors are unit tested to a certain fail percentage.
+	static final DoubleByReference cdf_default_abseps = new DoubleByReference(1e-5);
+	static final DoubleByReference cdf_default_releps = new DoubleByReference(1e-5);	
+	// These values are a little looser because ANY value could have it
+	static final DoubleByReference exp_default_abseps = new DoubleByReference(0.0005);
+	static final DoubleByReference exp_default_releps = new DoubleByReference(0.0005);	
 	
-	static final DoubleByReference cdf_default_abseps = new DoubleByReference(1e-6);
-	static final DoubleByReference cdf_default_releps = new DoubleByReference(1e-3);
+	public static class CDFResult {
+		public final double value;
+		public final double error;
+		public final boolean converged;
+		private CDFResult(double value, double error, boolean converged) {
+			this.value = value;
+			this.error = error;
+			this.converged = converged;
+		}		
+	}
 	
-	static final DoubleByReference exp_default_abseps = new DoubleByReference(1e-3);
-	static final DoubleByReference exp_default_releps = new DoubleByReference(1e-3);
-	
-	public static double cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
+	public static class ExpResult {
+		public final double cdf;
+		public final double cdfError;
+		public final double[] values;
+		public final double[] errors;
+		public final boolean converged;
+		public ExpResult(double cdf, double cdfError,
+				double[] values, double[] errors, boolean converged) {
+			this.cdf = cdf;
+			this.cdfError = cdfError;
+			this.values = values;
+			this.errors = errors;
+			this.converged = converged;
+		}			
+	}
+
+	public static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
 		return cdf(mean, sigma, lower, upper, 1, null, null);
 	}
 	
-	public static double cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
+	public static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
 			int maxTries, Double abseps, Double releps) {				
 		int n = checkErrors(mean, sigma, lower, upper);
 		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, new double[n]);
@@ -33,24 +60,25 @@ public class MultivariateNormal {
 		IntByReference inform = new IntByReference(0);
 		
 		int tries = 0;
-		int pts = (2 << 10) * n;
+		int pts = (2 << 11) * n;
 		int exitCode;
 		do {
 			maxpts.setValue(pts);			
 			MvnPackGenz.lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
 					maxpts, abseps_ref, releps_ref, error, value, inform);
 			exitCode = inform.getValue();
+			if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
 			pts <<= 1;
 		} while( ++tries < maxTries && exitCode > 0 );				
 		
-		return value.getValue();
+		return new CDFResult(value.getValue(), error.getValue(), exitCode == 0);
 	}
 	
-	public static double[] exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
+	public static ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
 		return exp(mean, sigma, lower, upper, 1, null, null);
 	}
 
-	public static double[] exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
+	public static ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
 			int maxTries, Double abseps, Double releps) {
 		int n = checkErrors(mean, sigma, lower, upper);
 		double[] sds = new double[n];
@@ -66,25 +94,32 @@ public class MultivariateNormal {
 		IntByReference inform = new IntByReference(0);										
 		
 		int tries = 0;
-		int pts = (2 << 10) * n;
+		int pts = (2 << 11) * n;
 		int exitCode;
 		do {
 			maxpts.setValue(pts);			
 			MvnPackGenz.lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
 					maxpts, abseps_ref, releps_ref, errors, values, inform);
 			exitCode = inform.getValue();
+			if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
 			pts <<= 1;
 		} while(  ++tries < maxTries && exitCode > 0 );						
 								
 		// get just the expected values
 		double[] result = new double[n];
-		System.arraycopy(values, 1, result, 0, n);	
+		double[] resultErrors = new double[n];
+		System.arraycopy(values, 1, result, 0, n);
+		System.arraycopy(errors, 1, resultErrors, 0, n);
 		
-		// Rescale the expected values! very important since the computation is on variance 1 normal!
-		for( int i = 0; i < n; i++ )
+		/* Rescale the expected values and errors 
+		 * very important since the computation is on variance 1 normal!
+		 */
+		for( int i = 0; i < n; i++ ) {
 			result[i] = result[i] * sds[i] + mean.getEntry(i);
+			resultErrors[i] = resultErrors[i] * sds[i];
+		}
 		
-		return result;
+		return new ExpResult(values[0], errors[0], result, resultErrors, exitCode == 0);
 	}
 
 	private static int checkErrors(RealVector mean, RealMatrix sigma,

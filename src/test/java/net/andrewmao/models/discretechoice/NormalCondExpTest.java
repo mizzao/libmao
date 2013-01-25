@@ -4,7 +4,11 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+
+import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.TestParameterGen;
+import net.andrewmao.probability.MultivariateNormal.CDFResult;
+import net.andrewmao.probability.MultivariateNormal.ExpResult;
 
 import org.apache.commons.math3.linear.RealVector;
 import org.junit.After;
@@ -47,6 +51,16 @@ public class NormalCondExpTest {
 
 	@After
 	public void tearDown() throws Exception {
+	}
+	
+	@Test
+	public void testLLEquivalence() {				
+		// Ensure that we can use the conditional expectation MVN value to estimate likelihood		
+		
+		CDFResult cdf = NormalLogLikelihood.multivariateProb(mean, var, ranking);
+		ExpResult exp = OrderedNormalEM.multivariateExp(mean, var, ranking, 1, null);
+		
+		assertEquals(cdf.value, exp.cdf, 1e-4);
 	}
 
 	@Test

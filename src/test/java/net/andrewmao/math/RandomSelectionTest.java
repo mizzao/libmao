@@ -3,21 +3,22 @@
  */
 package net.andrewmao.math;
 
+import static org.junit.Assert.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-
-import junit.framework.TestCase;
-
+import org.junit.Test;
 
 /**
  * @author mao
  *
  */
-public class RandomSelectionTest extends TestCase {
+public class RandomSelectionTest {
 
+	@Test
 	public void testStreamSelection() {
 		
 		int bins = 10;

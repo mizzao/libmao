@@ -17,7 +17,7 @@ import net.andrewmao.socialchoice.rules.PreferenceProfile;
  */
 public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 
-	private static final double THURSTONE_SIGMA = Math.sqrt(0.5);
+	public static final double THURSTONE_SIGMA = Math.sqrt(0.5);
 	
 	private final double[] sds;
 	
@@ -35,6 +35,14 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 		this.sds = sds;
 	}
 	
+	public NormalNoiseModel(List<T> ordering, Random rnd, double[] strengths, double stdev) {
+		super(ordering, rnd, strengths);
+		
+		sds = new double[candidates.size()];		
+		for( int j = 0; j < candidates.size(); j++ ) 
+			sds[j] = stdev;
+	}
+
 	/**
 	 * Initialized a fixed-variance probit model with the same difference between adjacent candidates
 	 * After scaling, equivalent to Thurstone model.

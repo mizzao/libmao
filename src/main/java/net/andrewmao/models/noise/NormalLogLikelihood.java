@@ -4,6 +4,7 @@ import java.util.List;
 
 import net.andrewmao.probability.BiNormalGenzDist;
 import net.andrewmao.probability.MultivariateNormal;
+import net.andrewmao.probability.MultivariateNormal.CDFResult;
 import net.andrewmao.probability.NormalDist;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
@@ -89,6 +90,10 @@ public class NormalLogLikelihood {
 	 * @return
 	 */
 	double multivariateLL(int[] ranking) {
+		return Math.log(multivariateProb(mean, variance, ranking).value);		
+	}
+
+	public static CDFResult multivariateProb(RealVector mean, RealVector variance, int[] ranking) {
 		int n = ranking.length;
 		
 		// Initialize diagonal variance matrix
@@ -108,10 +113,10 @@ public class NormalLogLikelihood {
 			upper[i] = Double.POSITIVE_INFINITY;
 		}
 				
-		RealVector mean = a.transpose().preMultiply(this.mean);
-		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
+		RealVector mu = a.transpose().preMultiply(mean);
+		RealMatrix sigma = a.multiply(d).multiply(a.transpose());	
 		
-		return Math.log(MultivariateNormal.cdf(mean, sigma, lower, upper));		
+		return MultivariateNormal.cdf(mu, sigma, lower, upper);		
 	}
 
 	double bivariateLL(int[] ranking) {

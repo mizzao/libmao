@@ -14,9 +14,9 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
 import com.google.common.primitives.Ints;
 
-import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.probability.MultivariateNormal;
+import net.andrewmao.probability.MultivariateNormal.ExpResult;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import net.andrewmao.stat.MultivariateMean;
 
@@ -27,8 +27,10 @@ import net.andrewmao.stat.MultivariateMean;
  * @author mao
  *
  */
-public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>> {
-
+public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>> {	
+	
+	public static final double FIXED_VARIANCE = 1.0d;
+	
 	private final int maxIter;
 	private final double abseps, releps;
 	
@@ -43,9 +45,8 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		int m = numItems;		
 		
 		RealVector mean = new ArrayRealVector(m, 0.0d);
-		RealVector variance = new ArrayRealVector(m, 1.0d);
-		
-		NormalLogLikelihood logLk = new NormalLogLikelihood(mean, variance);
+		RealVector variance = new ArrayRealVector(m, FIXED_VARIANCE);
+				
 		MultivariateMean meanAccum = new MultivariateMean(m);
 		double ll = Double.NEGATIVE_INFINITY;
 		
@@ -58,29 +59,33 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			for( int[] ranking : rankings )
 				counts.add(Ints.asList(ranking));	
 			
-			for( Entry<List<Integer>> e : counts.entrySet() ) {
-				int[] ranking = Ints.toArray(e.getElement());
-				double[] condMean = conditionalExp(mean, variance, ranking, 1, abseps);
-				// Add this expectation a number of times
-				for( int j = 0; j < e.getCount(); j++ ) {
-					meanAccum.addValue(condMean);	
-				}								
-			}
+			double currentLL = 0;
 			
-			// M-step: update mean, recenter first score to 0
-			double[] newMean = meanAccum.getMean();			
-			double adj = newMean[0];
+			for( Entry<List<Integer>> e : counts.entrySet() ) {
+				int[] ranking = Ints.toArray(e.getElement());	
+				int duplicity = e.getCount();
+				
+				ExpResult result = multivariateExp(mean, variance, ranking, 1, releps);				
+				double[] condMean = computeConditional(result.values, ranking);				
+				
+				// Add this ll, expectation a number of times				
+				for( int j = 0; j < duplicity; j++ ) {
+					meanAccum.addValue(condMean);
+				}				
+				currentLL += duplicity * Math.log(result.cdf);
+			}			
+			
+			// M-step: update mean
+			double[] newMean = meanAccum.getMean();						
 			for( int j = 0; j < m; j++ )
-				mean.setEntry(j, newMean[j] - adj);
+				mean.setEntry(j, newMean[j]);
 			
 			/*
-			 * Check out how we did
-			 * TODO log likelihood for the old mean is given for free above 
-			 * use that for a 2x speedup, even if the new ll is old			 
-			 */
-			double newLL = logLk.logLikelihood(rankings);			
-			System.out.printf("Likelihood: %f\n", newLL);
-			double absImpr = newLL - ll;
+			 * Check out how we did - log likelihood for the old mean is given for free above 
+			 * almost 2x speedup over re-computing the LL from scratch			 
+			 */					
+			System.out.printf("Likelihood: %f\n", currentLL);
+			double absImpr = currentLL - ll;
 			double relImpr = -absImpr / ll;
 			
 			if( absImpr < abseps ) {
@@ -92,10 +97,16 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 				break;
 			}
 			
-			ll = newLL;
+			ll = currentLL;
 		}
-				
-		return mean.toArray();
+		
+		// Re-center means so first is 0
+		double[] params = mean.toArray();
+		double adj = params[0];
+		for( int i = 0; i < params.length; i++ )
+			params[i] -= adj;
+		
+		return params;
 	}
 
 	/**
@@ -108,6 +119,26 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @return
 	 */
 	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking, int maxTries, double eps) {		
+		double[] result = multivariateExp(mean, variance, ranking, maxTries, eps).values;				
+		return computeConditional(result, ranking);
+	}
+
+	public static double[] computeConditional(double[] mvnexp, int[] ranking) {
+		double[] vals = new double[mvnexp.length];
+		
+		// First value is the highest order statistic
+		double str = mvnexp[0];
+		vals[ranking[0]-1] = str;
+		
+		// Rest of values assigned by differences
+		for( int i = 1; i < vals.length; i++ ) {
+			vals[ranking[i]-1] = (str -= mvnexp[i]);
+		}
+		
+		return vals;
+	}
+
+	public static ExpResult multivariateExp(RealVector mean, RealVector variance, int[] ranking, int maxTries, Double eps) {
 		int n = ranking.length;
 		
 		// Initialize diagonal variance matrix
@@ -140,20 +171,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
 		
-		double[] result = MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);		
-		
-		double[] vals = new double[n];
-		
-		// First value is 0
-		double str = result[0];
-		vals[ranking[0]-1] = str;
-		
-		// Rest of values assigned by differences
-		for( int i = 1; i < n; i++ ) {
-			vals[ranking[i]-1] = (str -= result[i]);
-		}
-		
-		return vals;
+		return MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);		
 	}
 
 	@Override
@@ -161,9 +179,10 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		List<T> ordering = Arrays.asList(profile.getSortedCandidates());
 		List<int[]> rankings = profile.getIndices(ordering);		
 		
-		double[] strParams = getParameters(rankings, ordering.size());
+		int m = ordering.size();
+		double[] strParams = getParameters(rankings, m);		
 		
-		return new NormalNoiseModel<T>(ordering, new Random(), strParams);		
+		return new NormalNoiseModel<T>(ordering, new Random(), strParams, FIXED_VARIANCE);		
 	}
 
 }

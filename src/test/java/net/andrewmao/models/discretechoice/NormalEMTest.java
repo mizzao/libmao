@@ -9,11 +9,11 @@ import java.util.Random;
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 
 public class NormalEMTest {
+	
+	static Random rnd = new Random();
 	
 	Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
 	final List<Character> stuffList = Arrays.asList(stuff);
@@ -25,35 +25,38 @@ public class NormalEMTest {
 	@After
 	public void tearDown() throws Exception {
 	}
-
+	
 	@Test
-	public void testInference() {
-		int trials = 10;
+	public void testInference() {		
+		// TODO: this is still busted
 		
-		int size = 1000;
-		double tol = 0.02;
-		
-		// TODO: this is still busted 
+		int size = 10000;
+		double tol = 0.02;		
+		 					
+		double strDiff = 1.0;
+		System.out.println("Testing " + strDiff);
+
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, new Random(), strDiff, 1.0d);			
+
+		PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
+		double targetLL = gen.logLikelihood(prefs);
+		System.out.println("Target likelihood: " + targetLL);
+
+		OrderedNormalEM normalEM = new OrderedNormalEM(100, 1e-5, 1e-5);
+
+		NormalNoiseModel<Character> model = normalEM.fitModel(prefs);
+		double achievedLL = model.logLikelihood(prefs);
 				
-		for( int a = 0; a < trials; a++ ) {
-			double strDiff = Math.random();
-			System.out.println("Testing " + strDiff);
+		ScoredItems<Character> params = model.getValueMap();
 
-			NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, new Random(), strDiff, 1.0d);
+		System.out.println(params);
 
-			PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
+		assertTrue("LL didn't reach close to target", (achievedLL - targetLL)/targetLL < tol);
 
-			OrderedNormalEM normalEM = new OrderedNormalEM(30, 1e-6, 1e-3);
+		for( int i = 0; i < stuff.length; i++ ) {
+			assertEquals(-i*strDiff, params.get(stuff[i]).doubleValue(), tol);
+		}
 			
-			NormalNoiseModel<Character> model = normalEM.fitModel(prefs);
-			ScoredItems<Character> params = model.getValueMap();
-			
-			System.out.println(params);
-
-			for( int i = 0; i < stuff.length; i++ ) {
-				assertEquals(-i*strDiff, params.get(stuff[i]).doubleValue(), tol);
-			}
-		}	
 	}
 
 }
