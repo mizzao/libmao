@@ -76,9 +76,10 @@ public class GumbelNoiseModel<T> extends RandomUtilityModel<T> {
 			double gammaSum = 0;
 			for( int i = preference.length - 1; i >= 0; i-- ) {
 				double gamma_i = strMap.get(preference[i]).doubleValue();
-				gammaSum += gamma_i;
+				gammaSum += Math.exp(gamma_i);
 				if( i == preference.length - 1 ) continue;
-				ll += Math.log(gamma_i / gammaSum);
+				ll += gamma_i;
+				ll -= Math.log(gammaSum);
 			}
 		}
 		

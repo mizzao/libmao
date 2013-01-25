@@ -26,14 +26,16 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class NormalCondExpTest {
 
-	static int trials = 10;		
-	static int gibbsSamples = 100000;
+	static int trials = 10;	
+	static int gibbsSamplesHigh = 100000;
 	
 	static double tol = 0.02;
 	
 	RealVector mean, var;
 	int[] ranking;
 
+	double[] condExpMVN;
+	
 	public NormalCondExpTest(RealVector mean, RealVector var, int[] ranking ) {
 		this.mean = mean;
 		this.var = var;
@@ -47,6 +49,7 @@ public class NormalCondExpTest {
 	
 	@Before
 	public void setUp() throws Exception {
+		condExpMVN = OrderedNormalEM.conditionalExp(mean, var, ranking, 4, 1e-8);
 	}
 
 	@After
@@ -62,13 +65,27 @@ public class NormalCondExpTest {
 		
 		assertEquals(cdf.value, exp.cdf, 1e-4);
 	}
+	
+	@Test
+	public void testConditionalExpectationQuick() {
+		System.out.println("Testing bias ");
+		double[] condExpMVNQuick = OrderedNormalEM.conditionalExp(mean, var, ranking, 1, 1e-5);		
+						
+		System.out.println("MVN Quick: " + Arrays.toString(condExpMVNQuick));		
+		System.out.println("MVN Accurate: " + Arrays.toString(condExpMVN));
+		
+		// check rankings are consistent
+		assertTrue("MVN Quick conditional expectation is inconsistent", checkConsistency(condExpMVNQuick));
+		assertTrue("MVN conditional expectation is inconsistent", checkConsistency(condExpMVN));				
+		
+		assertArrayEquals(condExpMVN, condExpMVNQuick, tol);
+	}
 
 	@Test
-	public void testConditionalExpectation() {		
-		double[] condExpMVN = OrderedNormalEM.conditionalExp(mean, var, ranking, 4, 1e-8);		
-		double[] condExpGibbs = new NormalGibbsSampler(mean, var, ranking, gibbsSamples).call().m1;
-		
-		System.out.println(Arrays.toString(ranking));
+	public void testConditionalExpectation() {
+		System.out.println("Testing Gibbs ");
+		double[] condExpGibbs = new NormalGibbsSampler(mean, var, ranking, gibbsSamplesHigh).call().m1;
+				
 		System.out.println("MVN: " + Arrays.toString(condExpMVN));		
 		System.out.println("Gibbs: " + Arrays.toString(condExpGibbs));
 		

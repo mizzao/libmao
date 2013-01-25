@@ -25,7 +25,9 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 	
 	static final double PL_MAX_ITERS = 500;
 	static final double tolerance = 1e-9;	
-
+	
+	volatile double lastComputedLL;
+	
 	@Override
 	public double[] getParameters(List<int[]> rankings, int numItems) {
 		int m = numItems; // # of items, indexed by i
@@ -39,7 +41,7 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 		 */
 		RealVector w = new ArrayRealVector(m, n);
 		for(int[] ranking : rankings)
-			w.addToEntry(ranking[m-1]-1, -1.0);		
+			w.addToEntry(ranking[m-1]-1, -1.0);
 		
 		int iter = 0;
 		do {
@@ -62,6 +64,13 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 			 * sum of gamma's for places i and higher in the jth contest
 			 * except for i=lastplace.
 			 */
+			
+			double ll = w.dotProduct(gamma.map(new Log()));
+			for( int i = 0; i < g.length; i++ )
+				for( int j = 0; j < g[i].length; j++ )
+					if( g[i][j] > 0 ) ll += Math.log(g[i][j]);
+//			System.out.println("Log likelihood: " + ll);
+			lastComputedLL = ll;
 			
 			for( int j = 0; j < n; j++ ) {
 				double cumsum = 0;

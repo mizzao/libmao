@@ -31,6 +31,8 @@ import net.andrewmao.stat.MultivariateMean;
  */
 public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel<?>> {
 
+	final boolean floatVariance;
+	
 	MultivariateMean m1Stats;
 	MultivariateMean m2Stats;
 	
@@ -40,18 +42,33 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	List<int[]> rankings;
 	int numItems;	
 
+	/**
+	 * Created an ordered normal model using MCEM. A fixed variance is set to 1.
+	 * 
+	 * @param floatVariance whether the variance should be allowed to change during EM.
+	 */
+	public OrderedNormalMCEM(boolean floatVariance, int maxIters, double abseps, double releps) {
+		super(maxIters, abseps, releps);
+		this.floatVariance = floatVariance;
+	}
+	
 	@Override
 	protected void initialize(List<int[]> rankings, int m) {
 		this.rankings = rankings;
 		this.numItems = m;
 		
-		m1Stats = new MultivariateMean(m);
-		m2Stats = new MultivariateMean(m);
+		m1Stats = new MultivariateMean(m);				
+		delta = new ArrayRealVector(start);
 		
-		delta = new ArrayRealVector(start);		
-		// Can either initialize variance randomly or fixed 
-		double[] randomVars = new NormalDistribution().sample(m);
-		variance = new ArrayRealVector(randomVars).mapToSelf(new Abs()).mapAddToSelf(1);
+		if( floatVariance ) {
+			m2Stats = new MultivariateMean(m);
+			
+			double[] randomVars = new NormalDistribution().sample(m);
+			variance = new ArrayRealVector(randomVars).mapToSelf(new Abs()).mapAddToSelf(1);	
+		}
+		else {
+			variance = new ArrayRealVector(m, 1.0d);
+		}		
 		
 		ll = new NormalLogLikelihood(delta, variance);
 	}
@@ -66,14 +83,15 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		int samples = 2000+300*i;
 				
 		m1Stats.clear();
-		m2Stats.clear();
+		if( floatVariance ) m2Stats.clear();
 		
 		Multiset<List<Integer>> counts = HashMultiset.create();			
 		for( int[] ranking : rankings )
 			counts.add(Ints.asList(ranking));	
 		
 		for( Entry<List<Integer>> e : counts.entrySet() ) {
-			int[] ranking = Ints.toArray(e.getElement());			
+			int[] ranking = Ints.toArray(e.getElement());
+			// TODO: make a separate gibbs sampler when we don't need the variance
 			super.addJob(new NormalGibbsSampler(delta, variance, ranking, samples, e.getCount()));								
 		}
 
@@ -83,22 +101,29 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	protected void addData(NormalMoments data) {
 		for( int i = 0; i < data.weight; i++ ) {
 			m1Stats.addValue(data.m1);
-			m2Stats.addValue(data.m2);	
+			if( floatVariance ) m2Stats.addValue(data.m2);	
 		}
 	}
-
-	@SuppressWarnings("deprecation")
+	
 	@Override
 	protected void mStep() {
 		/*
 		 * M-step: re-compute parameters
 		 */
-		delta = new ArrayRealVector(m1Stats.getMean());		
-		variance = new ArrayRealVector(m2Stats.getMean()).subtract(delta.ebeMultiply(delta));
+		double[] eM1 = m1Stats.getMean();
+		double[] eM2 = null;
+		if( floatVariance) eM2 = m2Stats.getMean();
+		
+		for( int i = 0; i < eM1.length; i++ ) {
+			double m = eM1[i];
+			delta.setEntry(i, eM1[i]);			
+			
+			if( floatVariance ) variance.setEntry(i, eM2[i] - m*m);
+		}
 					
 		/* adjust the mean and variance values to prevent drift:
 		 * first subtract means so that first value is 0
-		 * TODO then scale variance to 1
+		 * then scale variance to 1
 		 */
 				
 		// Dunno what hossein was thinking with this, doesn't seem to work well
@@ -108,23 +133,21 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		// Testing to see if parameters converge
 //		variance.set(1);		
 		
-		/* The below adjusts all variables so that
-		 * first mean is 0, first var is 1 
-		 */
-		double var = variance.getEntry(0);
-		double sd = Math.sqrt(var);
+		// Adjust all variables so that first var is 1 		 
+		if( floatVariance ) {
+			double var = variance.getEntry(0);
+			double sd = Math.sqrt(var);
+
+			variance.mapDivideToSelf(var);
+			delta.mapDivideToSelf(sd);
+		}
 		
-		variance.mapDivideToSelf(var);
-		delta.mapDivideToSelf(sd);		
+		// Re-center means - first mean is 0
 		delta.mapSubtractToSelf(delta.getEntry(0));
 		
 //		System.out.println(delta);
 //		System.out.println(variance);
-		
-		/* Right now we have to re-initialize the LL due to re-defining delta, variance
-		 * TODO: reduce continued initialization of this
-		 */
-		ll = new NormalLogLikelihood(delta, variance);
+				
 	}
 	
 

@@ -5,6 +5,11 @@ import com.sun.jna.Native;
 import com.sun.jna.ptr.DoubleByReference;
 import com.sun.jna.ptr.IntByReference;
 
+/**
+ * Interface-mapped library to mvnpack.so
+ * @author mao
+ *
+ */
 public interface MvnPackGenz extends Library {
 
 	MvnPackGenz lib = (MvnPackGenz) Native.loadLibrary(

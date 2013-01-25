@@ -16,7 +16,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 public class NormalMCEMTest {
-
+	
+	static Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
+	static final List<Character> stuffList = Arrays.asList(stuff);	
+	
 	Random rnd;
 	
 	@Before
@@ -33,23 +36,18 @@ public class NormalMCEMTest {
 		int trials = 10;
 		int n = 10;		
 		int iters = 30;
+		
 		double abseps = 1e-3; // Double.NEGATIVE_INFINITY;
-		double releps = 1e-3; // Double.NEGATIVE_INFINITY;
+		double releps = 1e-3; // Double.NEGATIVE_INFINITY;					
 		
-		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
-		final List<Character> stuffList = Arrays.asList(stuff);		
-		
-		double[] means = new double[] {0, -1, -2, -3};
-		double[] sds = new double[] {1, 1, 1, 1};
-		
-		OrderedNormalMCEM model = new OrderedNormalMCEM();
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, means, sds);
+		OrderedNormalMCEM model = new OrderedNormalMCEM(true, iters, abseps, releps);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, 1, 1);
 		
 		long startTime = System.currentTimeMillis();
 		
 		for( int i = 0; i < trials; i++ ) {
 			PreferenceProfile<Character> prefs = gen.sampleProfile(n);			
-			model.setup(new NormalDistribution(0,1).sample(4), iters, abseps, releps);			
+			model.setup(new NormalDistribution(0,1).sample(4));			
 			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
 			System.out.println(fitted);	
 		}		
@@ -62,23 +60,19 @@ public class NormalMCEMTest {
 
 	@Test
 	public void testInference() {
-		int n = 500;		
-		int iters = 30;
-		double abseps = 1e-8; // Double.NEGATIVE_INFINITY;
+		int n = 10000;		
+		int iters = 50;
+		double abseps = 1e-5; // Double.NEGATIVE_INFINITY;
 		double releps = 1e-5; // Double.NEGATIVE_INFINITY;
 		
-		Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
-		final List<Character> stuffList = Arrays.asList(stuff);		
-		
 		double[] means = new double[] {0, -1, -2, -3};
-		double[] sds = new double[] {1, 1, 1, 1};
-		
-		OrderedNormalMCEM model = new OrderedNormalMCEM();		
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, means, sds);
+				
+		OrderedNormalMCEM model = new OrderedNormalMCEM(true, iters, abseps, releps);		
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, means, 1);
 		
 		PreferenceProfile<Character> prefs = gen.sampleProfile(n);
 		
-		model.setup(new NormalDistribution(0,1).sample(4), iters, abseps, releps);
+		model.setup(new NormalDistribution(0,1).sample(4));
 		
 		ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();
 		

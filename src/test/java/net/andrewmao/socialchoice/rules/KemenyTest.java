@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import net.andrewmao.models.noise.CondorcetEstimator;
+import net.andrewmao.models.noise.CondorcetModel;
 import net.andrewmao.models.noise.NoiseModel;
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.socialchoice.rules.Kemeny;
@@ -109,6 +111,22 @@ public class KemenyTest {
 		assertTrue(rankings.contains(Arrays.asList(new Integer[] {1, 2, 4, 3})));
 		assertTrue(rankings.contains(Arrays.asList(new Integer[] {1, 3, 2, 4})));
 		assertTrue(rankings.contains(Arrays.asList(new Integer[] {1, 4, 3, 2})));				
+	}
+	
+	@Test 
+	public void testTiedRankingsCondorcet() {		
+		// All tied rankings should have the same p...?
+		
+		PreferenceProfile<Integer> prefs = new PreferenceProfile<Integer>(new Integer[][] {
+				{1, 3, 2, 4},
+				{2, 1, 4, 3},
+				{4, 1, 3, 2},	
+					});
+		
+		CondorcetEstimator estimator = new CondorcetEstimator();		
+		CondorcetModel<Integer> estimated = estimator.fitModel(prefs);
+		
+		System.out.println(estimated);
 	}
 	
 	@Test

@@ -7,6 +7,9 @@ import com.sun.jna.ptr.DoubleByReference;
 import com.sun.jna.ptr.IntByReference;
 
 public class MultivariateNormal {	
+	
+	static final MvnPackGenz lib = new MvnPackDirect();
+	
 	// These value errors are unit tested to a certain fail percentage.
 	static final DoubleByReference cdf_default_abseps = new DoubleByReference(1e-5);
 	static final DoubleByReference cdf_default_releps = new DoubleByReference(1e-5);	
@@ -64,7 +67,7 @@ public class MultivariateNormal {
 		int exitCode;
 		do {
 			maxpts.setValue(pts);			
-			MvnPackGenz.lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
+			lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
 					maxpts, abseps_ref, releps_ref, error, value, inform);
 			exitCode = inform.getValue();
 			if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
@@ -98,7 +101,7 @@ public class MultivariateNormal {
 		int exitCode;
 		do {
 			maxpts.setValue(pts);			
-			MvnPackGenz.lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
+			lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
 					maxpts, abseps_ref, releps_ref, errors, values, inform);
 			exitCode = inform.getValue();
 			if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");

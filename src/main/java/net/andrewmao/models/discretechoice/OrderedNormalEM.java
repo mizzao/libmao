@@ -45,6 +45,8 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		int m = numItems;		
 		
 		RealVector mean = new ArrayRealVector(m, 0.0d);
+//		RealVector mean = new ArrayRealVector(new NormalDistribution(0,1).sample(m), false);
+		
 		RealVector variance = new ArrayRealVector(m, FIXED_VARIANCE);
 				
 		MultivariateMean meanAccum = new MultivariateMean(m);
@@ -76,9 +78,10 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			}			
 			
 			// M-step: update mean
-			double[] newMean = meanAccum.getMean();						
+			double[] newMean = meanAccum.getMean();			
+			double adj = newMean[0];
 			for( int j = 0; j < m; j++ )
-				mean.setEntry(j, newMean[j]);
+				mean.setEntry(j, newMean[j] - adj);
 			
 			/*
 			 * Check out how we did - log likelihood for the old mean is given for free above 
@@ -101,12 +104,12 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		}
 		
 		// Re-center means so first is 0
-		double[] params = mean.toArray();
-		double adj = params[0];
-		for( int i = 0; i < params.length; i++ )
-			params[i] -= adj;
-		
-		return params;
+//		double[] params = mean.toArray();
+//		double adj = params[0];
+//		for( int i = 0; i < params.length; i++ )
+//			params[i] -= adj;		
+//		return params;
+		return mean.toArray();
 	}
 
 	/**
@@ -182,7 +185,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		int m = ordering.size();
 		double[] strParams = getParameters(rankings, m);		
 		
-		return new NormalNoiseModel<T>(ordering, new Random(), strParams, FIXED_VARIANCE);		
+		return new NormalNoiseModel<T>(ordering, new Random(), strParams, Math.sqrt(FIXED_VARIANCE));		
 	}
 
 }

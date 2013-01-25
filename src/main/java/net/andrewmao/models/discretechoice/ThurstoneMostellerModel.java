@@ -97,11 +97,15 @@ public class ThurstoneMostellerModel extends PairwiseDiscreteChoiceEstimator<Nor
 	}
 
 	private double[] powellParameters(TMNLogLikelihood nll) {
-		OptimizationData func = new ObjectiveFunction(nll);
-		OptimizationData grad = new ObjectiveFunctionGradient(nll.gradient());		
-		OptimizationData start = new InitialGuess(new double[nll.mat.getRowDimension() - 1]);		
+		// Random perturbations seems to help Powell along a bit
+		double[] start = new double[nll.mat.getRowDimension() - 1];
+		for( int i = 0; i < start.length; i++ )
+			start[i] = 0.1 * Math.random() - 0.5;
 		
-		PointValuePair result = backup.optimize(func, grad, GoalType.MINIMIZE, start,
+		OptimizationData func = new ObjectiveFunction(nll);			
+		OptimizationData init = new InitialGuess(start);		
+		
+		PointValuePair result = backup.optimize(func, GoalType.MINIMIZE, init,
 				new MaxEval(5000), new MaxIter(1000));
 		
 		return result.getPointRef();

@@ -38,7 +38,11 @@ public class CondorcetEstimator implements Estimator<CondorcetModel<?>> {
 		double bestPhi = 0;
 		List<T> bestRanking = null;
 		
-		// Optimize p over each ranking and pick the one with the best likelihood
+		/*
+		 * Optimize p over each ranking and pick the one with the best likelihood
+		 * RE: discussion with Hossein on 1/25: the likelihoods (and p) are all the same!
+		 * TODO have this estimator do a better model
+		 */
 		for( final List<T> ranking : bestRankings ) {
 			UnivariateFunction logLk = new UnivariateFunction() {
 				@Override public double value(double phi) {					
@@ -54,12 +58,16 @@ public class CondorcetEstimator implements Estimator<CondorcetModel<?>> {
 					GoalType.MAXIMIZE
 					);
 			
+			double phi = result.getPoint();
 			double ll = result.getValue();
+			
+			System.out.println(ranking + " has p=" + 1/(1+phi) +", has likelihood " + ll);
+			
 			if( ll < bestLL ) {
 				bestLL = ll;
-				bestPhi = result.getPoint();
+				bestPhi = phi;
 				bestRanking = ranking;
-			}							
+			}			
 		}
 		
 		return new CondorcetModel<T>(bestRanking, new Random(), 1/(1+bestPhi));

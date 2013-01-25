@@ -49,18 +49,26 @@ public class BradleyTerryModel extends PairwiseDiscreteChoiceEstimator<GumbelNoi
 		
 		OptimizationData func = new ObjectiveFunction(nll);
 		OptimizationData grad = new ObjectiveFunctionGradient(nll.gradient());		
-		OptimizationData start = new InitialGuess(new double[wins.length - 1]);
+		OptimizationData init = new InitialGuess(new double[wins.length - 1]);
 				
 		PointValuePair result = null;
 		// use Polak-Ribiere unless fails to converge
 		try {			
-			result = optim.optimize(func, grad, GoalType.MINIMIZE, start, 
+			result = optim.optimize(func, grad, GoalType.MINIMIZE, init, 
 					new MaxIter(500), new MaxEval(500));
 			cgUses.incrementAndGet();
 		}
 		catch( MathIllegalStateException e ) {
+			/* Had problems with returning 0.
+			 * Initialize with some small random numbers...
+			 */
+			double[] start = new double[wins.length - 1];
+			for( int i = 0; i < start.length; i++ )
+				start[i] = 0.1 * Math.random() - 0.5;
+			init = new InitialGuess(start);
+			
 			// TODO: Default value of 50 iterations in BracketFinder here seems to cause problems
-			result = backup.optimize(func, GoalType.MINIMIZE, start, 
+			result = backup.optimize(func, GoalType.MINIMIZE, init, 
 					new MaxEval(5000), new MaxIter(1000));
 			powellUses.incrementAndGet();
 		}

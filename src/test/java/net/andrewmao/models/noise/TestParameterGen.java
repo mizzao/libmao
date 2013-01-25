@@ -32,6 +32,16 @@ public class TestParameterGen {
 		return var;
 	}
 
+	public static Collection<Object[]> randomMeanVectors(int m, int trials) {
+		List<Object[]> stuff = new ArrayList<Object[]>(trials);
+		
+		for( int i = 0; i < trials; i++ ) {							
+			stuff.add(new Object[] {randomMeanVector(m) } );
+		}
+		
+		return stuff;
+	}
+
 	public static List<Object[]> randomMeanVarRankings(int m, int trials) {
 		List<Object[]> stuff = new ArrayList<Object[]>(trials);
 						

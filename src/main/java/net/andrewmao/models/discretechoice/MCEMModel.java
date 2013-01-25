@@ -27,7 +27,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 	// Make all MCEMs share the same threadpool.
 	static final ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 	
-	int maxIter;
+	int maxIters;
 	double abseps;
 	double releps;
 	double[] start;
@@ -35,10 +35,13 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 	AtomicInteger submittedJobs;
 	CompletionService<T> ecs;
 	
-	public void setup(double[] startPoint, int maxIter, double abseps, double releps) {
-		this.maxIter = maxIter;
+	public MCEMModel(int maxIters, double abseps, double releps) {
+		this.maxIters = maxIters;
 		this.abseps = abseps;
 		this.releps = releps;
+	}
+
+	public void setup(double[] startPoint) {		
 		this.start = startPoint;
 	}
 	
@@ -68,7 +71,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 //		RealVector oldParams = null; 
 		RealVector params = null;
 		
-		for( int i = 0; i < maxIter; i++ ) {
+		for( int i = 0; i < maxIters; i++ ) {
 			submittedJobs.set(0);
 			
 			eStep(i);						

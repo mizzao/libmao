@@ -13,9 +13,9 @@ public class OrderedNormalRule extends ScoredVotingRule {
 	
 	@Override
 	public <T> ScoredItems<T> getScoredRanking(PreferenceProfile<T> profile) {				
-		OrderedNormalMCEM model = new OrderedNormalMCEM();		
+		OrderedNormalMCEM model = new OrderedNormalMCEM(true, MAX_ITERS, ABS_EPS, REL_EPS);		
 		
-		model.setup(new NormalDistribution(0,1).sample(4), MAX_ITERS, ABS_EPS, REL_EPS);						
+		model.setup(new NormalDistribution(0,1).sample(4));						
 		
 		return model.fitModel(profile).getValueMap();
 	}
