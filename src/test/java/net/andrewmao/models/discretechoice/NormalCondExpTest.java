@@ -82,7 +82,7 @@ public class NormalCondExpTest {
 	}
 
 	@Test
-	public void testConditionalExpectation() {
+	public void testConditionalExpectationGibbs() {
 		System.out.println("Testing Gibbs ");
 		double[] condExpGibbs = new NormalGibbsSampler(mean, var, ranking, gibbsSamplesHigh).call().m1;
 				

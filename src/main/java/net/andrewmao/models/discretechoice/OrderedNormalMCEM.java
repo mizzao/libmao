@@ -32,6 +32,8 @@ import net.andrewmao.stat.MultivariateMean;
 public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel<?>> {
 
 	final boolean floatVariance;
+	final int startingSamples;
+	final int incrSamples;
 	
 	MultivariateMean m1Stats;
 	MultivariateMean m2Stats;
@@ -47,9 +49,23 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	 * 
 	 * @param floatVariance whether the variance should be allowed to change during EM.
 	 */
-	public OrderedNormalMCEM(boolean floatVariance, int maxIters, double abseps, double releps) {
+	public OrderedNormalMCEM(boolean floatVariance, int maxIters, double abseps, double releps, int startingSamples, int incrSamples) {
 		super(maxIters, abseps, releps);
 		this.floatVariance = floatVariance;
+		this.startingSamples = startingSamples;
+		this.incrSamples = incrSamples;
+	}
+	
+	/**
+	 * Default ordered normal MCEM model with 2000 starting samples and 300 add'l per iteration.
+	 * 
+	 * @param floatVariance
+	 * @param maxIters
+	 * @param abseps
+	 * @param releps
+	 */
+	public OrderedNormalMCEM(boolean floatVariance, int maxIters, double abseps, double releps) {
+		this(floatVariance, maxIters, abseps, releps, 2000, 300);
 	}
 	
 	@Override
@@ -76,11 +92,10 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	@Override
 	protected void eStep(int i) {
 		/*
-		 * E-step: parallelized Gibbs sampling			
-		 */
-		
-		// TODO: where this number come from and why it depends on # iterations?
-		int samples = 2000+300*i;
+		 * E-step: parallelized Gibbs sampling
+		 * # Samples are increased as we get closer to true goal			
+		 */	
+		int samples = startingSamples + incrSamples*i;
 				
 		m1Stats.clear();
 		if( floatVariance ) m2Stats.clear();
@@ -116,7 +131,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		
 		for( int i = 0; i < eM1.length; i++ ) {
 			double m = eM1[i];
-			delta.setEntry(i, eM1[i]);			
+			delta.setEntry(i, m);			
 			
 			if( floatVariance ) variance.setEntry(i, eM2[i] - m*m);
 		}

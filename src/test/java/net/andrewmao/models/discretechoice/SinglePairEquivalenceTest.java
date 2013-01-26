@@ -19,20 +19,29 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class SinglePairEquivalenceTest {
 
-	static int trials = 10;
+	static int trials = 5;
 	static int maxWins = 20;
 	
 	static double tol_logit = 1e-7;
-	static double accuracy_probit = 1e-5;
-	static double tol_probit = 0.03;
+	
+	static double accuracy_probit = 1e-7;	
+	static int max_em_iters = 50;
+	
+	static int starting_samples = 10000;	
+	static int additional_samples = 5000;
+	
+	static int max_mvn_attempts = 4;
+	
+	static double tol_probit = 0.02; // Maximum % difference tolerated
 		
 	static BradleyTerryModel bt = new BradleyTerryModel();
 	static PlackettLuceModel pl = new PlackettLuceModel();
 	
 	static ThurstoneMostellerModel tm = new ThurstoneMostellerModel();
-	static OrderedNormalEM on = new OrderedNormalEM(10, accuracy_probit, accuracy_probit);
+	static OrderedNormalEM on = new OrderedNormalEM(max_em_iters, accuracy_probit, accuracy_probit, max_mvn_attempts);
 	
-	OrderedNormalMCEM mcem = new OrderedNormalMCEM(false, 50, accuracy_probit, accuracy_probit);
+	OrderedNormalMCEM mcem = new OrderedNormalMCEM(false, max_em_iters, 
+			accuracy_probit, accuracy_probit, starting_samples, additional_samples);
 	
 	static NormalDistribution stdNormal = new NormalDistribution();
 	
@@ -89,11 +98,11 @@ public class SinglePairEquivalenceTest {
 		System.out.printf("TM: %.04f, MCEM: %.04f, MVNEM: %.04f\n", tmDiff, mcemDiff, onDiff);
 		
 		// Check against Thurstone, making adjustment
-		assertTrue("MCEM differs from Thurstone", Math.abs(mcemDiff - tmDiff)/tmDiff < tol_probit);
-		assertTrue("Fixed-var EM differs from Thurstone", Math.abs(onDiff - tmDiff)/tmDiff < tol_probit);
+		assertTrue("Fixed-var EM differs from Thurstone", Math.abs(onDiff/tmDiff-1) < tol_probit);
+		assertTrue("MCEM differs from Thurstone", Math.abs(mcemDiff/tmDiff-1) < tol_probit);		
 		
 		// Check two EMs against each other
-		assertTrue("EM models differ", Math.abs(onDiff - mcemDiff)/mcemDiff < tol_probit);
+		assertTrue("EM models differ", Math.abs(onDiff/mcemDiff-1) < tol_probit);
 				
 	}
 

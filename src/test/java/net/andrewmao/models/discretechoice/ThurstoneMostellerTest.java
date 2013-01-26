@@ -1,4 +1,4 @@
-package net.andrewmao.socialchoice.rules;
+package net.andrewmao.models.discretechoice;
 
 import static org.junit.Assert.*;
 

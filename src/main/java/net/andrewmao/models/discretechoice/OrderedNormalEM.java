@@ -33,13 +33,19 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	
 	private final int maxIter;
 	private final double abseps, releps;
+	private final int maxMVNTries;
 	
-	public OrderedNormalEM(int maxIter, double abseps, double releps) {
+	public OrderedNormalEM(int maxIter, double abseps, double releps, int maxMVNTries) {
 		this.maxIter = maxIter;
 		this.abseps = abseps;
 		this.releps = releps;
+		this.maxMVNTries = maxMVNTries;
 	}
 	
+	public OrderedNormalEM(int maxIter, double abseps, double releps) {
+		this(maxIter, abseps, releps, 1);
+	}
+
 	@Override
 	public double[] getParameters(List<int[]> rankings, int numItems) {
 		int m = numItems;		
@@ -53,6 +59,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		double ll = Double.NEGATIVE_INFINITY;
 		
 		for(int i = 0; i < maxIter; i++ ) {
+			// Yes, we HAVE to do this! Nasty bug ;) 
+			meanAccum.clear();
+			
 			/* 
 			 * E-step: compute conditional expectation
 			 * only need to compute over unique rankings
@@ -67,7 +76,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 				int[] ranking = Ints.toArray(e.getElement());	
 				int duplicity = e.getCount();
 				
-				ExpResult result = multivariateExp(mean, variance, ranking, 1, releps);				
+				ExpResult result = multivariateExp(mean, variance, ranking, maxMVNTries, releps);				
 				double[] condMean = computeConditional(result.values, ranking);				
 				
 				// Add this ll, expectation a number of times				
@@ -79,9 +88,10 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			
 			// M-step: update mean
 			double[] newMean = meanAccum.getMean();			
-			double adj = newMean[0];
+//			double adj = newMean[0];
 			for( int j = 0; j < m; j++ )
-				mean.setEntry(j, newMean[j] - adj);
+				mean.setEntry(j, newMean[j]);
+//				mean.setEntry(j, newMean[j] - adj);
 			
 			/*
 			 * Check out how we did - log likelihood for the old mean is given for free above 
@@ -104,12 +114,13 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		}
 		
 		// Re-center means so first is 0
-//		double[] params = mean.toArray();
-//		double adj = params[0];
-//		for( int i = 0; i < params.length; i++ )
-//			params[i] -= adj;		
-//		return params;
-		return mean.toArray();
+		double[] params = mean.toArray();
+		double adj = params[0];
+		for( int i = 0; i < params.length; i++ )
+			params[i] -= adj;		
+		return params;
+		
+//		return mean.toArray();
 	}
 
 	/**

@@ -13,10 +13,13 @@ import org.junit.*;
 
 public class NormalEMTest {
 	
+	static final double llTol = 1e-4;
+	
 	static Random rnd = new Random();
 	
 	Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
 	final List<Character> stuffList = Arrays.asList(stuff);
+	
 	
 	@Before
 	public void setUp() throws Exception {
@@ -27,9 +30,33 @@ public class NormalEMTest {
 	}
 	
 	@Test
-	public void testInference() {		
-		// TODO: this is still busted
+	public void testSpeed() {
+		int trials = 10;
+		int n = 10;		
+		int iters = 30;
 		
+		double abseps = 1e-3; // Double.NEGATIVE_INFINITY;
+		double releps = 1e-3; // Double.NEGATIVE_INFINITY;					
+		
+		OrderedNormalEM model = new OrderedNormalEM(iters, abseps, releps);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, 1, 1);
+		
+		long startTime = System.currentTimeMillis();
+		
+		for( int i = 0; i < trials; i++ ) {
+			PreferenceProfile<Character> prefs = gen.sampleProfile(n);						
+			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
+			System.out.println(fitted);	
+		}
+		
+		long stopTime = System.currentTimeMillis();
+		
+		double avgTime = (stopTime - startTime) / trials;
+		System.out.printf("Avg time for 10x4 preference profiles: %.0f ms\n", avgTime);		
+	}
+	
+	@Test
+	public void testInference() {		
 		int size = 10000;
 		double tol = 0.02;		
 		 					
@@ -46,12 +73,13 @@ public class NormalEMTest {
 
 		NormalNoiseModel<Character> model = normalEM.fitModel(prefs);
 		double achievedLL = model.logLikelihood(prefs);
-				
+		System.out.println("Achieved likelihood: " + achievedLL);		
+		
 		ScoredItems<Character> params = model.getValueMap();
 
 		System.out.println(params);
 
-		assertTrue("LL didn't reach close to target", (achievedLL - targetLL)/targetLL < tol);
+		assertTrue("LL didn't reach close to target", Math.abs(achievedLL/targetLL-1) < llTol);
 
 		for( int i = 0; i < stuff.length; i++ ) {
 			assertEquals(-i*strDiff, params.get(stuff[i]).doubleValue(), tol);
