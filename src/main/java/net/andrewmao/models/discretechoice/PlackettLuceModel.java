@@ -2,7 +2,6 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import net.andrewmao.models.noise.GumbelNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
@@ -56,7 +55,7 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 		double lastLL = Double.NEGATIVE_INFINITY, absImpr, relImpr;
 		
 		do {
-			if( iter++ > PL_MAX_ITERS ) 
+			if( iter++ > PL_MAX_ITERS && failMM ) 
 				throw new RuntimeException("MM failed to converge...check for MM assumption satisfied, or use LL convergence instead.");
 			
 			double[][] g = new double[n][m];
@@ -118,7 +117,7 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 			gamma = newGamma;			
 			
 			cont = ( failMM && diff.getNorm() > param_tolerance) || 
-					(!failMM && (Double.isNaN(relImpr) || relImpr > ll_tolerance));						
+					(!failMM && iter < PL_MAX_ITERS && (Double.isNaN(relImpr) || relImpr > ll_tolerance) );						
 		} while( cont );
 		
 		// Return scaled and with log
@@ -133,7 +132,9 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 		
 		double[] strParams = getParameters(rankings, ordering.size());
 		
-		return new GumbelNoiseModel<T>(ordering, new Random(), strParams);		
+		GumbelNoiseModel<T> gnm = new GumbelNoiseModel<T>(ordering, strParams);
+		gnm.setFittedLikelihood(lastComputedLL);
+		return gnm;
 	}
 
 }

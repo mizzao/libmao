@@ -102,11 +102,11 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 			double relImpr = -absImpr / ll;
 			
 			if( absImpr < abseps ) {
-				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
+//				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
 				break;
 			}
 			if( !Double.isNaN(relImpr) && relImpr < releps ) {
-				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
+//				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
 				break;
 			}
 			

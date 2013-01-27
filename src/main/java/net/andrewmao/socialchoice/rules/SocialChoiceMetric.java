@@ -11,10 +11,16 @@ public abstract class SocialChoiceMetric<T> {
 	public abstract double compute(List<T> ranking);	
 	public abstract double computeByScore(ScoredItems<T> scores);
 	
-	public double computeAverage(List<List<T>> rankings) {
+	public double computeAverage(Iterable<List<T>> rankings) {
 		double total = 0;
-		for( List<T> ranking : rankings ) total += compute(ranking);
-		return total / rankings.size();
+		int count = 0;
+		
+		for( List<T> ranking : rankings ) {
+			total += compute(ranking);
+			count++;
+		}
+		
+		return total / count;
 	}
 	
 	public static SocialChoiceMetric<Integer> getNumMistakesMetric() {

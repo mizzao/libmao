@@ -2,7 +2,6 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.andrewmao.models.noise.NormalNoiseModel;
@@ -121,7 +120,7 @@ public class ThurstoneMostellerModel extends PairwiseDiscreteChoiceEstimator<Nor
 		
 		double[] strParams = getParameters(wins);
 		
-		return new NormalNoiseModel<T>(ordering, new Random(), strParams);		
+		return new NormalNoiseModel<T>(ordering, strParams);		
 	}
 
 }

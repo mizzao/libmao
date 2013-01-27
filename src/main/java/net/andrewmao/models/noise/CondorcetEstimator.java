@@ -1,7 +1,6 @@
 package net.andrewmao.models.noise;
 
 import java.util.List;
-import java.util.Random;
 
 import org.apache.commons.math3.analysis.UnivariateFunction;
 import org.apache.commons.math3.optim.MaxEval;
@@ -23,6 +22,8 @@ public class CondorcetEstimator implements Estimator<CondorcetModel<?>> {
 
 	BrentOptimizer brent;
 	
+	volatile double lastLL;
+	
 	public CondorcetEstimator() {
 		brent = new BrentOptimizer(1e-7, 1e-11);
 	}
@@ -33,44 +34,46 @@ public class CondorcetEstimator implements Estimator<CondorcetModel<?>> {
 		Kemeny k = new Kemeny();
 		
 		List<List<T>> bestRankings = k.getAllRankings(profile);
+		final List<T> someRanking = bestRankings.get(0);
 		
-		double bestLL = Double.POSITIVE_INFINITY;
-		double bestPhi = 0;
-		List<T> bestRanking = null;
+//		double bestLL = Double.POSITIVE_INFINITY;
+//		double bestPhi = 0;		
 		
 		/*
 		 * Optimize p over each ranking and pick the one with the best likelihood
 		 * RE: discussion with Hossein on 1/25: the likelihoods (and p) are all the same!
-		 * TODO have this estimator do a better model
 		 */
-		for( final List<T> ranking : bestRankings ) {
-			UnivariateFunction logLk = new UnivariateFunction() {
-				@Override public double value(double phi) {					
-					return CondorcetModel.profileLogLikelihood(profile, ranking, phi);
-				}				
-			};
-			
-			UnivariatePointValuePair result = 
-					brent.optimize(
-					new UnivariateObjectiveFunction(logLk),
-					new SearchInterval(0, 1),
-					new MaxEval(1000),
-					GoalType.MAXIMIZE
-					);
-			
-			double phi = result.getPoint();
-			double ll = result.getValue();
-			
-			System.out.println(ranking + " has p=" + 1/(1+phi) +", has likelihood " + ll);
-			
-			if( ll < bestLL ) {
-				bestLL = ll;
-				bestPhi = phi;
-				bestRanking = ranking;
-			}			
-		}
+		UnivariateFunction logLk = new UnivariateFunction() {
+			@Override public double value(double phi) {					
+				return CondorcetModel.profileLogLikelihood(profile, someRanking, phi);
+			}				
+		};
 		
-		return new CondorcetModel<T>(bestRanking, new Random(), 1/(1+bestPhi));
+		UnivariatePointValuePair result = 
+				brent.optimize(
+				new UnivariateObjectiveFunction(logLk),
+				new SearchInterval(0, 1),
+				new MaxEval(1000),
+				GoalType.MAXIMIZE
+				);
+		
+		double phi = result.getPoint();
+		lastLL = result.getValue();
+		
+//		System.out.println("Model has p=" + 1/(1+phi) +", and likelihood " + ll);
+		
+//		for( final List<T> ranking : bestRankings ) {
+//					
+//			if( ll < bestLL ) {
+//				bestLL = ll;
+//				bestPhi = phi;
+//				bestRanking = ranking;
+//			}			
+//		}
+		
+		CondorcetModel<T> cm = new CondorcetModel<T>(bestRankings, 1/(1+phi));
+		cm.setFittedLikelihood(lastLL);
+		return cm;
 	}
 
 }

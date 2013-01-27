@@ -56,8 +56,8 @@ public class PlackettLuceInferenceTest {
 	public void testEstimation() {		
 		double tol = 0.02;
 					
-		GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(stuffList, rnd, mean.toArray());
-		PreferenceProfile<Character> prefs = gen.sampleProfile(size);
+		GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(stuffList, mean.toArray());
+		PreferenceProfile<Character> prefs = gen.sampleProfile(size, rnd);
 		double dataLL = gen.logLikelihood(prefs);
 
 		PlackettLuceModel plmm = new PlackettLuceModel(true);			

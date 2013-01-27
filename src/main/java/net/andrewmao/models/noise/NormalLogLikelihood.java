@@ -78,9 +78,13 @@ public class NormalLogLikelihood {
 	}
 
 	double singleRankingLL(int[] ranking) {
-		if( ranking.length == 2 ) return univariateLL(ranking);
-		else if( ranking.length == 3 ) return bivariateLL(ranking);
-		else return multivariateLL(ranking);
+		double value;
+		
+		if( ranking.length == 2 ) value = univariateLL(ranking);
+		else if( ranking.length == 3 ) value = bivariateLL(ranking);
+		else value = multivariateLL(ranking);		
+		
+		return value;
 	}
 
 	/**
@@ -90,7 +94,15 @@ public class NormalLogLikelihood {
 	 * @return
 	 */
 	double multivariateLL(int[] ranking) {
-		return Math.log(multivariateProb(mean, variance, ranking).value);		
+		int tries = 0;
+		double prob;
+		
+		// TODO: temporary fix for 0 probability results?
+		do {
+			prob = multivariateProb(mean, variance, ranking).value;			
+		} while( ++tries < 5 || prob == 0 );
+		
+		return Math.log(prob);		
 	}
 
 	public static CDFResult multivariateProb(RealVector mean, RealVector variance, int[] ranking) {
@@ -116,7 +128,17 @@ public class NormalLogLikelihood {
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());	
 		
-		return MultivariateNormal.cdf(mu, sigma, lower, upper);		
+		return MultivariateNormal.cdf(mu, sigma, lower, upper);
+		
+//		int tries = 0;
+//		while(++tries < 5 ) {			
+//			CDFResult cdf = MultivariateNormal.cdf(mu, sigma, lower, upper);						
+//			if( Double.isInfinite(cdf.value) || Double.isNaN(cdf.value) )
+//				continue;			
+//			return cdf;
+//		}
+//		
+//		throw new RuntimeException("Error fitting model...");
 	}
 
 	double bivariateLL(int[] ranking) {

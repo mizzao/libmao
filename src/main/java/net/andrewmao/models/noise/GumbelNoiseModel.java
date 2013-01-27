@@ -18,20 +18,30 @@ import org.apache.commons.math3.distribution.ExponentialDistribution;
  */
 public class GumbelNoiseModel<T> extends RandomUtilityModel<T> {
 
-	public GumbelNoiseModel(ScoredItems<T> scoreMap, Random rnd) {
-		super(scoreMap, rnd);		
+	public GumbelNoiseModel(ScoredItems<T> scoreMap) {
+		super(scoreMap);		
 	}
 	
-	public GumbelNoiseModel(List<T> candidates, Random rnd, double[] strengths) {
-		super(candidates, rnd, strengths);		
+	public GumbelNoiseModel(List<T> candidates, double[] strengths) {
+		super(candidates, strengths);		
 	}
 	
-	public GumbelNoiseModel(List<T> candidates, Random rnd, double adjStrDiff) {
-		super(candidates, rnd, adjStrDiff);		
+	public GumbelNoiseModel(List<T> candidates, double adjStrDiff) {
+		super(candidates, adjStrDiff);		
 	}
 
 	@Override
-	public PreferenceProfile<T> sampleProfile(int size) {
+	public String toParamString() {
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(candidates.toString()).append("\n");
+		sb.append(Arrays.toString(super.strParams));		
+		
+		return sb.toString();	
+	}
+
+	@Override
+	public PreferenceProfile<T> sampleProfile(int size, Random rnd) {
 		T[][] profile = super.getProfileArrayInitialized(size);		
 		
 		// Set up random number generators

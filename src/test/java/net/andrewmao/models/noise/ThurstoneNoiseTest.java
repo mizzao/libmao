@@ -44,9 +44,10 @@ public class ThurstoneNoiseTest {
 		
 		NormalDistribution dist = new NormalDistribution(0, 1);
 		
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(letters, new Random(), strDiff);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(letters, strDiff);
+		System.out.println(gen.toParamString());
 						
-		PreferenceProfile<Character> prefs = gen.sampleProfile(size);
+		PreferenceProfile<Character> prefs = gen.sampleProfile(size, new Random());
 		
 		System.out.println(1.0 * prefs.getNumCorrect('a', 'b', comp) / size);
 		System.out.println(dist.cumulativeProbability(strDiff));

@@ -2,7 +2,6 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.commons.math3.analysis.function.Abs;
 import org.apache.commons.math3.analysis.function.Sqrt;
@@ -185,7 +184,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		double[] strParams = getParameters(rankings, ordering.size());
 		double[] sds = variance.map(new Sqrt()).toArray();
 		
-		return new NormalNoiseModel<T>(ordering, new Random(), strParams, sds);		
+		return new NormalNoiseModel<T>(ordering, strParams, sds);		
 	}
 
 }

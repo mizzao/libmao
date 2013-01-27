@@ -37,9 +37,9 @@ public class CondorcetEstimatorTest {
 			double p = 1/(1+phi);		
 			
 			System.out.println("Testing p = " + p);
-			CondorcetModel<Integer> generator = new CondorcetModel<Integer>(numbers, new Random(), p);		
+			CondorcetModel<Integer> generator = new CondorcetModel<Integer>(numbers, p);		
 			
-			PreferenceProfile<Integer> prefs = generator.sampleProfile(size);
+			PreferenceProfile<Integer> prefs = generator.sampleProfile(size, new Random());
 			
 			CondorcetEstimator estimator = new CondorcetEstimator();			
 			CondorcetModel<Integer> estimated = estimator.fitModel(prefs);

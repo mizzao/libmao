@@ -13,6 +13,7 @@ import net.andrewmao.misc.Pair;
 public class PreferenceProfileList<T> extends ArrayList<PreferenceProfile<T>> {
 
 	private static final long serialVersionUID = 2624548982957801856L;
+	
 	private String name = null;
 	
 	public PreferenceProfileList(int numPartitions) {
@@ -25,7 +26,7 @@ public class PreferenceProfileList<T> extends ArrayList<PreferenceProfile<T>> {
 	
 	public void setString(String name) {
 		this.name = name;
-	}
+	}	
 
 	public String toString() {
 		return name == null ? super.toString() : name;

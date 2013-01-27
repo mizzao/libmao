@@ -3,6 +3,7 @@ package net.andrewmao.models.noise;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
@@ -43,6 +44,23 @@ public class CondorcetNoiseTest {
 	}
 	
 	@Test
+	public void testParamRecovery() {
+		@SuppressWarnings("unchecked")
+		Collection<List<Integer>> mixed = Arrays.asList(
+				Arrays.asList(1, 2, 3, 4),
+				Arrays.asList(2, 1, 4, 3)
+				);
+		double prob = 0.6;
+		
+		CondorcetModel<Integer> model = new CondorcetModel<Integer>(mixed, prob);
+		
+		String params = model.toParamString();
+		System.out.println(params);
+		
+		// TODO parse model from string
+	}
+	
+	@Test
 	public void testWeights() {
 		System.out.println("Testing weights");
 		double p = 0.6;		
@@ -67,7 +85,7 @@ public class CondorcetNoiseTest {
 	public void testInsertion() {
 		System.out.println("Testing insertion vector");
 		
-		CondorcetModel<Character> charGen = new CondorcetModel<Character>(letters, r, 1);
+		CondorcetModel<Character> charGen = new CondorcetModel<Character>(letters, 1);
 		
 		int[] insvec = new int[] {0, 0, 1, 2};
 		Character[] expected = new Character[] {'b', 'c', 'd', 'a'};
@@ -84,9 +102,9 @@ public class CondorcetNoiseTest {
 		double tol = 0.02;
 		double p = 0.5;			
 		
-		gen = new CondorcetModel<Integer>(numbers, r, p);		
+		gen = new CondorcetModel<Integer>(numbers, p);		
 		
-		PreferenceProfile<Integer> prefs = gen.sampleProfile(size);
+		PreferenceProfile<Integer> prefs = gen.sampleProfile(size, r);
 		
 		for( int i = 0; i < cs.length; i++ ) {
 			for( int j = i+1; j < cs.length; j++ ) {
@@ -104,9 +122,9 @@ public class CondorcetNoiseTest {
 		System.out.println("Testing constant distribution...p = 1");
 		int size = 10000;					
 		
-		gen = new CondorcetModel<Integer>(numbers, r, 1);		
+		gen = new CondorcetModel<Integer>(numbers, 1);		
 		
-		PreferenceProfile<Integer> prefs = gen.sampleProfile(size);
+		PreferenceProfile<Integer> prefs = gen.sampleProfile(size, r);
 		
 		for( int i = 0; i < cs.length; i++ ) {
 			for( int j = i+1; j < cs.length; j++ ) {
@@ -127,9 +145,9 @@ public class CondorcetNoiseTest {
 		double phi = (1-p)/p;
 		
 		System.out.println("Testing p = " + p);
-		gen = new CondorcetModel<Integer>(numbers, r, p);		
+		gen = new CondorcetModel<Integer>(numbers, p);		
 		
-		PreferenceProfile<Integer> prefs = gen.sampleProfile(size);
+		PreferenceProfile<Integer> prefs = gen.sampleProfile(size, r);
 		
 		for( int i = 0; i < cs.length; i++ ) {
 			for( int j = i+1; j < cs.length; j++ ) {

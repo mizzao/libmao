@@ -2,7 +2,6 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.andrewmao.models.noise.GumbelNoiseModel;
@@ -87,7 +86,7 @@ public class BradleyTerryModel extends PairwiseDiscreteChoiceEstimator<GumbelNoi
 		
 		double[] strParams = getParameters(wins);
 		
-		return new GumbelNoiseModel<T>(ordering, new Random(), strParams);
+		return new GumbelNoiseModel<T>(ordering, strParams);
 	}
 
 }

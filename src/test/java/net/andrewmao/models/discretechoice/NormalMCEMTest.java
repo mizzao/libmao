@@ -42,12 +42,12 @@ public class NormalMCEMTest {
 		double releps = 1e-3; // Double.NEGATIVE_INFINITY;					
 		
 		OrderedNormalMCEM model = new OrderedNormalMCEM(false, iters, abseps, releps);
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, 1, 1);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, 1, 1);
 		
 		long startTime = System.currentTimeMillis();
 		
 		for( int i = 0; i < trials; i++ ) {
-			PreferenceProfile<Character> prefs = gen.sampleProfile(n);			
+			PreferenceProfile<Character> prefs = gen.sampleProfile(n, rnd);			
 			model.setup(new NormalDistribution(0,1).sample(4));			
 			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
 			System.out.println(fitted);	
@@ -69,12 +69,12 @@ public class NormalMCEMTest {
 		double releps = 1e-3; // Double.NEGATIVE_INFINITY;					
 		
 		OrderedNormalMCEM model = new OrderedNormalMCEM(true, iters, abseps, releps);
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, 1, 1);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, 1, 1);
 		
 		long startTime = System.currentTimeMillis();
 		
 		for( int i = 0; i < trials; i++ ) {
-			PreferenceProfile<Character> prefs = gen.sampleProfile(n);			
+			PreferenceProfile<Character> prefs = gen.sampleProfile(n, rnd);			
 			model.setup(new NormalDistribution(0,1).sample(4));			
 			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
 			System.out.println(fitted);	
@@ -106,8 +106,8 @@ public class NormalMCEMTest {
 		System.out.println(Arrays.toString(means));
 		System.out.println(Arrays.toString(sds));
 								
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, means, sds);		
-		PreferenceProfile<Character> prefs = gen.sampleProfile(n);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, means, sds);		
+		PreferenceProfile<Character> prefs = gen.sampleProfile(n, rnd);
 		
 		OrderedNormalMCEM model = new OrderedNormalMCEM(true, iters, abseps, releps);
 		model.setup(new NormalDistribution(0,1).sample(4));		

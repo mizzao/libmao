@@ -1,6 +1,7 @@
 package net.andrewmao.models.noise;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 
@@ -9,6 +10,7 @@ import org.apache.commons.lang.ArrayUtils;
 
 import net.andrewmao.math.RandomSelection;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
+import net.andrewmao.socialchoice.rules.SocialChoiceMetric;
 
 /**
  * Generates preference profiles with Condorcet noise
@@ -19,9 +21,11 @@ import net.andrewmao.socialchoice.rules.PreferenceProfile;
 public class CondorcetModel<T> extends NoiseModel<T> {
 		
 	final double phi;
+	final Collection<List<T>> candidatesMixed;
 	
-	public CondorcetModel(List<T> candidates, Random rnd, double prob) {
-		super(candidates, rnd);
+	public CondorcetModel(Collection<List<T>> candidatesMixed, double prob) {
+		super(candidatesMixed.iterator().next());
+		this.candidatesMixed = candidatesMixed;
 		
 		if(prob > 1.0 || prob < 0.5) 
 			throw new IllegalArgumentException("p must be in the range [0.5, 1]");
@@ -29,10 +33,40 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 		this.phi = (1.0 - prob) / prob;
 	}
 	
+	public CondorcetModel(List<T> candidates, double prob) {
+		super(candidates);
+		candidatesMixed = null;
+		
+		if(prob > 1.0 || prob < 0.5) 
+			throw new IllegalArgumentException("p must be in the range [0.5, 1]");
+		
+		this.phi = (1.0 - prob) / prob;
+	}
+	
+	public Collection<List<T>> getCandidateMixture() {
+		return candidatesMixed;
+	}
+	
 	public String toString() {
 		return candidates.toString() + " p=" + 1/(1+phi);
 	}
 	
+	@Override
+	public String toParamString() {
+		StringBuilder sb = new StringBuilder();
+		
+		if( candidatesMixed != null ) {
+			for( List<T> candidates : candidatesMixed ) {
+				sb.append(candidates.toString()).append("\n");
+			}
+		}
+		else
+			sb.append(candidates.toString());
+		
+		sb.append(1/(1+phi));		
+		return sb.toString();
+	}
+
 	static double[] getWeights(int i, double phi) {
 		// Draw integers from 0 .. i with probability p_ij as defined in Lu & Boutilier paper
 		double[] wts = new double[i + 1];
@@ -41,7 +75,7 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 		return wts;
 	}
 	
-	int[] getNewInsertionVector() {
+	int[] getNewInsertionVector(Random rnd) {
 		int[] insVec = new int[candidates.size()];
 		
 		for( int i = 0; i < insVec.length; i++ ) {
@@ -63,11 +97,11 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 	}
 
 	@Override
-	public PreferenceProfile<T> sampleProfile(int size) {
+	public PreferenceProfile<T> sampleProfile(int size, Random rnd) {
 		T[][] profile = super.getProfileArray(size);
 		
 		for( int i = 0; i < size; i++ ) {
-			int[] insVec = getNewInsertionVector();
+			int[] insVec = getNewInsertionVector(rnd);
 			
 			List<T> ranking = getInsertedList(insVec);
 											
@@ -75,6 +109,14 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 		}
 		
 		return new PreferenceProfile<T>(profile);
+	}
+
+	@Override
+	public double computeMetric(SocialChoiceMetric<T> metric) {	
+		if( candidatesMixed != null )
+			return metric.computeAverage(candidatesMixed);
+		else			
+			return metric.compute(candidates);
 	}
 
 	@Override

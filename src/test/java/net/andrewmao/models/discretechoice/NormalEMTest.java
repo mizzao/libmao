@@ -30,6 +30,36 @@ public class NormalEMTest {
 	}
 	
 	@Test
+	public void testNanBug() {
+		int iters = 30;
+		
+		double abseps = 1e-3; // Double.NEGATIVE_INFINITY;
+		double releps = 1e-3; // Double.NEGATIVE_INFINITY;		
+		
+		PreferenceProfile<Integer> prefs = 
+				new PreferenceProfile<Integer>(new Integer[][] {
+						{8, 5, 11, 14},
+						{8, 14, 11, 5},
+						{8, 5, 14, 11},
+						{5, 8, 11, 14},
+						{8, 5, 14, 11},
+						{5, 8, 11, 14},
+						{14, 5, 11, 8},
+						{5, 8, 14, 11},
+						{14, 8, 5, 11},
+						{8, 5, 11, 14},
+				});
+		
+		OrderedNormalEM model = new OrderedNormalEM(iters, abseps, releps);
+		NormalNoiseModel<Integer> fitted = model.fitModel(prefs);
+		
+		System.out.println(fitted.toParamString());
+		
+		for( double d : fitted.getValueMap().toArray() )
+			assertFalse(Double.isNaN(d));	
+	}
+	
+	@Test
 	public void testSpeed() {
 		int trials = 10;
 		int n = 10;		
@@ -39,12 +69,12 @@ public class NormalEMTest {
 		double releps = 1e-3; // Double.NEGATIVE_INFINITY;					
 		
 		OrderedNormalEM model = new OrderedNormalEM(iters, abseps, releps);
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, rnd, 1, 1);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, 1, 1);
 		
 		long startTime = System.currentTimeMillis();
 		
 		for( int i = 0; i < trials; i++ ) {
-			PreferenceProfile<Character> prefs = gen.sampleProfile(n);						
+			PreferenceProfile<Character> prefs = gen.sampleProfile(n, rnd);						
 			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
 			System.out.println(fitted);	
 		}
@@ -63,9 +93,9 @@ public class NormalEMTest {
 		double strDiff = 1.0;
 		System.out.println("Testing " + strDiff);
 
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, new Random(), strDiff, 1.0d);			
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, strDiff, 1.0d);			
 
-		PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
+		PreferenceProfile<Character> prefs = gen.sampleProfile(size, rnd);	
 		double targetLL = gen.logLikelihood(prefs);
 		System.out.println("Target likelihood: " + targetLL);
 

@@ -71,9 +71,10 @@ public class GumbelNoiseTest {
 		double tol = 1e-2;
 		double strDiff = 0.2;				
 		
-		GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(letters, new Random(), strDiff);
+		GumbelNoiseModel<Character> gen = new GumbelNoiseModel<Character>(letters, strDiff);
+		System.out.println(gen.toParamString());
 						
-		PreferenceProfile<Character> prefs = gen.sampleProfile(size);	
+		PreferenceProfile<Character> prefs = gen.sampleProfile(size, new Random());	
 		
 		System.out.println(1.0 * prefs.getNumCorrect('a', 'b', comp) / size);
 		System.out.println(1/(1+Math.exp(-strDiff)));

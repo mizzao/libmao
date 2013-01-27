@@ -2,7 +2,6 @@ package net.andrewmao.models.discretechoice;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -86,10 +85,11 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 					meanAccum.addValue(condMean);
 				}				
 				currentLL += duplicity * Math.log(result.cdf);
-			}			
+			}
 			
 			// M-step: update mean
-			double[] newMean = meanAccum.getMean();			
+			double[] newMean = meanAccum.getMean();					
+						
 //			double adj = newMean[0];
 			for( int j = 0; j < m; j++ )
 				mean.setEntry(j, newMean[j]);
@@ -99,17 +99,17 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			 * Check out how we did - log likelihood for the old mean is given for free above 
 			 * almost 2x speedup over re-computing the LL from scratch			 
 			 */					
-			System.out.printf("Likelihood: %f\n", currentLL);
+//			System.out.printf("Likelihood: %f\n", currentLL);
 			double absImpr = currentLL - ll;
 			double relImpr = -absImpr / ll;
 			ll = lastLL = currentLL;
 			
 			if( absImpr < abseps ) {
-				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
+//				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
 				break;
 			}
 			if( !Double.isNaN(relImpr) && relImpr < releps ) {
-				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
+//				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
 				break;
 			}			
 		}
@@ -186,7 +186,18 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
 		
-		return MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);		
+		return MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);
+		
+//		int tries = 0;
+//		while(++tries < 5 ) {			
+//			ExpResult exp = MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);			
+//			for( double val : exp.values )
+//				if( Double.isInfinite(val) || Double.isNaN(val) )
+//					continue;			
+//			return exp;
+//		}
+//		
+//		throw new RuntimeException("Computation error in conditional expectation");
 	}
 
 	@Override
@@ -197,7 +208,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		int m = ordering.size();
 		double[] strParams = getParameters(rankings, m);		
 		
-		return new NormalNoiseModel<T>(ordering, new Random(), strParams, Math.sqrt(FIXED_VARIANCE));		
+		NormalNoiseModel<T> nn = new NormalNoiseModel<T>(ordering, strParams, Math.sqrt(FIXED_VARIANCE));
+		nn.setFittedLikelihood(lastLL);
+		return nn;		
 	}
 
 }

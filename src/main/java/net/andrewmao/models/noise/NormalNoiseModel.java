@@ -21,22 +21,22 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	
 	private final double[] sds;
 	
-	public NormalNoiseModel(List<T> candidates, Random rnd, double[] strengths) {
-		super(candidates, rnd, strengths);
+	public NormalNoiseModel(List<T> candidates, double[] strengths) {
+		super(candidates, strengths);
 		
 		sds = new double[candidates.size()];		
 		for( int j = 0; j < candidates.size(); j++ ) 
 			sds[j] = THURSTONE_SIGMA;
 	}
 	
-	public NormalNoiseModel(List<T> candidates, Random rnd, double[] strengths, double[] sds) {
-		super(candidates, rnd, strengths);
+	public NormalNoiseModel(List<T> candidates, double[] strengths, double[] sds) {
+		super(candidates, strengths);
 		
 		this.sds = sds;
 	}
 	
-	public NormalNoiseModel(List<T> ordering, Random rnd, double[] strengths, double stdev) {
-		super(ordering, rnd, strengths);
+	public NormalNoiseModel(List<T> ordering, double[] strengths, double stdev) {
+		super(ordering, strengths);
 		
 		sds = new double[candidates.size()];		
 		for( int j = 0; j < candidates.size(); j++ ) 
@@ -52,8 +52,8 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	 * @param strDiff
 	 * @param stdev
 	 */
-	public NormalNoiseModel(List<T> candidates, Random rnd, double adjStrDiff, double stdev) {
-		super(candidates, rnd, adjStrDiff);
+	public NormalNoiseModel(List<T> candidates, double adjStrDiff, double stdev) {
+		super(candidates, adjStrDiff);
 		
 		sds = new double[candidates.size()];		
 		for( int j = 0; j < candidates.size(); j++ ) 
@@ -66,13 +66,24 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	 * @param rnd
 	 * @param adjStrDiff
 	 */
-	public NormalNoiseModel(List<T> candidates, Random rnd, double adjStrDiff) {
+	public NormalNoiseModel(List<T> candidates, double adjStrDiff) {
 		// Generate normal random variables with variance 0.5
-		this(candidates, rnd, adjStrDiff, THURSTONE_SIGMA);
+		this(candidates, adjStrDiff, THURSTONE_SIGMA);
 	}
 
 	@Override
-	public PreferenceProfile<T> sampleProfile(int size) {
+	public String toParamString() {
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append(candidates.toString()).append("\n");
+		sb.append(Arrays.toString(super.strParams)).append("\n");
+		sb.append(Arrays.toString(sds));
+		
+		return sb.toString();	
+	}
+
+	@Override
+	public PreferenceProfile<T> sampleProfile(int size, Random rnd) {
 		T[][] profile = super.getProfileArrayInitialized(size);							
 		
 		for( int i = 0; i < size; i++ ) {																	

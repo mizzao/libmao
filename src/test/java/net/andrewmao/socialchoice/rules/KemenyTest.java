@@ -135,10 +135,10 @@ public class KemenyTest {
 		int trials = 1000;
 		
 		List<Integer> stuff = Arrays.asList(new Integer[] {1, 2, 3, 4});		
-		NoiseModel<Integer> rfg = new NormalNoiseModel<Integer>(stuff, new Random(), 0.2);
+		NoiseModel<Integer> rfg = new NormalNoiseModel<Integer>(stuff, 0.2);
 		
 		for( int i = 0; i < trials; i++ ) {
-			PreferenceProfile<Integer> generated = rfg.sampleProfile(10);
+			PreferenceProfile<Integer> generated = rfg.sampleProfile(10, new Random());
 			
 			List<List<Integer>> k1 = kemeny.getAllRankings(generated);
 			List<List<Integer>> k2 = kemeny_old.getAllRankings(generated);
