@@ -92,6 +92,10 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 		
 		return new PreferenceProfile<T>(profile);
 	}
+	
+	public double[] getSigmas() {
+		return sds;
+	}
 
 	@Override
 	public double logLikelihood(PreferenceProfile<T> profile) {		

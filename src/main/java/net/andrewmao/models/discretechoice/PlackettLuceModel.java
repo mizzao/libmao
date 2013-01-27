@@ -24,9 +24,17 @@ import org.apache.commons.math3.linear.RealVector;
 public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?>> {
 	
 	static final double PL_MAX_ITERS = 500;
-	static final double tolerance = 1e-9;	
+	
+	static final double ll_tolerance = 1e-5;
+	static final double param_tolerance = 1e-9;	
+	
+	final boolean failMM;
 	
 	volatile double lastComputedLL;
+	
+	public PlackettLuceModel(boolean failMM) {
+		this.failMM = failMM;
+	}
 	
 	@Override
 	public double[] getParameters(List<int[]> rankings, int numItems) {
@@ -44,9 +52,12 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 			w.addToEntry(ranking[m-1]-1, -1.0);
 		
 		int iter = 0;
+		boolean cont = true;
+		double lastLL = Double.NEGATIVE_INFINITY, absImpr, relImpr;
+		
 		do {
 			if( iter++ > PL_MAX_ITERS ) 
-				throw new RuntimeException("MM failed to converge...check for MM assumption satisfied.");
+				throw new RuntimeException("MM failed to converge...check for MM assumption satisfied, or use LL convergence instead.");
 			
 			double[][] g = new double[n][m];
 			for( int j = 0; j < n; j++ ) {
@@ -69,8 +80,11 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 			for( int i = 0; i < g.length; i++ )
 				for( int j = 0; j < g[i].length; j++ )
 					if( g[i][j] > 0 ) ll += Math.log(g[i][j]);
-//			System.out.println("Log likelihood: " + ll);
-			lastComputedLL = ll;
+//			System.out.println("Log likelihood: " + ll);			
+			
+			absImpr = ll - lastLL;
+			relImpr = -absImpr / lastLL;
+			lastLL = lastComputedLL = ll;
 			
 			for( int j = 0; j < n; j++ ) {
 				double cumsum = 0;
@@ -96,13 +110,16 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 				for( int i = 0; i < m; i++ ) {
 					denoms[ranking[i]-1] += g[j][i];
 				}				
-			}
+			}							
 			
 			@SuppressWarnings("deprecation")
 			RealVector newGamma = w.ebeDivide(new ArrayRealVector(denoms));			
 			diff = newGamma.subtract(gamma); 
-			gamma = newGamma;
-		} while( diff.getNorm() > tolerance );
+			gamma = newGamma;			
+			
+			cont = ( failMM && diff.getNorm() > param_tolerance) || 
+					(!failMM && (Double.isNaN(relImpr) || relImpr > ll_tolerance));						
+		} while( cont );
 		
 		// Return scaled and with log
 		double scalar = gamma.getEntry(0);

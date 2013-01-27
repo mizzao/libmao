@@ -40,6 +40,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	
 	RealVector delta, variance;
 	NormalLogLikelihood ll;
+	volatile double lastLL;
 	
 	List<int[]> rankings;
 	int numItems;	
@@ -106,8 +107,9 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		
 		for( Entry<List<Integer>> e : counts.entrySet() ) {
 			int[] ranking = Ints.toArray(e.getElement());
-			// TODO: make a separate gibbs sampler when we don't need the variance
-			super.addJob(new NormalGibbsSampler(delta, variance, ranking, samples, e.getCount()));								
+			int weight = e.getCount();
+			
+			super.addJob(new NormalGibbsSampler(delta, variance, ranking, samples, floatVariance, weight));							
 		}
 
 	}
@@ -172,7 +174,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	}
 
 	public double getLogLikelihood() {		
-		return ll.logLikelihood(rankings);
+		return lastLL = ll.logLikelihood(rankings);
 	}	
 
 	@Override

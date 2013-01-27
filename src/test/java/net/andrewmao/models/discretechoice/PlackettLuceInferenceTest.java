@@ -60,7 +60,7 @@ public class PlackettLuceInferenceTest {
 		PreferenceProfile<Character> prefs = gen.sampleProfile(size);
 		double dataLL = gen.logLikelihood(prefs);
 
-		PlackettLuceModel plmm = new PlackettLuceModel();			
+		PlackettLuceModel plmm = new PlackettLuceModel(true);			
 		GumbelNoiseModel<Character> model = plmm.fitModel(prefs);
 		double fittedLL = plmm.lastComputedLL;
 		double modelLL = model.logLikelihood(prefs);
@@ -73,7 +73,7 @@ public class PlackettLuceInferenceTest {
 		System.out.println("Original Data LL: " + dataLL);
 
 		assertTrue("Final model LL doesn't match fitted LL", 
-				Math.abs(fittedLL - modelLL) / modelLL < PlackettLuceModel.tolerance );
+				Math.abs(fittedLL - modelLL) / modelLL < PlackettLuceModel.param_tolerance );
 		assertTrue("Original data LL too far from fitted model LL",
 				Math.abs(fittedLL - modelLL) / modelLL < 1e-6 );
 

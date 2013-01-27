@@ -35,7 +35,7 @@ public class SinglePairEquivalenceTest {
 	static double tol_probit = 0.02; // Maximum % difference tolerated
 		
 	static BradleyTerryModel bt = new BradleyTerryModel();
-	static PlackettLuceModel pl = new PlackettLuceModel();
+	static PlackettLuceModel pl = new PlackettLuceModel(true);
 	
 	static ThurstoneMostellerModel tm = new ThurstoneMostellerModel();
 	static OrderedNormalEM on = new OrderedNormalEM(max_em_iters, accuracy_probit, accuracy_probit, max_mvn_attempts);

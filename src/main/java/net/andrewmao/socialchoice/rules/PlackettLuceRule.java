@@ -10,7 +10,14 @@ public class PlackettLuceRule extends ScoredVotingRule {
 	double LARGE_SPACER = 1e6;
 
 	@Override
-	public <T> ScoredItems<T> getScoredRanking(PreferenceProfile<T> profile) {
+	public <T> ScoredItems<T> getScoredRanking(PreferenceProfile<T> profile) {			
+		// Just fit approximate parameters in case of non-convergence
+		PlackettLuceModel model = new PlackettLuceModel(false);
+		
+		return model.fitModel(profile).getValueMap();		
+	}
+	
+	public <T> ScoredItems<T> getScoredRankingHacky(PreferenceProfile<T> profile) {
 		/*
 		 * TODO: make this preprocessing more robust in the case of preference profiles > 4 
 		 * possible idea: break candidates into strongly connected components of a DAG
@@ -38,7 +45,7 @@ public class PlackettLuceRule extends ScoredVotingRule {
 			}
 		}
 		
-		PlackettLuceModel model = new PlackettLuceModel();
+		PlackettLuceModel model = new PlackettLuceModel(true);
 		
 		ScoredItems<T> params = null;
 		try {

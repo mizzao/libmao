@@ -31,6 +31,8 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	
 	public static final double FIXED_VARIANCE = 1.0d;
 	
+	volatile double lastLL;
+	
 	private final int maxIter;
 	private final double abseps, releps;
 	private final int maxMVNTries;
@@ -100,17 +102,16 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			System.out.printf("Likelihood: %f\n", currentLL);
 			double absImpr = currentLL - ll;
 			double relImpr = -absImpr / ll;
+			ll = lastLL = currentLL;
 			
 			if( absImpr < abseps ) {
 				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
 				break;
 			}
-			if( relImpr < releps ) {
+			if( !Double.isNaN(relImpr) && relImpr < releps ) {
 				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
 				break;
-			}
-			
-			ll = currentLL;
+			}			
 		}
 		
 		// Re-center means so first is 0
