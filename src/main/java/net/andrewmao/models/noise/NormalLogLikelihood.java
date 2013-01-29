@@ -93,16 +93,8 @@ public class NormalLogLikelihood {
 	 * @param ranking
 	 * @return
 	 */
-	double multivariateLL(int[] ranking) {
-		int tries = 0;
-		double prob;
-		
-		// TODO: temporary fix for 0 probability results?
-		do {
-			prob = multivariateProb(mean, variance, ranking).value;			
-		} while( ++tries < 5 || prob == 0 );
-		
-		return Math.log(prob);		
+	double multivariateLL(int[] ranking) {		
+		return Math.log(multivariateProb(mean, variance, ranking).value);					
 	}
 
 	public static CDFResult multivariateProb(RealVector mean, RealVector variance, int[] ranking) {
@@ -128,17 +120,7 @@ public class NormalLogLikelihood {
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());	
 		
-		return MultivariateNormal.cdf(mu, sigma, lower, upper);
-		
-//		int tries = 0;
-//		while(++tries < 5 ) {			
-//			CDFResult cdf = MultivariateNormal.cdf(mu, sigma, lower, upper);						
-//			if( Double.isInfinite(cdf.value) || Double.isNaN(cdf.value) )
-//				continue;			
-//			return cdf;
-//		}
-//		
-//		throw new RuntimeException("Error fitting model...");
+		return MultivariateNormal.cdf(mu, sigma, lower, upper);		
 	}
 
 	double bivariateLL(int[] ranking) {

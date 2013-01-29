@@ -44,6 +44,10 @@ public abstract class RandomUtilityModel<T> extends NoiseModel<T> {
 		}
 	}
 
+	public double[] getValues() {
+		return strParams;
+	}
+	
 	public ScoredItems<T> getValueMap() {
 		return strMap;
 	}

@@ -1,9 +1,11 @@
 package net.andrewmao.models.noise;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.Scanner;
 
 import net.andrewmao.math.RandomGeneration;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
@@ -111,6 +113,32 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	@Override
 	public double logLikelihood(PreferenceProfile<T> profile) {		
 		return new NormalLogLikelihood(super.strParams, sds).logLikelihood(profile, candidates);		
+	}
+	
+	static String splitRegex = "[\\[\\] ,]+";
+
+	public static NormalNoiseModel<?> parseParams(String params) {
+		Scanner sc = new Scanner(params);
+		
+		String itemStr = sc.nextLine();
+		String meanStr = sc.nextLine();
+		String sdStr = sc.nextLine();
+		
+		String[] items = itemStr.split(splitRegex);
+		String[] means = meanStr.split(splitRegex);
+		String[] sds = sdStr.split(splitRegex);
+		
+		int m = items.length - 1;
+		List<String> objs = new ArrayList<String>(m);
+		double[] mus = new double[m];
+		double[] sigmas = new double[m];
+		for( int i = 0; i < m; i++ ) {
+			objs.add(items[i+1]);
+			mus[i] = Double.parseDouble(means[i+1]);
+			sigmas[i] = Double.parseDouble(sds[i+1]);
+		}
+		
+		return new NormalNoiseModel<String>(objs, mus, sigmas);
 	}
 
 }

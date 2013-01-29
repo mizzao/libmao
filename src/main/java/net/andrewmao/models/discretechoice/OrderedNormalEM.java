@@ -187,17 +187,6 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
 		
 		return MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);
-		
-//		int tries = 0;
-//		while(++tries < 5 ) {			
-//			ExpResult exp = MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);			
-//			for( double val : exp.values )
-//				if( Double.isInfinite(val) || Double.isNaN(val) )
-//					continue;			
-//			return exp;
-//		}
-//		
-//		throw new RuntimeException("Computation error in conditional expectation");
 	}
 
 	@Override

@@ -8,7 +8,7 @@ import java.util.List;
 
 import net.andrewmao.models.noise.TestParameterGen;
 
-import org.apache.commons.math3.linear.RealVector;
+import org.apache.commons.math3.distribution.NormalDistribution;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,17 +34,16 @@ public class NormalComparisonTest {
 	static OrderedNormalEM em = new OrderedNormalEM(iters, abseps, releps, max_mvn_attempts);	
 	static OrderedNormalMCEM mcemFixed = new OrderedNormalMCEM(false, iters, abseps, releps, starting_samples, additional_samples);
 	static OrderedNormalMCEM mcemVar = new OrderedNormalMCEM(true, iters, abseps, releps, starting_samples, additional_samples);
-	
-	RealVector mean, var;	
+		
 	List<int[]> rankings;	
 	
 	double[] emParams, mcemFixedParams, mcemVarParams;
 	double emLL, mcemFixedLL, mcemVarLL;
 
-	public NormalComparisonTest(RealVector mean, RealVector var, List<int[]> rankings) {
-		this.mean = mean;
-		this.var = var;	
+	public NormalComparisonTest(List<int[]> rankings) {		
 		this.rankings = rankings;
+		
+		NormalDistribution sample = new NormalDistribution();
 		
 		emParams = em.getParameters(rankings, candidates);
 		emLL = em.lastLL;
@@ -57,7 +56,7 @@ public class NormalComparisonTest {
 		System.out.println("MCEM Fixed params, LL: " + mcemFixedLL );
 		System.out.println(Arrays.toString(mcemFixedParams));
 		
-		mcemVar.setup(new double[candidates]);
+		mcemVar.setup(sample.sample(candidates));
 		mcemVarParams = mcemVar.getParameters(rankings, candidates);
 		mcemVarLL = mcemVar.lastLL;
 		System.out.println("MCEM Var params, LL: " + mcemVarLL );
@@ -66,7 +65,7 @@ public class NormalComparisonTest {
 	
 	@Parameters
 	public static Collection<Object[]> tnImpls() {											
-		return TestParameterGen.randomMeanVarProfiles(candidates, trials, voters);
+		return TestParameterGen.randomProfiles(candidates, trials, voters);
 	}
 
 	@Before
@@ -86,9 +85,12 @@ public class NormalComparisonTest {
 	@Test
 	public void testVarLL() {
 		assertTrue(mcemVarLL > emLL);
-		assertTrue(mcemVarLL > mcemFixedLL);
-		
-		assertEquals(emLL, mcemFixedLL, Math.abs(emLL * 10 * releps));		
+		assertTrue(mcemVarLL > mcemFixedLL);						
+	}
+	
+	@Test
+	public void testFixedLLEqual() {
+		assertEquals(emLL, mcemFixedLL, Math.abs(emLL * 10 * releps));
 	}
 
 }

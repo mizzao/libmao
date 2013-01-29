@@ -66,9 +66,16 @@ public class MultivariateNormal {
 		int pts = (2 << 11) * n;
 		int exitCode;
 		do {
-			maxpts.setValue(pts);			
-			lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
-					maxpts, abseps_ref, releps_ref, error, value, inform);
+			maxpts.setValue(pts);	
+			
+			synchronized(lib) {
+				lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
+						maxpts, abseps_ref, releps_ref, error, value, inform);
+			}
+			
+			if( Double.isInfinite(value.getValue()) || Double.isNaN(value.getValue()) )
+				throw new RuntimeException("Error computing CDF; possible concurrent thread access...");
+			
 			exitCode = inform.getValue();
 			if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
 			pts <<= 1;
@@ -100,9 +107,16 @@ public class MultivariateNormal {
 		int pts = (2 << 11) * n;
 		int exitCode;
 		do {
-			maxpts.setValue(pts);			
-			lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
-					maxpts, abseps_ref, releps_ref, errors, values, inform);
+			maxpts.setValue(pts);
+			
+			synchronized(lib) {
+				lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
+						maxpts, abseps_ref, releps_ref, errors, values, inform);
+			}
+			
+			if( Double.isInfinite(values[0]) || Double.isNaN(values[0]) )
+				throw new RuntimeException("Error computing expectation; possible concurrent thread access...");
+			
 			exitCode = inform.getValue();
 			if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
 			pts <<= 1;

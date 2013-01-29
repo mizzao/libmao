@@ -74,6 +74,24 @@ public class TestParameterGen {
 		
 		return stuff;
 	}
+	
+	public static List<Object[]> randomProfiles(int m, int trials, int n) {
+		List<Object[]> stuff = new ArrayList<Object[]>(trials);
+		
+		for( int i = 0; i < trials; i++ ) {												
+			int[] arr = new int[m];
+			for( int j = 0; j < m; j++ ) 
+				arr[j] = j+1;
+			
+			List<int[]> rankings = new ArrayList<int[]>(n);
+			for( int j = 0; j < n; j++ ) 
+				rankings.add(RandomSelection.shuffle(arr.clone(), rnd));
+			
+			stuff.add(new Object[] { rankings } );
+		}
+		
+		return stuff;
+	}
 
 	@SuppressWarnings("unchecked")
 	public static <T> Collection<Object[]> randomPairwiseProfiles(T[] items, int trials, int maxWins) {

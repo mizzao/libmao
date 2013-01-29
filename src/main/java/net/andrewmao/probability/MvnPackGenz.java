@@ -12,8 +12,8 @@ import com.sun.jna.ptr.IntByReference;
  */
 public interface MvnPackGenz extends Library {
 
-	MvnPackGenz lib = (MvnPackGenz) Native.loadLibrary(
-			MvnPackGenz.class.getClassLoader().getResource("mvnpack.so").getPath(), MvnPackGenz.class);
+	MvnPackGenz lib = (MvnPackGenz) Native.synchronizedLibrary((Library) Native.loadLibrary(
+			MvnPackGenz.class.getClassLoader().getResource("mvnpack.so").getPath(), MvnPackGenz.class));
 	
 	void mvndst_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
 			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps, 
