@@ -184,7 +184,9 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		double[] strParams = getParameters(rankings, ordering.size());
 		double[] sds = variance.map(new Sqrt()).toArray();
 		
-		return new NormalNoiseModel<T>(ordering, strParams, sds);		
+		NormalNoiseModel<T> nn = new NormalNoiseModel<T>(ordering, strParams, sds);
+		nn.setFittedLikelihood(lastLL);
+		return nn;		
 	}
 
 }
