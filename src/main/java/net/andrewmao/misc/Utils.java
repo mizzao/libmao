@@ -83,42 +83,42 @@ public class Utils {
 	}
 
 	public static InetAddress getNetworkAddr() {
-			InetAddress localAddr = null;
-			
-			// Find our public IP address
-			Enumeration<NetworkInterface> netInterfaces;
-			try {
-				netInterfaces = NetworkInterface.getNetworkInterfaces();
-				while (netInterfaces.hasMoreElements()) {				
-					NetworkInterface ni = (NetworkInterface) netInterfaces.nextElement();				
-					Enumeration<InetAddress> addresses = ni.getInetAddresses();				
-					while( addresses.hasMoreElements() ) {
-						InetAddress addr = addresses.nextElement();
-						
-	//					System.out.println("Checking out " + ni.getName() + " with address " + addr.toString());
-						
-						if (!addr.isSiteLocalAddress() && 
-								!addr.isLoopbackAddress() && 
-								!addr.isLinkLocalAddress() &&
-								addr.getHostAddress().indexOf(":") == -1) { // MAC/IPv6 address detection
-							System.out.println("Interface " + ni.getName()
-									+ " seems to be InternetInterface. I'll take address " + addr.toString());
-							System.out.println("Associated hostname: " + addr.getHostName());
-							localAddr = addr;
-							break;
-						}
-					}	
-					if( localAddr != null ) break;
-				}
-			} catch( NoSuchElementException e) {
-				System.out.println("Couldn't find a public address");
-				localAddr = null;
-			} catch (SocketException e) {
-				e.printStackTrace();
-				localAddr = null;
+		InetAddress localAddr = null;
+
+		// Find our public IP address
+		Enumeration<NetworkInterface> netInterfaces;
+		try {
+			netInterfaces = NetworkInterface.getNetworkInterfaces();
+			while (netInterfaces.hasMoreElements()) {				
+				NetworkInterface ni = (NetworkInterface) netInterfaces.nextElement();				
+				Enumeration<InetAddress> addresses = ni.getInetAddresses();				
+				while( addresses.hasMoreElements() ) {
+					InetAddress addr = addresses.nextElement();
+
+					// System.out.println("Checking out " + ni.getName() + " with address " + addr.toString());
+
+					if (!addr.isSiteLocalAddress() && 
+							!addr.isLoopbackAddress() && 
+							!addr.isLinkLocalAddress() &&
+							addr.getHostAddress().indexOf(":") == -1) { // MAC/IPv6 address detection
+						System.out.println("Interface " + ni.getName()
+								+ " seems to be InternetInterface. I'll take address " + addr.toString());
+						System.out.println("Associated hostname: " + addr.getHostName());
+						localAddr = addr;
+						break;
+					}
+				}	
+				if( localAddr != null ) break;
 			}
-			
-			return localAddr;
+		} catch( NoSuchElementException e) {
+			System.out.println("Couldn't find a public address");
+			localAddr = null;
+		} catch (SocketException e) {
+			e.printStackTrace();
+			localAddr = null;
 		}
+
+		return localAddr;
+	}
 	
 }
