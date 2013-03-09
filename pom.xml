@@ -73,26 +73,6 @@
           		<target>1.6</target>
         	</configuration>
   		</plugin>  		
-  	
-  		<plugin>
-  			<groupId>com.googlecode.addjars-maven-plugin</groupId>
-  			<artifactId>addjars-maven-plugin</artifactId>
-  			<version>1.0.5</version>
-  			<executions>
-        		<execution>
-            		<goals>
-                		<goal>add-jars</goal>
-            		</goals>
-            		<configuration>
-                		<resources>
-                    		<resource>
-                        		<directory>${project.basedir}/lib</directory>
-                    		</resource>                    		
-                		</resources>
-            		</configuration>
-        		</execution>
-    		</executions>
-  		</plugin>
 
 		<!-- possible compilation of f77 using native plugin for later
   		<plugin>
@@ -124,42 +104,6 @@
   		-->
   		
   	</plugins>
-  	
-  	<pluginManagement>
-  		<plugins>
-  			<!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-  			<plugin>
-  				<groupId>org.eclipse.m2e</groupId>
-  				<artifactId>lifecycle-mapping</artifactId>
-  				<version>1.0.0</version>
-  				<configuration>
-  					<lifecycleMappingMetadata>
-  						<pluginExecutions>
-  							<pluginExecution>
-  								<pluginExecutionFilter>
-  									<groupId>
-  										com.googlecode.addjars-maven-plugin
-  									</groupId>
-  									<artifactId>
-  										addjars-maven-plugin
-  									</artifactId>
-  									<versionRange>
-  										[1.0.5,)
-  									</versionRange>
-  									<goals>
-  										<goal>add-jars</goal>
-  									</goals>
-  								</pluginExecutionFilter>
-  								<action>
-  							    	<execute />
-  								</action>
-  							</pluginExecution>
-  						</pluginExecutions>
-  					</lifecycleMappingMetadata>
-  				</configuration>
-  			</plugin>
-  		</plugins>
-  	</pluginManagement>
   	
   </build>
 </project>
