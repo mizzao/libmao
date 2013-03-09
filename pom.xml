@@ -11,7 +11,16 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jna.version>3.5.1</jna.version>
   </properties>
-  <dependencies>
+  
+  <dependencies>    
+  	<dependency>
+    	<groupId>ilog</groupId>
+    	<artifactId>cplex</artifactId>
+    	<version>12.5</version>
+    	<scope>system</scope>
+    	<systemPath>${project.basedir}/lib/cplex125.jar</systemPath>    	
+    </dependency>
+    
     <dependency>
     	<groupId>junit</groupId>
     	<artifactId>junit</artifactId>
