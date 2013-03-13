@@ -30,8 +30,20 @@ public class ConcurrentBooleanCounter<T> extends ConcurrentHashMap<T, Boolean> {
 	}
 
 	@Override
+	public Boolean replace(T key, Boolean value) {
+		Boolean oldValue = super.replace(key, value);
+		
+		if( oldValue != null ) {
+			if( oldValue && !value ) trueCount.decrementAndGet();
+			else if( value && !oldValue) trueCount.incrementAndGet();
+		}
+		
+		return oldValue;
+	}
+
+	@Override
 	public Boolean put(T key, Boolean value) {
-		// TODO this may no longer be correct after removing synchronized block around the whole thing
+		// TODO this may no longer be correct after removing synchronized block around the whole thing				
 		
 		if( value == true ) {
 			// Add 1 if it doesn't exist or it was false before
