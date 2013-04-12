@@ -51,7 +51,7 @@ public class NormalEMTest {
 				});
 		
 		OrderedNormalEM model = new OrderedNormalEM(iters, abseps, releps);
-		NormalNoiseModel<Integer> fitted = model.fitModel(prefs);
+		NormalNoiseModel<Integer> fitted = model.fitModelOrdinal(prefs);
 		
 		System.out.println(fitted.toParamString());
 		
@@ -75,7 +75,7 @@ public class NormalEMTest {
 		
 		for( int i = 0; i < trials; i++ ) {
 			PreferenceProfile<Character> prefs = gen.sampleProfile(n, rnd);						
-			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
+			ScoredItems<Character> fitted = model.fitModelOrdinal(prefs).getValueMap();			
 			System.out.println(fitted);	
 		}
 		
@@ -101,7 +101,7 @@ public class NormalEMTest {
 
 		OrderedNormalEM normalEM = new OrderedNormalEM(100, 1e-5, 1e-5);
 
-		NormalNoiseModel<Character> model = normalEM.fitModel(prefs);
+		NormalNoiseModel<Character> model = normalEM.fitModelOrdinal(prefs);
 		double achievedLL = model.logLikelihood(prefs);
 		System.out.println("Achieved likelihood: " + achievedLL);		
 		

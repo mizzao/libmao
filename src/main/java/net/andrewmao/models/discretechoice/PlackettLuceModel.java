@@ -126,7 +126,7 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 	}
 
 	@Override
-	public <T> GumbelNoiseModel<T> fitModel(PreferenceProfile<T> profile) {
+	public <T> GumbelNoiseModel<T> fitModelOrdinal(PreferenceProfile<T> profile) {
 		List<T> ordering = Arrays.asList(profile.getSortedCandidates());				
 		List<int[]> rankings = profile.getIndices(ordering);		
 		

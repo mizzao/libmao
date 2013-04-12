@@ -14,7 +14,7 @@ public class PlackettLuceRule extends ScoredVotingRule {
 		// Just fit approximate parameters in case of non-convergence
 		PlackettLuceModel model = new PlackettLuceModel(false);
 		
-		return model.fitModel(profile).getValueMap();		
+		return model.fitModelOrdinal(profile).getValueMap();		
 	}
 	
 	public <T> ScoredItems<T> getScoredRankingHacky(PreferenceProfile<T> profile) {
@@ -49,7 +49,7 @@ public class PlackettLuceRule extends ScoredVotingRule {
 		
 		ScoredItems<T> params = null;
 		try {
-			params = model.fitModel(profile).getValueMap();			
+			params = model.fitModelOrdinal(profile).getValueMap();			
 		}
 		catch( RuntimeException e ) {
 			// In this case, need to divide the profile in half and fit each piece separately
@@ -59,9 +59,9 @@ public class PlackettLuceRule extends ScoredVotingRule {
 //			System.out.println(firstHalf);
 //			System.out.println(secondHalf);
 							
-			ScoredItems<T> firstParams = model.fitModel(firstHalf).getValueMap();
+			ScoredItems<T> firstParams = model.fitModelOrdinal(firstHalf).getValueMap();
 						
-			ScoredItems<T> secondParams = model.fitModel(secondHalf).getValueMap();
+			ScoredItems<T> secondParams = model.fitModelOrdinal(secondHalf).getValueMap();
 			// Put a large negative number into second params and combine
 			for( MutableDouble val : secondParams.values() )
 				val.add(-LARGE_SPACER);

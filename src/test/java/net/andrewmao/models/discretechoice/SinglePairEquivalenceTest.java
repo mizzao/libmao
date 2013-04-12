@@ -71,8 +71,8 @@ public class SinglePairEquivalenceTest {
 		/*
 		 * Tests the equivalency of BT and PL on data for two alternatives.
 		 */
-		double[] btParams = bt.fitModel(prefs).getValueMap().toArray();			
-		double[] plParams = pl.fitModel(prefs).getValueMap().toArray();
+		double[] btParams = bt.fitModelOrdinal(prefs).getValueMap().toArray();			
+		double[] plParams = pl.fitModelOrdinal(prefs).getValueMap().toArray();
 
 		double btDiff = btParams[0] - btParams[1];
 		double plDiff = plParams[0] - plParams[1];
@@ -85,11 +85,11 @@ public class SinglePairEquivalenceTest {
 		/*
 		 * Tests the equivalency of BT and PL on data for two alternatives.
 		 */
-		double[] tmParams = tm.fitModel(prefs).getValueMap().toArray();			
-		double[] onParams = on.fitModel(prefs).getValueMap().toArray();
+		double[] tmParams = tm.fitModelOrdinal(prefs).getValueMap().toArray();			
+		double[] onParams = on.fitModelOrdinal(prefs).getValueMap().toArray();
 		
 		mcem.setup(stdNormal.sample(2));
-		double[] mcemParams = mcem.fitModel(prefs).getValueMap().toArray();
+		double[] mcemParams = mcem.fitModelOrdinal(prefs).getValueMap().toArray();
 
 		double tmDiff = (tmParams[0] - tmParams[1]) * Num.RAC2;
 		double onDiff = onParams[0] - onParams[1];

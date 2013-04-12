@@ -17,7 +17,7 @@ public class OrderedNormalRule extends ScoredVotingRule {
 		
 		model.setup(new NormalDistribution(0,1).sample(4));						
 		
-		return model.fitModel(profile).getValueMap();
+		return model.fitModelOrdinal(profile).getValueMap();
 	}
 
 	@Override

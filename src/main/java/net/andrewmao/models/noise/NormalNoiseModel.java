@@ -2,7 +2,6 @@ package net.andrewmao.models.noise;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
@@ -85,25 +84,8 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	}
 
 	@Override
-	public PreferenceProfile<T> sampleProfile(int size, Random rnd) {
-		T[][] profile = super.getProfileArrayInitialized(size);							
-		
-		for( int i = 0; i < size; i++ ) {																	
-			final double[] strVals = RandomGeneration.gaussianArray(strParams, sds, rnd);
-
-			// Sort by the resulting strength parameters
-			Arrays.sort(profile[i], new Comparator<T>() {
-				@Override
-				public int compare(T o1, T o2) {
-					int i1 = candidates.indexOf(o1);
-					int i2 = candidates.indexOf(o2);
-					// Higher strength parameter comes earlier in the array
-					return Double.compare(strVals[i2], strVals[i1]);
-				}				
-			});
-		}
-		
-		return new PreferenceProfile<T>(profile);
+	public double[] sampleUtilities(Random rnd) {
+		return RandomGeneration.gaussianArray(strParams, sds, rnd);
 	}
 	
 	public double[] getSigmas() {

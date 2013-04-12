@@ -177,7 +177,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	}	
 
 	@Override
-	public <T> NormalNoiseModel<T> fitModel(PreferenceProfile<T> profile) {
+	public <T> NormalNoiseModel<T> fitModelOrdinal(PreferenceProfile<T> profile) {
 		List<T> ordering = Arrays.asList(profile.getSortedCandidates());
 		List<int[]> rankings = profile.getIndices(ordering);
 		

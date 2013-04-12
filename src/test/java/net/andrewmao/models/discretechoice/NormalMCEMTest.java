@@ -49,7 +49,7 @@ public class NormalMCEMTest {
 		for( int i = 0; i < trials; i++ ) {
 			PreferenceProfile<Character> prefs = gen.sampleProfile(n, rnd);			
 			model.setup(new NormalDistribution(0,1).sample(4));			
-			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
+			ScoredItems<Character> fitted = model.fitModelOrdinal(prefs).getValueMap();			
 			System.out.println(fitted);	
 		}		
 		
@@ -76,7 +76,7 @@ public class NormalMCEMTest {
 		for( int i = 0; i < trials; i++ ) {
 			PreferenceProfile<Character> prefs = gen.sampleProfile(n, rnd);			
 			model.setup(new NormalDistribution(0,1).sample(4));			
-			ScoredItems<Character> fitted = model.fitModel(prefs).getValueMap();			
+			ScoredItems<Character> fitted = model.fitModelOrdinal(prefs).getValueMap();			
 			System.out.println(fitted);	
 		}		
 		
@@ -111,7 +111,7 @@ public class NormalMCEMTest {
 		
 		OrderedNormalMCEM model = new OrderedNormalMCEM(true, iters, abseps, releps);
 		model.setup(new NormalDistribution(0,1).sample(4));		
-		NormalNoiseModel<Character> fitted = model.fitModel(prefs);
+		NormalNoiseModel<Character> fitted = model.fitModelOrdinal(prefs);
 		
 		double[] fittedMeans = fitted.getValueMap().toArray();
 		double[] fittedSds = fitted.getSigmas();

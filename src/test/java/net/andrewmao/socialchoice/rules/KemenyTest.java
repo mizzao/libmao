@@ -124,7 +124,7 @@ public class KemenyTest {
 					});
 		
 		CondorcetEstimator estimator = new CondorcetEstimator();		
-		CondorcetModel<Integer> estimated = estimator.fitModel(prefs);
+		CondorcetModel<Integer> estimated = estimator.fitModelOrdinal(prefs);
 		
 		System.out.println(estimated);
 	}

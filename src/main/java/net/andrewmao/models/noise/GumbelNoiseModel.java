@@ -1,7 +1,6 @@
 package net.andrewmao.models.noise;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
@@ -41,6 +40,11 @@ public class GumbelNoiseModel<T> extends RandomUtilityModel<T> {
 	}
 
 	@Override
+	public double[] sampleUtilities(Random rnd) {		
+		throw new UnsupportedOperationException("Sampling is currently done with exponentials");
+	}
+
+	@Override
 	public PreferenceProfile<T> sampleProfile(int size, Random rnd) {
 		T[][] profile = super.getProfileArrayInitialized(size);		
 		
@@ -54,24 +58,14 @@ public class GumbelNoiseModel<T> extends RandomUtilityModel<T> {
 		}				
 		
 		for( int i = 0; i < size; i++ ) {			
-			final double[] strVals = new double[candidates.size()];			
+			double[] strVals = new double[candidates.size()];			
 			
 			// Generate exponential random variables
 			for( int j = 0; j < candidates.size(); j++ ) 						
 				strVals[j] = dists[j].sample();										
 
 			// Sort by the resulting strength parameters
-			Arrays.sort(profile[i], new Comparator<T>() {
-				@Override
-				public int compare(T o1, T o2) {
-					int i1 = candidates.indexOf(o1);
-					int i2 = candidates.indexOf(o2);
-					/* Reverse sort order - lower exponential comes first
-					 * so it's the same as normal sort order
-					 */
-					return Double.compare(strVals[i1], strVals[i2]);
-				}				
-			});
+			sortByStrengthReverse(profile[i], strVals);
 		}
 		
 		return new PreferenceProfile<T>(profile);

@@ -61,7 +61,7 @@ public class PlackettLuceInferenceTest {
 		double dataLL = gen.logLikelihood(prefs);
 
 		PlackettLuceModel plmm = new PlackettLuceModel(true);			
-		GumbelNoiseModel<Character> model = plmm.fitModel(prefs);
+		GumbelNoiseModel<Character> model = plmm.fitModelOrdinal(prefs);
 		double fittedLL = plmm.lastComputedLL;
 		double modelLL = model.logLikelihood(prefs);
 

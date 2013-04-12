@@ -28,7 +28,7 @@ public class PlackettLuceTest {
 	public void testMMFailure() {
 		PlackettLuceModel plmm = new PlackettLuceModel(true);
 		
-		plmm.fitModel(mmFailPrefs);	
+		plmm.fitModelOrdinal(mmFailPrefs);	
 		
 		fail();
 	}
@@ -36,7 +36,7 @@ public class PlackettLuceTest {
 	@Test
 	public void testMMApprox() {
 		PlackettLuceModel plmm = new PlackettLuceModel(false);
-		plmm.fitModel(mmFailPrefs);	
+		plmm.fitModelOrdinal(mmFailPrefs);	
 	}
 
 }

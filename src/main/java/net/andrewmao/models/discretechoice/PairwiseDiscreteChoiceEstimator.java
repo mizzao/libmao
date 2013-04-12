@@ -3,9 +3,11 @@ package net.andrewmao.models.discretechoice;
 import java.util.List;
 
 import net.andrewmao.models.noise.NoiseModel;
+import net.andrewmao.models.noise.OrdinalEstimator;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
-public abstract class PairwiseDiscreteChoiceEstimator<M extends NoiseModel<?>> extends DiscreteChoiceEstimator<M> {		
+public abstract class PairwiseDiscreteChoiceEstimator<M extends NoiseModel<?>> 
+implements OrdinalEstimator<M> {		
 	
 	protected <T> double[][] addAdjacentPairs(PreferenceProfile<T> profile, List<T> ordering) {
 		int m = ordering.size();		
@@ -42,7 +44,7 @@ public abstract class PairwiseDiscreteChoiceEstimator<M extends NoiseModel<?>> e
 	}
 	
 	@Override
-	public <T> M fitModel(PreferenceProfile<T> profile) {
+	public <T> M fitModelOrdinal(PreferenceProfile<T> profile) {
 		return this.fitModel(profile, true);
 	}
 

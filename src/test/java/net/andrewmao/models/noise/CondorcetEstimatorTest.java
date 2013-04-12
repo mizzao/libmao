@@ -42,7 +42,7 @@ public class CondorcetEstimatorTest {
 			PreferenceProfile<Integer> prefs = generator.sampleProfile(size, new Random());
 			
 			CondorcetEstimator estimator = new CondorcetEstimator();			
-			CondorcetModel<Integer> estimated = estimator.fitModel(prefs);
+			CondorcetModel<Integer> estimated = estimator.fitModelOrdinal(prefs);
 			
 			System.out.println("Fitted: " + estimated);
 			

@@ -18,7 +18,7 @@ import net.andrewmao.socialchoice.rules.PreferenceProfile;
  * @author mao
  *
  */
-public class CondorcetEstimator implements Estimator<CondorcetModel<?>> {
+public class CondorcetEstimator implements OrdinalEstimator<CondorcetModel<?>> {
 
 	BrentOptimizer brent;
 	
@@ -29,7 +29,7 @@ public class CondorcetEstimator implements Estimator<CondorcetModel<?>> {
 	}
 	
 	@Override
-	public <T> CondorcetModel<T> fitModel(final PreferenceProfile<T> profile) {
+	public <T> CondorcetModel<T> fitModelOrdinal(final PreferenceProfile<T> profile) {
 		// Find optimal kemeny rankings
 		Kemeny k = new Kemeny();
 		
