@@ -14,8 +14,9 @@ import org.apache.commons.lang.ArrayUtils;
 import net.andrewmao.math.RandomSelection;
 
 public class PreferenceProfile<T> {
-
+	
 	T[][] profile;
+	String data;
 
 	public PreferenceProfile(T[][] profile) {
 		this.profile = profile;
@@ -31,6 +32,14 @@ public class PreferenceProfile<T> {
 		Arrays.sort(candidates);
 		
 		return candidates;
+	}
+	
+	public void setData(String data) {
+		this.data = data;
+	}
+	
+	public String getData() {
+		return data;
 	}
 
 	public int getNumCandidates() {
