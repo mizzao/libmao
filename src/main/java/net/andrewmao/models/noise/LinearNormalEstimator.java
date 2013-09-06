@@ -1,5 +1,6 @@
 package net.andrewmao.models.noise;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.math3.analysis.solvers.LaguerreSolver;
@@ -10,12 +11,12 @@ public class LinearNormalEstimator implements CardinalEstimator<NormalNoiseModel
 
 	LaguerreSolver solver = new LaguerreSolver();
 	
-	final double lambda, eps;
+	final double norm, eps;
 	
 	double[] a_last = null;
 	
-	public LinearNormalEstimator(double lambda, double eps) {
-		this.lambda = lambda;
+	public LinearNormalEstimator(double norm, double eps) {
+		this.norm = norm;
 		this.eps = eps;
 	}
 	
@@ -28,84 +29,124 @@ public class LinearNormalEstimator implements CardinalEstimator<NormalNoiseModel
 		// Initialize a_n and delta_m
 		double[] delta = new double[items.size()];
 		double[] a = new double[scores.length];
-				
-		double mean = 1d/lambda;
-		for( int n = 0; n < a.length; n++ )	
-			a[n] = mean;
-				
-		double nlogLk = nLogLikelihood(delta, a, scores);
+						
+		for( int i = 0; i < a.length; i++ )	
+			a[i] = 1d;
+		
+		Mean a_mean = new Mean();
+		double a_hat = a_mean.evaluate(a);
+		
+		double nlogLk = nLogLikelihood(delta, // a_hat,
+				a, scores);
 		double nlogLk_old = Double.POSITIVE_INFINITY;
 		double improvement = (nlogLk_old - nlogLk) / nlogLk_old; 
 		
 		int iter = 0;
 		do {
-			// Update strength parameters						
-			for( int m = 0; m < delta.length; m++ ) {
-				Mean delta_m = new Mean();
-				for( int n = 0; n < a.length; n++ )
-					delta_m.increment(scores[n][m] / a[n]);					
-				delta[m] = delta_m.getResult();
-			}
+			// Update strength parameters												
+			updateDelta(delta, a, scores);
 			
-			/* 
-			 * Update scale values
-			 * (First) positive root of quartic
-			 */						
-			for( int n = 0; n < a.length; n++ ) {
-				// Constant term
-				double a0 = 0d, a1 = 0d;				
-				for( int m = 0; m < delta.length; m++ ) {
-					a0 += scores[n][m] * scores[n][m];
-					a1 -= delta[m];
-				}
-				
-				double[] coefficients = new double[] { a0, a1, 0, 0, -2*lambda };
-				
-				Complex root = solver.solveComplex(coefficients, 0);
-				if ( root.getImaginary() != 0d ) {
-					Complex[] roots = solver.solveAllComplex(coefficients, 0);
-					// Take the first positive complex root
-					for( Complex r : roots ) {
-						if( r.getImaginary() == 0d || r.getReal() > 0d ) {
-							root = r;
-							break;
-						}							
-					}
-					System.out.println("Could not find positive real root");
-					root = null;
-				}								
-				
-				a[n] = (root == null) ? 0 : root.getReal();				
-			}
+			a_hat = a_mean.evaluate(a);
+			
+			updateAlpha(a, delta, scores);
 				
 			nlogLk_old = nlogLk;
-			nlogLk = nLogLikelihood(delta, a, scores);
-			System.out.printf("Iteration %d: %.04f\n", ++iter, nlogLk);
+			nlogLk = nLogLikelihood(delta, // a_hat,
+					a, scores);
+//			System.out.printf("Iteration %d: %.04f, a: %.04f, mu: %s\n", ++iter, nlogLk, a_hat, Arrays.toString(delta));
 			improvement = (nlogLk_old - nlogLk) / nlogLk_old;
 			
-		} while( improvement > eps );
+		} while( Math.abs(improvement) > eps );
 		
 		a_last = a;
 		
 		return new NormalNoiseModel<T>(items, delta, 1);
 	}
 
-	private double nLogLikelihood(double[] d, double[] a, double[][] u) {		
-		double nloglk = 0;
+	void updateDelta(double[] delta, double[] a, double[][] scores) {
+		double delta_sum = 0;
 		
-		for( int n = 0; n < a.length; n++ ) {			
-			double denom = 2 * a[n] * a[n];
-			
-			for( int m = 0; m < d.length; m++ ) {
-				double diff = u[n][m] - a[n] * d[m];
-				nloglk += diff * diff / denom;
-			}
+		for( int j = 0; j < delta.length; j++ ) {
+			Mean delta_m = new Mean();
+			for( int i = 0; i < a.length; i++ )
+				delta_m.increment(scores[i][j] / a[i]);					
+			delta_sum += delta[j] = delta_m.getResult();
 		}
 		
-		double regularizer = 0;	
-		for( int n = 0; n < a.length; n++ ) 
-			regularizer += a[n] * a[n];							
-		nloglk += lambda * regularizer;
+		for( int j = 0; j < delta.length; j++ ) {
+			delta[j] *= norm / delta_sum;
+		}
+	}
+
+	void updateAlpha(double[] a, double[] delta, double[][] scores) {
+			/* 
+			 * Update scale values
+			 * (First) positive root of quartic
+			 */						
+			for( int i = 0; i < a.length; i++ ) {
+				// Constant term
+				double a0 = 0d, a1 = 0d;
+				
+				for( int j = 0; j < delta.length; j++ ) {
+					a0 -= scores[i][j] * scores[i][j];
+					a1 += delta[j] * scores[i][j];
+				}								
+				
+				double[] coefficients = new double[] { a0, a1 }; // , 0, -lambda * a_hat, lambda };
+								
+	//				Complex root = solver.solveComplex(coefficients, mean);
+				
+				Complex root = null;
+					
+				Complex[] roots = solver.solveAllComplex(coefficients, 0);
+				// Take the (only) positive complex root
+				for( Complex r : roots ) {
+					if( rootIsNonnegativeReal(r) ) {
+						if( root != null )
+							throw new RuntimeException(String.format("Found two positive real roots: %s and %s", root, r));						
+						
+						root = r;
+						break;
+					}							
+				}
+	
+				if( root == null ) {
+					throw new RuntimeException("Could not find positive real root; roots are " + Arrays.toString(roots));								
+				}
+				else {
+					a[i] = root.getReal();	
+				}															
+								
+			}
+		}
+
+	static boolean rootIsNonnegativeReal(Complex root) {
+		return Math.abs(root.getImaginary()) < 1e-10 && root.getReal() >= -Double.MIN_NORMAL;
+	}
+
+	private double nLogLikelihood(double[] mu, // double a_hat, 
+			double[] a, double[][] u) {		
+		double nloglk = 0;
+		
+		for( int i = 0; i < a.length; i++ ) {			
+			double denom_i = 2 * a[i] * a[i];
+			
+			double sum_i = 0;
+			
+			for( int j = 0; j < mu.length; j++ ) {
+				double diff = u[i][j] - a[i] * mu[j];
+				sum_i += diff * diff;
+			}
+			
+			nloglk += sum_i / denom_i;
+		}
+		
+//		double regularizer = 0;	
+//		for( int i = 0; i < a.length; i++ ) {
+//			double diff = (a[i] - a_hat);
+//			regularizer += diff * diff;		
+//		}
+//		nloglk += lambda * regularizer / 2;
 		
 		return nloglk;
 	}
