@@ -3,9 +3,10 @@ package net.andrewmao.models.games;
 import java.text.NumberFormat;
 import java.util.*;
 
-import org.apache.commons.lang.NotImplementedException;
+import net.andrewmao.math.RandomSelection;
 
 import be.ac.ulg.montefiore.run.jahmm.Opdf;
+import be.ac.ulg.montefiore.run.jahmm.OpdfInteger;
 
 /**
  * Represents a set of distributions over actions corresponding to a set of signals,
@@ -17,49 +18,69 @@ import be.ac.ulg.montefiore.run.jahmm.Opdf;
  * @param <A>
  */
 public class OpdfStrategy<S extends Enum<S>, A extends Enum<A>> 
-implements Opdf<SignalActionObservation<S,A>> {
+implements Opdf<SigActObservation<S,A>> {
 	
 	private static final long serialVersionUID = 1L;
 
 	final List<S> signals;
 	final List<A> actions;
 	
+	final double[] signalPrior;
+	final OpdfInteger signalDistribution;
+	
 	final double[][] actionProbs;
 	
-	public OpdfStrategy(Class<S> signalClass, Class<A> actionClass, double[][] probs) {
+	Random rnd = new Random();
+	
+	public OpdfStrategy(Class<S> signalClass, Class<A> actionClass, 
+			double[] signalPrior, double[][] probs) {
 		
 		Set<S> sigs = EnumSet.allOf(signalClass);
-		signals = new ArrayList<S>(sigs.size());
+		signals = new ArrayList<S>(sigs);
 		for( S s : sigs )
 			signals.set(s.ordinal(), s);
 		
 		Set<A> acts = EnumSet.allOf(actionClass);
-		actions = new ArrayList<A>(acts.size());
+		actions = new ArrayList<A>(acts);
 		for( A a : acts )
 			actions.set(a.ordinal(), a);
 		
+		this.signalPrior = signalPrior;
 		this.actionProbs = probs;
+		
+		if( signalPrior != null ) {
+			// TODO make sure this takes the prior in the same order
+			signalDistribution = new OpdfInteger(signalPrior);
+		}
+		else signalDistribution = null;
 	}
 	
 	@Override
-	public double probability(SignalActionObservation<S,A> o) {				
+	public double probability(SigActObservation<S,A> o) {				
 		// pick the probability out of the actions for the given signal
 		return actionProbs[o.signal.ordinal()][o.action.ordinal()];
 	}
 
 	@Override
-	public SignalActionObservation<S,A> generate() {
-		// Implementing this requires a signal distribution, which we aren't sure we need yet.
-		throw new NotImplementedException();
+	public SigActObservation<S,A> generate() {
+		if( signalPrior == null )
+			throw new UnsupportedOperationException("Can't generate signals without prior");
+		
+		int sigIdx = signalDistribution.generate().value;
+		S sig = signals.get(sigIdx);
+		int actIdx = RandomSelection.selectRandomWeighted(actionProbs[sigIdx], rnd);
+		A act = actions.get(actIdx);
+		
+		return new SigActObservation<S,A>(sig, act);
 	}
 
 	@Override
-	public void fit(SignalActionObservation<S,A>... oa) {
+	public void fit(SigActObservation<S,A>... oa) {
 		fit(Arrays.asList(oa));		
 	}
 
 	@Override
-	public void fit(Collection<? extends SignalActionObservation<S,A>> co) {
+	public void fit(Collection<? extends SigActObservation<S,A>> co) {
 		double[] weights = new double[co.size()];
 		Arrays.fill(weights, 1. / co.size());
 		
@@ -67,12 +88,12 @@ implements Opdf<SignalActionObservation<S,A>> {
 	}
 
 	@Override
-	public void fit(SignalActionObservation<S,A>[] o, double[] weights) {
+	public void fit(SigActObservation<S,A>[] o, double[] weights) {
 		fit(Arrays.asList(o), weights);		
 	}
 
 	@Override
-	public void fit(Collection<? extends SignalActionObservation<S,A>> co, double[] weights) {
+	public void fit(Collection<? extends SigActObservation<S,A>> co, double[] weights) {
 		if (co.isEmpty() || co.size() != weights.length)
 			throw new IllegalArgumentException();
 		
@@ -80,7 +101,7 @@ implements Opdf<SignalActionObservation<S,A>> {
 			Arrays.fill(probs, 0d);
 		
 		int i = 0;
-		for( SignalActionObservation<S,A> sa: co ) {
+		for( SigActObservation<S,A> sa: co ) {
 			actionProbs[sa.signal.ordinal()][sa.action.ordinal()] += weights[i++];
 		}
 		
@@ -102,6 +123,9 @@ implements Opdf<SignalActionObservation<S,A>> {
 	@Override
 	public String toString(NumberFormat numberFormat) {
 		StringBuilder sb = new StringBuilder();
+		
+		// Initial line so stuff prints out evenly
+		sb.append("\n");
 		
 		for( A a : actions ) {
 			sb.append("\t").append(a);
