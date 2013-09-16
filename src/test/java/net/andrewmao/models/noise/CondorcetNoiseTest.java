@@ -44,8 +44,7 @@ public class CondorcetNoiseTest {
 	}
 	
 	@Test
-	public void testParamRecovery() {
-		@SuppressWarnings("unchecked")
+	public void testParamRecovery() {		
 		Collection<List<Integer>> mixed = Arrays.asList(
 				Arrays.asList(1, 2, 3, 4),
 				Arrays.asList(2, 1, 4, 3)

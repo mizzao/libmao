@@ -100,27 +100,28 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	static String splitRegex = "[\\[\\] ,]+";
 
 	public static NormalNoiseModel<?> parseParams(String params) {
-		Scanner sc = new Scanner(params);
-		
-		String itemStr = sc.nextLine();
-		String meanStr = sc.nextLine();
-		String sdStr = sc.nextLine();
-		
-		String[] items = itemStr.split(splitRegex);
-		String[] means = meanStr.split(splitRegex);
-		String[] sds = sdStr.split(splitRegex);
-		
-		int m = items.length - 1;
-		List<String> objs = new ArrayList<String>(m);
-		double[] mus = new double[m];
-		double[] sigmas = new double[m];
-		for( int i = 0; i < m; i++ ) {
-			objs.add(items[i+1]);
-			mus[i] = Double.parseDouble(means[i+1]);
-			sigmas[i] = Double.parseDouble(sds[i+1]);
+		try(Scanner sc = new Scanner(params)) {
+			
+			String itemStr = sc.nextLine();
+			String meanStr = sc.nextLine();
+			String sdStr = sc.nextLine();
+			
+			String[] items = itemStr.split(splitRegex);
+			String[] means = meanStr.split(splitRegex);
+			String[] sds = sdStr.split(splitRegex);
+			
+			int m = items.length - 1;
+			List<String> objs = new ArrayList<String>(m);
+			double[] mus = new double[m];
+			double[] sigmas = new double[m];
+			for( int i = 0; i < m; i++ ) {
+				objs.add(items[i+1]);
+				mus[i] = Double.parseDouble(means[i+1]);
+				sigmas[i] = Double.parseDouble(sds[i+1]);
+			}
+			
+			return new NormalNoiseModel<String>(objs, mus, sigmas);
 		}
-		
-		return new NormalNoiseModel<String>(objs, mus, sigmas);
 	}
 
 }

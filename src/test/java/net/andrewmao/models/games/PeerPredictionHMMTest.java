@@ -11,8 +11,7 @@ import com.google.common.collect.Lists;
 
 import be.ac.ulg.montefiore.run.jahmm.Hmm;
 import be.ac.ulg.montefiore.run.jahmm.Observation;
-import be.ac.ulg.montefiore.run.jahmm.learn.BaumWelchLearner;
-import be.ac.ulg.montefiore.run.jahmm.toolbox.KullbackLeiblerDistanceCalculator;
+import be.ac.ulg.montefiore.run.jahmm.Opdf;
 import be.ac.ulg.montefiore.run.jahmm.toolbox.MarkovGenerator;
 
 public class PeerPredictionHMMTest {
@@ -20,7 +19,7 @@ public class PeerPredictionHMMTest {
 	int sequences = 1000;
 	int seqLength = 200;
 	
-	int iters = 50;
+	double tol = 0.02;
 	
 	enum CandySignal {
 		MM, GB
@@ -40,23 +39,38 @@ public class PeerPredictionHMMTest {
 		List<List<SigActObservation<CandySignal, CandyReport>>> generatedSeqs = 
 				generateSequences(origHmm, sequences, seqLength);
 		
-		BaumWelchLearner bwl = new BaumWelchLearner();
+		BWToleranceLearner bwl = new BWToleranceLearner();
 		
-		Hmm<SigActObservation<CandySignal, CandyReport>> learntHmm = getInitHmm();
-		
-		// This object measures the distance between two HMMs
-		KullbackLeiblerDistanceCalculator klc = 
-			new KullbackLeiblerDistanceCalculator();
+		Hmm<SigActObservation<CandySignal, CandyReport>> learntHmm = getInitHmm();		
 		
 		// Incrementally improve the solution
-		for (int i = 0; i < iters; i++) {
-			System.out.println("Distance at iteration " + i + ": " +
-					klc.distance(learntHmm, origHmm));
-			learntHmm = bwl.iterate(learntHmm, generatedSeqs);
+		learntHmm = bwl.learn(origHmm, generatedSeqs);		
+		
+		System.out.println("Resulting HMM:\n" + learntHmm);		
+		
+		// Check pi
+		for( int i = 0; i < 3; i++ )
+			assertEquals(origHmm.getPi(i), learntHmm.getPi(i), tol);
+		
+		// Check a
+		for( int i = 0; i < 3; i++ ) {
+			for( int j = 0; j < 3; j++ ) {
+				assertEquals(origHmm.getAij(i,j), learntHmm.getAij(i,j), tol);
+			}
 		}
-		
-		System.out.println("Resulting HMM:\n" + learntHmm);
-		
+				
+		// Check strategy
+		for( int i = 0; i < 3; i++ ) {
+			Opdf<SigActObservation<CandySignal, CandyReport>> origStrategy = origHmm.getOpdf(i);
+			Opdf<SigActObservation<CandySignal, CandyReport>> learnedStrategy = learntHmm.getOpdf(i);
+			
+			for( CandySignal cs : CandySignal.values() ) {
+				for( CandyReport ca : CandyReport.values() ) {
+					SigActObservation<CandySignal, CandyReport> sa = new SigActObservation<CandySignal, CandyReport>(cs, ca);
+					assertEquals(origStrategy.probability(sa), learnedStrategy.probability(sa), tol);
+				}
+			}
+		}		
 		
 	}
 
