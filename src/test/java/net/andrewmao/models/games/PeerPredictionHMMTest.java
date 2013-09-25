@@ -122,6 +122,7 @@ public class PeerPredictionHMMTest {
 			new double [] { 0.1, 0.9 }
 		};
 		
+		@SuppressWarnings("unchecked")
 		List<OpdfStrategy<CandySignal, CandyReport>> opdfs 
 		= Lists.newArrayList(
 				getOpdf(honestProbs),
@@ -159,6 +160,7 @@ static Hmm<SigActObservation<CandySignal, CandyReport>> getInitHmm() {
 			new double [] { 0.4, 0.6 }
 		};
 		
+		@SuppressWarnings("unchecked")
 		List<OpdfStrategy<CandySignal, CandyReport>> opdfs 
 		= Lists.newArrayList(
 				getOpdf(honestProbs),

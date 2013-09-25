@@ -1,0 +1,11 @@
+These files are slightly modified from software provided by Alan Genz:
+
+http://www.math.wsu.edu/faculty/genz/software/software.html
+
+The original files have some overlap with each other and so I have
+commented out the appropriate parts so that they can be used as one
+library from Java.
+
+Note: The compiled library is NOT thread safe, due to the use of
+global variables in the FORTRAN code. To use it from multiple threads,
+create multiple copies and load one from each thread.

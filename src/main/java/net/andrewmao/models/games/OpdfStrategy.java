@@ -74,6 +74,7 @@ implements Opdf<SigActObservation<S,A>> {
 		return new SigActObservation<S,A>(sig, act);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void fit(SigActObservation<S,A>... oa) {
 		fit(Arrays.asList(oa));		

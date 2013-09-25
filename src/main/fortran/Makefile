@@ -1,5 +1,5 @@
 CC=gfortran
-SOURCES=mvndstpack.f mvnexppack.f
+SOURCES=mvndstpack.f mvnexppack.f mvnxpppack.f
 OBJECTS=$(SOURCES:.f=.o)
 LDFLAGS=-Wall -shared
 CFLAGS=-Wall -fPIC
