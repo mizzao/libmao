@@ -11,9 +11,11 @@ import com.sun.jna.ptr.IntByReference;
  *
  */
 public interface MvnPackGenz extends Library {
+	
+	public static final String MVNPACK_SO = "mvnpack.so";
 
 	MvnPackGenz lib = (MvnPackGenz) Native.synchronizedLibrary((Library) Native.loadLibrary(
-			MvnPackGenz.class.getClassLoader().getResource("mvnpack.so").getPath(), MvnPackGenz.class));
+			MvnPackGenz.class.getClassLoader().getResource(MVNPACK_SO).getPath(), MvnPackGenz.class));
 	
 	void mvndst_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
 			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps, 
@@ -21,6 +23,10 @@ public interface MvnPackGenz extends Library {
 	
 	void mvnexp_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
 			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps,
-			double[] errors, double[] value, IntByReference inform);
+			double[] error, double[] value, IntByReference inform);
+	
+	void mvnxpp_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
+			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps,
+			double[] error, double[] value, IntByReference inform);
 
 }

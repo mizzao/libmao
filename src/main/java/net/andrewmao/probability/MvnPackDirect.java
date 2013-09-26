@@ -6,26 +6,32 @@ import com.sun.jna.ptr.IntByReference;
 
 /**
  * Direct-mapped library to mvnpack.so
+ * This class is NOT thread-safe
+ * 
  * @author mao
  *
  */
 public class MvnPackDirect implements MvnPackGenz {
 	
 	static {
-		Native.register(MvnPackDirect.class.getClassLoader().getResource("mvnpack.so").getPath());
+		Native.register(MvnPackDirect.class.getClassLoader().getResource(MVNPACK_SO).getPath());
 	}
 
 	@Override
-	public native void mvndst_(IntByReference n, double[] lower, double[] upper,
-			int[] infin, double[] correl, IntByReference maxpts,
-			DoubleByReference abseps, DoubleByReference releps,
-			DoubleByReference error, DoubleByReference value,
-			IntByReference inform);
+	public native 
+	void mvndst_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl, 
+			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps,
+			DoubleByReference error, DoubleByReference value, IntByReference inform);
 
 	@Override
-	public native void mvnexp_(IntByReference n, double[] lower, double[] upper,
-			int[] infin, double[] correl, IntByReference maxpts,
-			DoubleByReference abseps, DoubleByReference releps,
-			double[] errors, double[] value, IntByReference inform);
+	public native 
+	void mvnexp_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl, 
+			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps,
+			double[] error, double[] value, IntByReference inform);
 
+	@Override
+	public native 
+	void mvnxpp_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
+			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps,
+			double[] error, double[] value, IntByReference inform);
 }
