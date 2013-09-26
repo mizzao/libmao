@@ -9,7 +9,7 @@
   <url>http://maven.apache.org</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jna.version>3.5.1</jna.version>
+    <jna.version>4.0.0</jna.version>
   </properties>
   
   <repositories>
@@ -38,7 +38,7 @@
     <dependency>
     	<groupId>org.apache.commons</groupId>
     	<artifactId>commons-math3</artifactId>
-    	<version>3.1.1</version>
+    	<version>3.2</version>
     </dependency>    
     <dependency>
     	<groupId>net.java.dev.jna</groupId>
@@ -47,16 +47,9 @@
     </dependency>
     <dependency>
     	<groupId>net.java.dev.jna</groupId>
-    	<artifactId>platform</artifactId>
+    	<artifactId>jna-platform</artifactId>
     	<version>${jna.version}</version>
     </dependency>
-    <!-- Avoid pulling this in until necessary due to massive dependency list 
-    <dependency>
-    	<groupId>ca.umontreal.iro</groupId>
-    	<artifactId>ssj</artifactId>
-    	<version>2.5</version>
-    </dependency>    
-    -->
     <dependency>
     	<groupId>commons-lang</groupId>
     	<artifactId>commons-lang</artifactId>
@@ -65,13 +58,21 @@
     <dependency>
     	<groupId>com.google.guava</groupId>
     	<artifactId>guava</artifactId>
-    	<version>14.0</version>    	
+    	<version>15.0</version>    	
     </dependency>
     <dependency>
     	<groupId>be.ac.ulg.montefiore.run.jahmm</groupId>
     	<artifactId>jahmm</artifactId>
     	<version>0.6.2</version>
     </dependency>
+    
+    <!-- Avoid pulling this in unless absolutely necessary due to massive dependency list 
+    <dependency>
+    	<groupId>ca.umontreal.iro</groupId>
+    	<artifactId>ssj</artifactId>
+    	<version>2.5</version>
+    </dependency>    
+    -->
   </dependencies>
     
   <build>
@@ -87,36 +88,67 @@
         	</configuration>
   		</plugin>  		
 
-		<!-- possible compilation of f77 using native plugin for later
+		<!-- possible compilation of f77 using native plugin for later -->
   		<plugin>
   			<groupId>org.codehaus.mojo</groupId>
   			<artifactId>native-maven-plugin</artifactId>
   			<version>[1.0-alpha-7,)</version>
   			<extensions>true</extensions>
-			<configuration>           
+			<configuration>
+				<compilerStartOptions>
+            		<compilerStartOption>${commonCompilerOptions}</compilerStartOption>
+          		</compilerStartOptions>           
 				<sources>             		
              		<source>
                		<directory>src/main/fortran</directory> 
                		<fileNames>
                  		<fileName>mvndstpack.f</fileName>
                  		<fileName>mvnexppack.f</fileName>                 		
+                 		<fileName>mvnxpppack.f</fileName>
                		</fileNames>
              		</source>           
            		</sources>
            		<compilerProvider>generic</compilerProvider>
-           		<compilerExecutable>gfortran</compilerExecutable>
-           		
+           		<compilerExecutable>gfortran</compilerExecutable>           		
            		<compilerStartOptions>
-          			<compilerStartOption>-shared -Wall -fPIC</compilerStartOption>
+          			<compilerStartOption>-Wall -fPIC</compilerStartOption>
           		</compilerStartOptions>
            		<linkerStartOptions>
-            		<linkerStartOption></linkerStartOption> 
+            		<linkerStartOption>-Wall -shared</linkerStartOption> 
            		</linkerStartOptions>
-         	</configuration>  			
-  		</plugin>
-  		-->
+         	</configuration>  			        
+  		</plugin>  		
   		
   	</plugins>
-  	
+  	<pluginManagement>
+      <plugins>
+        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence 
+          on the Maven build itself. -->
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>native-maven-plugin</artifactId>
+                    <versionRange>[1.0-alpha-7,)</versionRange>
+                    <goals>
+                      <goal>native:compile</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <execute/>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
 </project>

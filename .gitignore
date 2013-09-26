@@ -3,3 +3,7 @@
 .settings/
 target/
 hs_err_pid*.log
+
+# Compiled source
+*.o
+*.so
