@@ -30,21 +30,23 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	
 	public static final double FIXED_VARIANCE = 1.0d;
 	
+	public static final int EM_MAXPTS_MULTIPLIER = 1 << 14;
+	
 	volatile double lastLL;
 	
 	private final int maxIter;
 	private final double abseps, releps;
-	private final int maxMVNTries;
+	private final int maxPtsScale;
 	
-	public OrderedNormalEM(int maxIter, double abseps, double releps, int maxMVNTries) {
+	public OrderedNormalEM(int maxIter, double abseps, double releps, int maxPtsScale) {
 		this.maxIter = maxIter;
 		this.abseps = abseps;
 		this.releps = releps;
-		this.maxMVNTries = maxMVNTries;
+		this.maxPtsScale = maxPtsScale;
 	}
 	
 	public OrderedNormalEM(int maxIter, double abseps, double releps) {
-		this(maxIter, abseps, releps, 1);
+		this(maxIter, abseps, releps, EM_MAXPTS_MULTIPLIER);
 	}
 
 	@Override
@@ -77,7 +79,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 				int[] ranking = Ints.toArray(e.getElement());	
 				int duplicity = e.getCount();
 				
-				ExpResult result = multivariateExp(mean, variance, ranking, maxMVNTries, releps);				
+				ExpResult result = multivariateExp(mean, variance, ranking, maxPtsScale, releps);				
 				double[] condMean = computeConditional(result.values, ranking);				
 				
 				// Add this ll, expectation a number of times				
@@ -133,8 +135,8 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @param ranking
 	 * @return
 	 */
-	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking, int maxTries, double eps) {		
-		double[] result = multivariateExp(mean, variance, ranking, maxTries, eps).values;				
+	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking, int maxPtsMultiplier, double eps) {
+		double[] result = multivariateExp(mean, variance, ranking, maxPtsMultiplier, eps).values;				
 		return computeConditional(result, ranking);
 	}
 
@@ -152,8 +154,8 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		
 		return vals;
 	}
-
-	public static ExpResult multivariateExp(RealVector mean, RealVector variance, int[] ranking, int maxTries, Double eps) {
+	
+	public static ExpResult multivariateExp(RealVector mean, RealVector variance, int[] ranking, int maxPtsScale, Double eps) {
 		int n = ranking.length;
 		
 		// Initialize diagonal variance matrix
@@ -186,7 +188,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
 		
-		return MultivariateNormal.exp(mu, sigma, lower, upper, maxTries, eps, eps);
+		return MultivariateNormal.exp(mu, sigma, lower, upper, maxPtsScale, eps, eps);
 	}
 
 	@Override

@@ -26,7 +26,7 @@ public class MultivariateNormalTest {
 
 	// The amount of time we tolerate not getting within the error
 	static final double trials = 1000;
-	static final double convergenceTol = 0.15;
+	static final double convergenceTol = 0.1;
 	static Random rnd = new Random();
 	
 	@Before
@@ -133,10 +133,9 @@ public class MultivariateNormalTest {
 			RealVector var = TestParameterGen.randomVarVector(m);
 			RandomSelection.shuffle(ranking, rnd);
 			
-			ExpResult result = OrderedNormalEM.multivariateExp(mean, var, ranking, 1, null);
-			if( !result.converged ) {				
-				convergeFail++;
-			}
+			ExpResult result = OrderedNormalEM.multivariateExp(mean, var, ranking, OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null);
+			
+			if( !result.converged ) convergeFail++;			
 		}
 		
 		double failRatio = 1.0 * convergeFail / trials;

@@ -6,15 +6,15 @@ import com.sun.jna.ptr.IntByReference;
 
 /**
  * Direct-mapped library to mvnpack.so
- * This class is NOT thread-safe
+ * This class itself is NOT thread-safe
  * 
  * @author mao
  *
  */
 public class MvnPackDirect implements MvnPackGenz {
 	
-	static {
-		Native.register(MvnPackDirect.class.getClassLoader().getResource(MVNPACK_SO).getPath());
+	static {		
+		Native.register(MvnPackDirect.class.getClassLoader().getResource(MVNPACK_SO).getPath());		
 	}
 
 	@Override

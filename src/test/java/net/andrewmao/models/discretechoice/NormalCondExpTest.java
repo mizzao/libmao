@@ -49,7 +49,7 @@ public class NormalCondExpTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		condExpMVN = OrderedNormalEM.conditionalExp(mean, var, ranking, 4, 1e-8);
+		condExpMVN = OrderedNormalEM.conditionalExp(mean, var, ranking, 2<<14, 1e-8);
 	}
 
 	@After
@@ -61,7 +61,7 @@ public class NormalCondExpTest {
 		// Ensure that we can use the conditional expectation MVN value to estimate likelihood		
 		
 		CDFResult cdf = NormalLogLikelihood.multivariateProb(mean, var, ranking);
-		ExpResult exp = OrderedNormalEM.multivariateExp(mean, var, ranking, 1, null);
+		ExpResult exp = OrderedNormalEM.multivariateExp(mean, var, ranking, OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null);
 		
 		assertEquals(cdf.value, exp.cdf, 1e-4);
 	}
@@ -69,7 +69,7 @@ public class NormalCondExpTest {
 	@Test
 	public void testConditionalExpectationQuick() {
 		System.out.println("Testing bias ");
-		double[] condExpMVNQuick = OrderedNormalEM.conditionalExp(mean, var, ranking, 1, 1e-5);		
+		double[] condExpMVNQuick = OrderedNormalEM.conditionalExp(mean, var, ranking, 2<<12, 1e-5);		
 						
 		System.out.println("MVN Quick: " + Arrays.toString(condExpMVNQuick));		
 		System.out.println("MVN Accurate: " + Arrays.toString(condExpMVN));

@@ -1,7 +1,6 @@
 package net.andrewmao.probability;
 
 import com.sun.jna.Library;
-import com.sun.jna.Native;
 import com.sun.jna.ptr.DoubleByReference;
 import com.sun.jna.ptr.IntByReference;
 
@@ -12,19 +11,58 @@ import com.sun.jna.ptr.IntByReference;
  */
 public interface MvnPackGenz extends Library {
 	
-	public static final String MVNPACK_SO = "mvnpack.so";
-
-	MvnPackGenz lib = (MvnPackGenz) Native.synchronizedLibrary((Library) Native.loadLibrary(
-			MvnPackGenz.class.getClassLoader().getResource(MVNPACK_SO).getPath(), MvnPackGenz.class));
+	public static final String MVNPACK_SO = "mvnpack.so";			
 	
+	/**
+	 * See http://www.math.wsu.edu/faculty/genz/software/fort77/mvtdstpack.f
+	 * @param n
+	 * @param lower
+	 * @param upper
+	 * @param infin
+	 * @param correl
+	 * @param maxpts
+	 * @param abseps
+	 * @param releps
+	 * @param error
+	 * @param value
+	 * @param inform
+	 */
 	void mvndst_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
 			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps, 
 			DoubleByReference error, DoubleByReference value, IntByReference inform);
 	
+	/**
+	 * See http://www.math.wsu.edu/faculty/genz/software/fort77/mvnexppack.f
+	 * @param n
+	 * @param lower
+	 * @param upper
+	 * @param infin
+	 * @param correl
+	 * @param maxpts
+	 * @param abseps
+	 * @param releps
+	 * @param error
+	 * @param value
+	 * @param inform
+	 */
 	void mvnexp_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
 			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps,
 			double[] error, double[] value, IntByReference inform);
 	
+	/**
+	 * See http://www.math.wsu.edu/faculty/genz/software/fort77/mvnxpppack.f
+	 * @param n
+	 * @param lower
+	 * @param upper
+	 * @param infin
+	 * @param correl
+	 * @param maxpts
+	 * @param abseps
+	 * @param releps
+	 * @param error
+	 * @param value
+	 * @param inform
+	 */
 	void mvnxpp_(IntByReference n, double[] lower, double[] upper, int[] infin, double[] correl,
 			IntByReference maxpts, DoubleByReference abseps, DoubleByReference releps,
 			double[] error, double[] value, IntByReference inform);

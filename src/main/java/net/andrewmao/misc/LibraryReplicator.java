@@ -38,11 +38,11 @@ public class LibraryReplicator<C> {
 		File origFile = new File(orig);
 		for( int i = 0; i < copies; i++ ) {
 			File copy = new File(orig + "." + i);
-			Files.copy(origFile, copy);
-						
-			C libCopy = (C) Native.loadLibrary(copy.getPath(), interfaceClass);
+			Files.copy(origFile, copy);						
+			
+			C libCopy = (C) Native.loadLibrary(copy.getPath(), interfaceClass);			
 			libQueue.offer(libCopy); // This should never fail
-		}
+		}				
 		
 		proxiedInterface = (C) Proxy.newProxyInstance(
 				interfaceClass.getClassLoader(), 
@@ -65,7 +65,8 @@ public class LibraryReplicator<C> {
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
 			C instance = null;
-			// Grab a copy of the library out of the queue
+			
+			// Grab a copy of the library out of the queue			
 			do {
 				try { instance = libQueue.take(); }
 				catch(InterruptedException e) {}

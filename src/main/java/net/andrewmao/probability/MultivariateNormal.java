@@ -1,5 +1,9 @@
 package net.andrewmao.probability;
 
+import java.io.IOException;
+
+import net.andrewmao.misc.LibraryReplicator;
+
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -8,7 +12,20 @@ import com.sun.jna.ptr.IntByReference;
 
 public class MultivariateNormal {	
 	
-	static final MvnPackGenz lib = new MvnPackDirect();
+	// Load up a thread-safe version of the library when we start
+	static final MvnPackGenz lib;	
+	static {
+		try {
+			lib = new LibraryReplicator<MvnPackGenz>(
+					MvnPackGenz.class.getClassLoader().getResource(MvnPackGenz.MVNPACK_SO), 
+					MvnPackGenz.class).getProxiedInterface();
+		} catch (IOException e) { 
+			throw new RuntimeException(e);			
+		}
+	}
+	
+	static final int cdf_maxpts_multiplier = 1 << 13;
+	static final int exp_maxpts_multiplier = 1 << 14;
 	
 	// These value errors are unit tested to a certain fail percentage.
 	static final DoubleByReference cdf_default_abseps = new DoubleByReference(1e-5);
@@ -16,6 +33,8 @@ public class MultivariateNormal {
 	// These values are a little looser because ANY value could have it
 	static final DoubleByReference exp_default_abseps = new DoubleByReference(0.0005);
 	static final DoubleByReference exp_default_releps = new DoubleByReference(0.0005);	
+	
+	 
 	
 	public static class CDFResult {
 		public final double value;
@@ -45,82 +64,70 @@ public class MultivariateNormal {
 	}
 
 	public static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
-		return cdf(mean, sigma, lower, upper, 1, null, null);
+		return cdf(mean, sigma, lower, upper, cdf_maxpts_multiplier * mean.getDimension(), null, null);
 	}
 	
 	public static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
-			int maxTries, Double abseps, Double releps) {				
+			int maxPts, Double abseps, Double releps) {				
 		int n = checkErrors(mean, sigma, lower, upper);
 		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, new double[n]);
-		int[] infin = getSetInfin(n, lower, upper);
+		
+		// Copy bounds arrays because we modify them
+		lower = lower.clone();
+		upper = upper.clone();
+		int[] infin = getSetInfin(n, lower, upper);				
 		
 		DoubleByReference abseps_ref = (abseps == null ) ? cdf_default_abseps : new DoubleByReference(abseps);
 		DoubleByReference releps_ref = (releps == null ) ? cdf_default_releps : new DoubleByReference(releps);
 		
-		IntByReference maxpts = new IntByReference(0);		
+		IntByReference maxpts = new IntByReference(maxPts);		
 		DoubleByReference error = new DoubleByReference(0);
 		DoubleByReference value = new DoubleByReference(0);
 		IntByReference inform = new IntByReference(0);
+						
+		lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
+				maxpts, abseps_ref, releps_ref, error, value, inform);			
 		
-		int tries = 0;
-		int pts = (2 << 11) * n;
-		int exitCode;
-		do {
-			maxpts.setValue(pts);	
-			
-			synchronized(lib) {
-				lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
-						maxpts, abseps_ref, releps_ref, error, value, inform);
-			}
-			
-			if( Double.isInfinite(value.getValue()) || Double.isNaN(value.getValue()) )
-				throw new RuntimeException("Error computing CDF; possible concurrent thread access...");
-			
-			exitCode = inform.getValue();
-			if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
-			pts <<= 1;
-		} while( ++tries < maxTries && exitCode > 0 );				
+		if( Double.isInfinite(value.getValue()) || Double.isNaN(value.getValue()) )
+			throw new RuntimeException("Error computing CDF; possible concurrent thread access...");
 		
+		int exitCode = inform.getValue();		
+		if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
+				
 		return new CDFResult(value.getValue(), error.getValue(), exitCode == 0);
 	}
 	
 	public static ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
-		return exp(mean, sigma, lower, upper, 1, null, null);
+		return exp(mean, sigma, lower, upper, exp_maxpts_multiplier * mean.getDimension(), null, null);
 	}
 
 	public static ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
-			int maxTries, Double abseps, Double releps) {
+			int maxPts, Double abseps, Double releps) {
 		int n = checkErrors(mean, sigma, lower, upper);
 		double[] sds = new double[n];
 		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, sds);
+		
+		// Copy bounds arrays because we modify them
+		lower = lower.clone();
+		upper = upper.clone();
 		int[] infin = getSetInfin(n, lower, upper);
 		
 		DoubleByReference abseps_ref = (abseps == null ) ? exp_default_abseps : new DoubleByReference(abseps);
 		DoubleByReference releps_ref = (releps == null ) ? exp_default_releps : new DoubleByReference(releps);
 		
-		IntByReference maxpts = new IntByReference(0);				
+		IntByReference maxpts = new IntByReference(maxPts);				
 		double[] errors = new double[n+1];
 		double[] values = new double[n+1];		
 		IntByReference inform = new IntByReference(0);										
+												
+		lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
+				maxpts, abseps_ref, releps_ref, errors, values, inform);			
 		
-		int tries = 0;
-		int pts = (2 << 11) * n;
-		int exitCode;
-		do {
-			maxpts.setValue(pts);
-			
-			synchronized(lib) {
-				lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
-						maxpts, abseps_ref, releps_ref, errors, values, inform);
-			}
-			
-			if( Double.isInfinite(values[0]) || Double.isNaN(values[0]) )
-				throw new RuntimeException("Error computing expectation; possible concurrent thread access...");
-			
-			exitCode = inform.getValue();
-			if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
-			pts <<= 1;
-		} while(  ++tries < maxTries && exitCode > 0 );						
+		if( Double.isInfinite(values[0]) || Double.isNaN(values[0]) )
+			throw new RuntimeException("Error computing expectation; possible concurrent thread access...");
+		
+		int exitCode = inform.getValue();		
+		if( exitCode == 2 ) throw new RuntimeException("Dimension error for MVN");									
 								
 		// get just the expected values
 		double[] result = new double[n];

@@ -26,12 +26,11 @@ public class NormalComparisonTest {
 	static double abseps = 1e-5;
 	static double releps = 1e-5;
 	
-	static int iters = 50;
-	static int max_mvn_attempts = 1;
+	static int iters = 50;	
 	static int starting_samples = 3000;	
 	static int additional_samples = 500;		
 	
-	static OrderedNormalEM em = new OrderedNormalEM(iters, abseps, releps, max_mvn_attempts);	
+	static OrderedNormalEM em = new OrderedNormalEM(iters, abseps, releps);	
 	static OrderedNormalMCEM mcemFixed = new OrderedNormalMCEM(false, iters, abseps, releps, starting_samples, additional_samples);
 	static OrderedNormalMCEM mcemVar = new OrderedNormalMCEM(true, iters, abseps, releps, starting_samples, additional_samples);
 		
