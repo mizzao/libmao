@@ -94,7 +94,7 @@ public class NormalLogLikelihood {
 	 * @return
 	 */
 	double multivariateLL(int[] ranking) {		
-		return Math.log(multivariateProb(mean, variance, ranking).value);					
+		return Math.log(multivariateProb(mean, variance, ranking).cdf);					
 	}
 
 	public static CDFResult multivariateProb(RealVector mean, RealVector variance, int[] ranking) {

@@ -72,7 +72,7 @@ public class MultivariateNormalThreadedTest {
 			double expected = Math.pow(0.5, 4); 
 			
 			for( int i = 0; i < trials; i++ ) {				
-				double value = MultivariateNormal.cdf(mean, sigma, lower, upper).value;				
+				double value = MultivariateNormal.cdf(mean, sigma, lower, upper).cdf;				
 				assertEquals(expected, value, MultivariateNormal.cdf_default_abseps.getValue());	
 			}	
 			
@@ -102,7 +102,7 @@ public class MultivariateNormalThreadedTest {
 				upper[i] = Double.POSITIVE_INFINITY;
 			
 			for( int i = 0; i < trials; i++ ) {
-				double[] values = MultivariateNormal.exp(mean, sigma, lower, upper).values;							
+				double[] values = MultivariateNormal.exp(mean, sigma, lower, upper).expValues;							
 				
 				for( double d : values )
 					assertEquals(Math.sqrt(2.0/Math.PI), d, MultivariateNormal.exp_default_releps.getValue());	

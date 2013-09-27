@@ -32,35 +32,41 @@ public class MultivariateNormal {
 	static final DoubleByReference cdf_default_releps = new DoubleByReference(1e-5);	
 	// These values are a little looser because ANY value could have it
 	static final DoubleByReference exp_default_abseps = new DoubleByReference(0.0005);
-	static final DoubleByReference exp_default_releps = new DoubleByReference(0.0005);	
-	
-	 
+	static final DoubleByReference exp_default_releps = new DoubleByReference(0.0005);			 
 	
 	public static class CDFResult {
-		public final double value;
-		public final double error;
+		public final double cdf;
+		public final double cdfError;
 		public final boolean converged;
-		private CDFResult(double value, double error, boolean converged) {
-			this.value = value;
-			this.error = error;
+		private CDFResult(double cdfValue, double cdfError, boolean converged) {
+			this.cdf = cdfValue;
+			this.cdfError = cdfError;
 			this.converged = converged;
 		}		
 	}
 	
-	public static class ExpResult {
-		public final double cdf;
-		public final double cdfError;
-		public final double[] values;
-		public final double[] errors;
-		public final boolean converged;
+	public static class ExpResult extends CDFResult {		
+		public final double[] expValues;
+		public final double[] expErrors;		
 		public ExpResult(double cdf, double cdfError,
-				double[] values, double[] errors, boolean converged) {
-			this.cdf = cdf;
-			this.cdfError = cdfError;
-			this.values = values;
-			this.errors = errors;
-			this.converged = converged;
+				double[] expValues, double[] expErrors, boolean converged) {
+			super(cdf, cdfError, converged);			
+			this.expValues = expValues;
+			this.expErrors = expErrors;			
 		}			
+	}
+	
+	public static class EX2Result extends ExpResult {
+		public final double[] eX2Values;
+		public final double[] eX2Errors;
+		public EX2Result(double cdf, double cdfError, 
+				double[] expValues, double[] expErrors,
+				double[] eX2Values, double[] eX2Errors,
+				boolean converged) {
+			super(cdf, cdfError, expValues, expErrors, converged);
+			this.eX2Values = eX2Values;
+			this.eX2Errors = eX2Errors;
+		}
 	}
 
 	public static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
@@ -87,9 +93,6 @@ public class MultivariateNormal {
 						
 		lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
 				maxpts, abseps_ref, releps_ref, error, value, inform);			
-		
-		if( Double.isInfinite(value.getValue()) || Double.isNaN(value.getValue()) )
-			throw new RuntimeException("Error computing CDF; possible concurrent thread access...");
 		
 		int exitCode = inform.getValue();		
 		if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
@@ -123,9 +126,6 @@ public class MultivariateNormal {
 		lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
 				maxpts, abseps_ref, releps_ref, errors, values, inform);			
 		
-		if( Double.isInfinite(values[0]) || Double.isNaN(values[0]) )
-			throw new RuntimeException("Error computing expectation; possible concurrent thread access...");
-		
 		int exitCode = inform.getValue();		
 		if( exitCode == 2 ) throw new RuntimeException("Dimension error for MVN");									
 								
@@ -146,6 +146,71 @@ public class MultivariateNormal {
 		return new ExpResult(values[0], errors[0], result, resultErrors, exitCode == 0);
 	}
 
+	public static EX2Result eX2(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
+		return eX2(mean, sigma, lower, upper, exp_maxpts_multiplier * mean.getDimension(), null, null);
+	}
+	
+	public static EX2Result eX2(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
+			int maxPts, Double abseps, Double releps) {
+		int n = checkErrors(mean, sigma, lower, upper);
+		double[] sds = new double[n];
+		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, sds);
+		
+		// Copy bounds arrays because we modify them
+		lower = lower.clone();
+		upper = upper.clone();
+		int[] infin = getSetInfin(n, lower, upper);
+		
+		DoubleByReference abseps_ref = (abseps == null ) ? exp_default_abseps : new DoubleByReference(abseps);
+		DoubleByReference releps_ref = (releps == null ) ? exp_default_releps : new DoubleByReference(releps);
+		
+		IntByReference maxpts = new IntByReference(maxPts);				
+		double[] errors = new double[2*n+1];
+		double[] values = new double[2*n+1];						
+		IntByReference inform = new IntByReference(0);										
+												
+		lib.mvnxpp_(new IntByReference(n), lower, upper, infin, correl, 
+				maxpts, abseps_ref, releps_ref, errors, values, inform);			
+		
+		int exitCode = inform.getValue();		
+		if( exitCode == 2 ) throw new RuntimeException("Dimension error for MVN");									
+								
+		// Copy over first and second moments
+		double[] expResult = new double[n];
+		double[] expErrors = new double[n];
+		double[] eX2Result = new double[n];
+		double[] eX2Errors = new double[n];
+		System.arraycopy(values, 1, expResult, 0, n);
+		System.arraycopy(errors, 1, expErrors, 0, n);
+		System.arraycopy(values, n+1, eX2Result, 0, n);
+		System.arraycopy(errors, n+1, eX2Errors, 0, n);
+		
+		/* Rescaling
+		 * The order of operations here is important because we use the first moment to compute the second 
+		 */
+		for( int i = 0; i < n; i++ ) {
+			double var_i = sds[i] * sds[i];
+			double mu = mean.getEntry(i);
+			double mu_sq = mu * mu;
+			/*
+			 * Y = sX + u
+			 * E[Y^2] = E[s^2X^2 + 2suX + u^2]
+			 * Don't touch the first moments yet 
+			 * TODO The 2nd moment error calculation is sketchy...
+			 */
+			eX2Result[i] = var_i * eX2Result[i] + 2 * sds[i] * mu * expResult[i] + mu_sq;
+			eX2Errors[i] = var_i * eX2Errors[i] + 2 * sds[i] * mu * expErrors[i];
+			/*
+			 * E[Y] = E[sX + u]
+			 * Now we can modify them
+			 */
+			expResult[i] = expResult[i] * sds[i] + mean.getEntry(i);
+			expErrors[i] = expErrors[i] * sds[i];			
+		}
+		
+		return new EX2Result(values[0], errors[0], expResult, expErrors, eX2Result, eX2Errors, exitCode == 0);
+	}
+	
 	private static int checkErrors(RealVector mean, RealMatrix sigma,
 			double[] lower, double[] upper) {
 		int n = mean.getDimension();		

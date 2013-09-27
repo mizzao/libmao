@@ -80,7 +80,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 				int duplicity = e.getCount();
 				
 				ExpResult result = multivariateExp(mean, variance, ranking, maxPtsScale, releps);				
-				double[] condMean = computeConditional(result.values, ranking);				
+				double[] condMean = computeConditional(result.expValues, ranking);				
 				
 				// Add this ll, expectation a number of times				
 				for( int j = 0; j < duplicity; j++ ) {
@@ -136,7 +136,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @return
 	 */
 	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking, int maxPtsMultiplier, double eps) {
-		double[] result = multivariateExp(mean, variance, ranking, maxPtsMultiplier, eps).values;				
+		double[] result = multivariateExp(mean, variance, ranking, maxPtsMultiplier, eps).expValues;				
 		return computeConditional(result, ranking);
 	}
 

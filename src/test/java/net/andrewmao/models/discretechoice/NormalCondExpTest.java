@@ -63,7 +63,7 @@ public class NormalCondExpTest {
 		CDFResult cdf = NormalLogLikelihood.multivariateProb(mean, var, ranking);
 		ExpResult exp = OrderedNormalEM.multivariateExp(mean, var, ranking, OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null);
 		
-		assertEquals(cdf.value, exp.cdf, 1e-4);
+		assertEquals(cdf.cdf, exp.cdf, 1e-4);
 	}
 	
 	@Test

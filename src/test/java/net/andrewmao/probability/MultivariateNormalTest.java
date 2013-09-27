@@ -29,6 +29,29 @@ public class MultivariateNormalTest {
 	static final double convergenceTol = 0.1;
 	static Random rnd = new Random();
 	
+	int n = 4;
+	RealVector mean4 = new ArrayRealVector(n, 0);
+	RealMatrix sigmaI4 = new Array2DRowRealMatrix(n, n);
+	
+	double[] lower0 = new double[n];	
+	double[] lowerInf = new double[n];
+	double[] upperInf = new double[n];	
+	
+	public MultivariateNormalTest() {
+		sigmaI4.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
+			@Override
+			public double visit(int row, int column, double value) {				
+				return row == column ? 1 : 0;
+			}			
+		});
+		
+		for( int i = 0; i < lowerInf.length; i++ )
+			lowerInf[i] = Double.NEGATIVE_INFINITY;					
+		
+		for( int i = 0; i < upperInf.length; i++ )
+			upperInf[i] = Double.POSITIVE_INFINITY;
+	}
+	
 	@Before
 	public void setUp() throws Exception {
 
@@ -39,26 +62,8 @@ public class MultivariateNormalTest {
 	}
 
 	@Test
-	public void testCDF() {
-		int n = 4;
-		
-		RealVector mean = new ArrayRealVector(n, 0);
-		RealMatrix sigma = new Array2DRowRealMatrix(n, n);
-		
-		sigma.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
-			@Override
-			public double visit(int row, int column, double value) {				
-				return row == column ? 1 : 0;
-			}			
-		});
-		
-		double[] lower = new double[n];
-		
-		double[] upper = new double[n];
-		for( int i = 0; i < upper.length; i++ )
-			upper[i] = Double.POSITIVE_INFINITY;
-		
-		double value = MultivariateNormal.cdf(mean, sigma, lower, upper).value;
+	public void testCDF() {		
+		double value = MultivariateNormal.cdf(mean4, sigmaI4, lower0, upperInf).cdf;
 		
 		System.out.println("Obtained cdf:");
 		System.out.println(value);
@@ -93,31 +98,22 @@ public class MultivariateNormalTest {
 	
 	@Test
 	public void testExpectation() {
-		int n = 4;		
-		
-		RealVector mean = new ArrayRealVector(n, 0);
-		RealMatrix sigma = new Array2DRowRealMatrix(n, n);
-		
-		sigma.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
-			@Override
-			public double visit(int row, int column, double value) {				
-				return row == column ? 1 : 0;
-			}			
-		});
-		
-		double[] lower = new double[n];
-		
-		double[] upper = new double[n];
-		for( int i = 0; i < upper.length; i++ )
-			upper[i] = Double.POSITIVE_INFINITY;
-		
-		double[] values = MultivariateNormal.exp(mean, sigma, lower, upper).values;
+		double expected = Math.sqrt(2.0/Math.PI);
+		double[] values = MultivariateNormal.exp(mean4, sigmaI4, lower0, upperInf).expValues;
 		
 		System.out.println("Obtained expected values:");		
-		System.out.println(Arrays.toString(values));		
+		System.out.println(Arrays.toString(values));						
 		
 		for( double d : values )
-			assertEquals(Math.sqrt(2.0/Math.PI), d, MultivariateNormal.exp_default_releps.getValue());		
+			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
+		
+		values = MultivariateNormal.eX2(mean4, sigmaI4, lower0, upperInf).expValues;
+		
+		System.out.println("Obtained expected values from 2nd order:");		
+		System.out.println(Arrays.toString(values));						
+		
+		for( double d : values )
+			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
 	}
 
 	@Test 
@@ -146,12 +142,8 @@ public class MultivariateNormalTest {
 	
 	@Test
 	public void testExpectationScaling() {
-		// Giving wrong values after scaling! :D
-		
-		int n = 4;
-		final double scale = 2.0d;
-		
-		RealVector mean = new ArrayRealVector(n, 0);
+		// Giving wrong values after scaling! :D		
+		final double scale = 2.0d;		
 		RealMatrix sigma = new Array2DRowRealMatrix(n, n);
 		
 		sigma.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
@@ -161,13 +153,7 @@ public class MultivariateNormalTest {
 			}
 		});
 		
-		double[] lower = new double[n];
-		
-		double[] upper = new double[n];
-		for( int i = 0; i < upper.length; i++ )
-			upper[i] = Double.POSITIVE_INFINITY;
-		
-		double[] values = MultivariateNormal.exp(mean, sigma, lower, upper).values;
+		double[] values = MultivariateNormal.exp(mean4, sigma, lower0, upperInf).expValues;
 		
 		System.out.println("Obtained expected values:");		
 		System.out.println(Arrays.toString(values));		
@@ -183,31 +169,20 @@ public class MultivariateNormalTest {
 		int n = 4;
 		final double scale = 2.0d;
 		final double limit = 1.96;
+					
+		double[] upper196 = new double[n];
 		
-		RealVector mean = new ArrayRealVector(n, 0);
-		RealMatrix sigma = new Array2DRowRealMatrix(n, n);
-		
-		sigma.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
-			@Override
-			public double visit(int row, int column, double value) {				
-				return row == column ? 1 : 0;
-			}
-		});
-		
-		double[] lower = new double[n];		
-		double[] upper = new double[n];
-		
-		for( int i = 0; i < upper.length; i++ ) {
-			lower[i] = 0;
-			upper[i] = limit;
+		for( int i = 0; i < upper196.length; i++ ) {			
+			upper196[i] = limit;
 		}
 		
-		double[] values = MultivariateNormal.exp(mean, sigma, lower, upper).values;				
+		double[] values = MultivariateNormal.exp(mean4, sigmaI4, lower0, upper196).expValues;				
 		
 		System.out.println("Obtained expected values:");		
 		System.out.println(Arrays.toString(values));		
 		
 		// Rescale sigma and bounds, and test
+		RealMatrix sigma = sigmaI4.copy();
 		sigma.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
 			@Override
 			public double visit(int row, int column, double value) {				
@@ -215,12 +190,15 @@ public class MultivariateNormalTest {
 			}
 		});
 		
-		for( int i = 0; i < upper.length; i++ ) {
+		double[] lower = lower0.clone();
+		double[] upperScaled = upper196.clone();
+		
+		for( int i = 0; i < upper196.length; i++ ) {
 			lower[i] = lower[i] * scale;
-			upper[i] = upper[i] * scale;
+			upperScaled[i] = upperScaled[i] * scale;
 		}
 		
-		double[] values2 = MultivariateNormal.exp(mean, sigma, lower, upper).values;				
+		double[] values2 = MultivariateNormal.exp(mean4, sigma, lower, upperScaled).expValues;				
 		
 		System.out.println("Obtained expected values after scaling:");		
 		System.out.println(Arrays.toString(values2));
@@ -231,29 +209,8 @@ public class MultivariateNormalTest {
 	}
 	
 	@Test
-	public void testExpectationInf() {
-		int n = 4;		
-		
-		RealVector mean = new ArrayRealVector(n, 0);
-		RealMatrix sigma = new Array2DRowRealMatrix(n, n);
-		
-		sigma.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
-			@Override
-			public double visit(int row, int column, double value) {				
-				return row == column ? 1 : 0;
-			}			
-		});
-		
-		double[] lower = new double[n];		
-		double[] upper = new double[n];
-		
-		for( int i = 0; i < upper.length; i++ ) {
-			lower[i] = Double.NEGATIVE_INFINITY;
-			upper[i] = Double.POSITIVE_INFINITY;
-		}
-			
-		
-		double[] values = MultivariateNormal.exp(mean, sigma, lower, upper).values;
+	public void testExpectationInf() {							
+		double[] values = MultivariateNormal.exp(mean4, sigmaI4, lowerInf, upperInf).expValues;
 		
 		System.out.println("Obtained expected values:");		
 		System.out.println(Arrays.toString(values));		
@@ -262,4 +219,66 @@ public class MultivariateNormalTest {
 			assertEquals(0, d, MultivariateNormal.exp_default_releps.getValue());		
 	}
 
+	@Test
+	public void testEX2Octant() {		
+		double[] values = MultivariateNormal.eX2(mean4, sigmaI4, lower0, upperInf).eX2Values;
+		
+		System.out.println("Obtained ex2 values:");		
+		System.out.println(Arrays.toString(values));		
+		
+		double expected = 1d; // Mean of chi-square distribution with k=1
+		
+		for( double d : values )
+			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
+	}
+	
+	@Test
+	public void testEX2Inf() {		
+		double[] values = MultivariateNormal.eX2(mean4, sigmaI4, lowerInf, upperInf).eX2Values;
+		
+		System.out.println("Obtained ex2 values:");		
+		System.out.println(Arrays.toString(values));		
+		
+		double expected = 1d; // Mean of chi-square distribution with k=1
+		
+		for( double d : values )
+			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
+	}
+	
+	@Test
+	public void testEX2Error() {
+		fail("Not implemented");
+	}
+	
+	@Test
+	public void testEX2Scaling() {
+		// Giving wrong values after scaling! :D		
+		final double scale = 2.0d;		
+		RealMatrix sigma = new Array2DRowRealMatrix(n, n);
+		
+		sigma.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
+			@Override
+			public double visit(int row, int column, double value) {				
+				return row == column ? scale * scale : 0;
+			}
+		});
+		
+		double[] values = MultivariateNormal.eX2(mean4, sigma, lower0, upperInf).eX2Values;
+		
+		System.out.println("Obtained ex2 scaled values:");		
+		System.out.println(Arrays.toString(values));		
+		
+		double expected = scale * scale; // E[Y^2] = a^2E[X^2] for Y = aX
+		
+		for( double d : values )
+			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue() * scale * scale);		
+	}
+	
+	/*
+	 * Make sure the dodgy error calculation for the second moment is correct
+	 */
+	@Test
+	public void testEX2ScaleBounds() {
+		fail("Not implemented");
+	}
 }
