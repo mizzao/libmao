@@ -40,6 +40,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	RealVector delta, variance;
 	NormalLogLikelihood ll;
 	volatile double lastLL;
+	Multiset<List<Integer>> counts;
 	
 	List<int[]> rankings;
 	int numItems;	
@@ -86,7 +87,11 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 			variance = new ArrayRealVector(m, 1.0d);
 		}		
 		
-		ll = new NormalLogLikelihood(delta, variance);
+		ll = new NormalLogLikelihood(delta, variance, MCEMModel.exec);
+				
+		counts = HashMultiset.create();			
+		for( int[] ranking : rankings )
+			counts.add(Ints.asList(ranking));
 	}
 
 	@Override
@@ -98,11 +103,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		int samples = startingSamples + incrSamples*i;
 				
 		m1Stats.clear();
-		if( floatVariance ) m2Stats.clear();
-		
-		Multiset<List<Integer>> counts = HashMultiset.create();			
-		for( int[] ranking : rankings )
-			counts.add(Ints.asList(ranking));	
+		if( floatVariance ) m2Stats.clear();	
 		
 		for( Entry<List<Integer>> e : counts.entrySet() ) {
 			int[] ranking = Ints.toArray(e.getElement());
@@ -110,7 +111,6 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 			
 			super.addJob(new NormalGibbsSampler(delta, variance, ranking, samples, floatVariance, weight));							
 		}
-
 	}
 
 	@Override
@@ -164,16 +164,20 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 //		System.out.println(delta);
 //		System.out.println(variance);
 				
-	}
-	
+	}	
 
 	@Override
 	protected double[] getCurrentParameters() {
 		return delta.toArray();
 	}
+	
+	public double[] getCurrentStdev() {
+		return variance.map(new Sqrt()).toArray();
+	}
 
 	public double getLogLikelihood() {		
-		return lastLL = ll.logLikelihood(rankings);
+		// Don't modify any parameters as this can happen multi-threaded
+		return lastLL = ll.logLikelihood(counts);
 	}	
 
 	@Override

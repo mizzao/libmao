@@ -1,6 +1,10 @@
 package net.andrewmao.models.noise;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import net.andrewmao.probability.BiNormalGenzDist;
 import net.andrewmao.probability.MultivariateNormal;
@@ -22,6 +26,7 @@ public class NormalLogLikelihood {
 
 	RealVector mean;
 	RealVector variance;
+	ExecutorService exec = null;
 	
 	/**
 	 * Create a likelihood using the vectors as reference parameters.
@@ -33,6 +38,11 @@ public class NormalLogLikelihood {
 		this.variance = variance;
 	}
 	
+	public NormalLogLikelihood(RealVector mean, RealVector variance, ExecutorService exec) {
+		this(mean, variance);
+		this.exec = exec;
+	}
+
 	/**
 	 * Create a likelihood using the fixed values given.
 	 * @param mean
@@ -64,17 +74,51 @@ public class NormalLogLikelihood {
 		for( int[] ranking : indices )
 			counts.add(Ints.asList(ranking));					
 		
-		double ll = 0;
-		for( Entry<List<Integer>> e : counts.entrySet() )
-			ll += e.getCount() * singleRankingLL(Ints.toArray(e.getElement()));					
-		return ll;
+		return logLikelihood(counts);		
 	}
 	
+	public double logLikelihood(Multiset<List<Integer>> counts) {
+		double ll = 0;
+		if( exec != null ) {
+			// Run in parallel
+			List<LLResult> tasks = new ArrayList<LLResult>(counts.entrySet().size());		    
+		    
+			for( Entry<List<Integer>> e : counts.entrySet() )
+				tasks.add(new LLResult(e.getCount(), Ints.toArray(e.getElement())));
+						
+			try {
+				for (Future<Double> future : exec.invokeAll(tasks)) {
+				    ll += future.get();		        		   
+				}
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+		else {
+			for( Entry<List<Integer>> e : counts.entrySet() )
+				ll += e.getCount() * singleRankingLL(Ints.toArray(e.getElement()));
+		}
+		return ll;
+	}
+
 	public double logLikelihoodDumb(List<int[]> indices) {
 		double ll = 0;
 		for( int[] ranking : indices )
 			ll += singleRankingLL(ranking);
 		return ll;
+	}
+
+	public class LLResult implements Callable<Double> {
+		final int multiplicity;
+		final int[] ranking;
+		public LLResult(int multiplicity, int[] ranking) {
+			this.multiplicity = multiplicity;
+			this.ranking = ranking;
+		}
+		@Override
+		public Double call() throws Exception {
+			return multiplicity * singleRankingLL(ranking);
+		}
 	}
 
 	double singleRankingLL(int[] ranking) {

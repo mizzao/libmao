@@ -5,8 +5,10 @@ import static org.junit.Assert.*;
 import java.util.Arrays;
 import java.util.Collection;
 
+import net.andrewmao.models.discretechoice.OrderedNormalEM.MVNParams;
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.TestParameterGen;
+import net.andrewmao.probability.MultivariateNormal;
 import net.andrewmao.probability.MultivariateNormal.CDFResult;
 import net.andrewmao.probability.MultivariateNormal.ExpResult;
 
@@ -61,7 +63,11 @@ public class NormalCondExpTest {
 		// Ensure that we can use the conditional expectation MVN value to estimate likelihood		
 		
 		CDFResult cdf = NormalLogLikelihood.multivariateProb(mean, var, ranking);
-		ExpResult exp = OrderedNormalEM.multivariateExp(mean, var, ranking, OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null);
+		
+		MVNParams params = OrderedNormalEM.getTransformedParams(mean, var, ranking);
+		ExpResult exp = MultivariateNormal.exp(
+				params.mu, params.sigma, params.lower, params.upper,
+				OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null, null);
 		
 		assertEquals(cdf.cdf, exp.cdf, 1e-4);
 	}

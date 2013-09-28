@@ -74,6 +74,8 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 		for( int i = 0; i < maxIters; i++ ) {
 			submittedJobs.set(0);
 			
+			System.out.println("Starting iteration " + i);
+			
 			eStep(i);						
 			
 			// Wait for sampling to finish
@@ -97,7 +99,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 //				absImpr = params.subtract(oldParams).getNorm();			
 						
 			double newLL = getLogLikelihood();
-//			System.out.printf("Likelihood: %f\n", newLL);
+			System.out.printf("Likelihood: %f\n", newLL);
 			double absImpr = newLL - ll;
 			double relImpr = -absImpr / ll;
 			

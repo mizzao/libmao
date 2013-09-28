@@ -50,7 +50,7 @@ public class NormalEMTest {
 						{8, 5, 11, 14},
 				});
 		
-		OrderedNormalEM model = new OrderedNormalEM(iters, abseps, releps);
+		OrderedNormalEM model = new OrderedNormalEM(false, iters, abseps, releps);
 		NormalNoiseModel<Integer> fitted = model.fitModelOrdinal(prefs);
 		
 		System.out.println(fitted.toParamString());
@@ -68,7 +68,7 @@ public class NormalEMTest {
 		double abseps = 1e-3; // Double.NEGATIVE_INFINITY;
 		double releps = 1e-3; // Double.NEGATIVE_INFINITY;					
 		
-		OrderedNormalEM model = new OrderedNormalEM(iters, abseps, releps);
+		OrderedNormalEM model = new OrderedNormalEM(true, iters, abseps, releps);
 		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, 1, 1);
 		
 		long startTime = System.currentTimeMillis();
@@ -93,13 +93,14 @@ public class NormalEMTest {
 		double strDiff = 1.0;
 		System.out.println("Testing " + strDiff);
 
+		// Fixed-variance normal model
 		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(stuffList, strDiff, 1.0d);			
 
 		PreferenceProfile<Character> prefs = gen.sampleProfile(size, rnd);	
 		double targetLL = gen.logLikelihood(prefs);
 		System.out.println("Target likelihood: " + targetLL);
 
-		OrderedNormalEM normalEM = new OrderedNormalEM(100, 1e-5, 1e-5);
+		OrderedNormalEM normalEM = new OrderedNormalEM(false, 100, 1e-5, 1e-5);
 
 		NormalNoiseModel<Character> model = normalEM.fitModelOrdinal(prefs);
 		double achievedLL = model.logLikelihood(prefs);
@@ -117,4 +118,9 @@ public class NormalEMTest {
 			
 	}
 
+	@Test
+	public void testInferenceVarying() {
+		// Test likelihood with changing variance
+		fail("not implemented");
+	}
 }

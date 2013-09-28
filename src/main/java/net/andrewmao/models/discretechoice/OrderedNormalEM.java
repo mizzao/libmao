@@ -3,6 +3,7 @@ package net.andrewmao.models.discretechoice;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.math3.analysis.function.Sqrt;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -33,20 +34,23 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	public static final int EM_MAXPTS_MULTIPLIER = 1 << 14;
 	
 	volatile double lastLL;
+	volatile RealVector lastVariance;
 	
+	private final boolean floatVariance;
 	private final int maxIter;
 	private final double abseps, releps;
 	private final int maxPtsScale;
 	
-	public OrderedNormalEM(int maxIter, double abseps, double releps, int maxPtsScale) {
+	public OrderedNormalEM(boolean floatVariance, int maxIter, double abseps, double releps, int maxPtsScale) {
+		this.floatVariance = floatVariance;
 		this.maxIter = maxIter;
 		this.abseps = abseps;
 		this.releps = releps;
 		this.maxPtsScale = maxPtsScale;
 	}
 	
-	public OrderedNormalEM(int maxIter, double abseps, double releps) {
-		this(maxIter, abseps, releps, EM_MAXPTS_MULTIPLIER);
+	public OrderedNormalEM(boolean floatVariance, int maxIter, double abseps, double releps) {
+		this(floatVariance, maxIter, abseps, releps, EM_MAXPTS_MULTIPLIER);
 	}
 
 	@Override
@@ -58,39 +62,51 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		
 		RealVector variance = new ArrayRealVector(m, FIXED_VARIANCE);
 				
-		MultivariateMean meanAccum = new MultivariateMean(m);
+		MultivariateMean m1Stats = new MultivariateMean(m), m2Stats = null;
+		if( floatVariance ) m2Stats = new MultivariateMean(m);
 		double ll = Double.NEGATIVE_INFINITY;
 		
+		// Pre-compute a single hash of rankings
+		Multiset<List<Integer>> counts = HashMultiset.create();			
+		for( int[] ranking : rankings )
+			counts.add(Ints.asList(ranking));
+		
 		for(int i = 0; i < maxIter; i++ ) {
-			// Yes, we HAVE to do this! Nasty bug ;) 
-			meanAccum.clear();
+			// Need to empty out the previous iteration's means. Nasty bug ;) 
+			m1Stats.clear();
+			if( floatVariance ) m2Stats.clear();
 			
 			/* 
 			 * E-step: compute conditional expectation
 			 * only need to compute over unique rankings
-			 */
-			Multiset<List<Integer>> counts = HashMultiset.create();			
-			for( int[] ranking : rankings )
-				counts.add(Ints.asList(ranking));	
-			
+			 */				
 			double currentLL = 0;
 			
 			for( Entry<List<Integer>> e : counts.entrySet() ) {
 				int[] ranking = Ints.toArray(e.getElement());	
-				int duplicity = e.getCount();
+				int duplicity = e.getCount();								
 				
-				ExpResult result = multivariateExp(mean, variance, ranking, maxPtsScale, releps);				
-				double[] condMean = computeConditional(result.expValues, ranking);				
-				
-				// Add this ll, expectation a number of times				
-				for( int j = 0; j < duplicity; j++ ) {
-					meanAccum.addValue(condMean);
-				}				
-				currentLL += duplicity * Math.log(result.cdf);
+				if( floatVariance ) {
+					
+				}
+				else {
+					// TODO parallelize this
+					MVNParams params = getTransformedParams(mean, variance, ranking);
+					ExpResult result = MultivariateNormal.exp(
+							params.mu, params.sigma, params.lower, params.upper,
+							maxPtsScale, abseps, releps);
+					double[] condMean = computeConditionalExp(result.expValues, ranking);				
+
+					// Add this ll, expectation a number of times				
+					for( int j = 0; j < duplicity; j++ ) {
+						m1Stats.addValue(condMean);
+					}				
+					currentLL += duplicity * Math.log(result.cdf);
+				}
 			}
 			
 			// M-step: update mean
-			double[] newMean = meanAccum.getMean();					
+			double[] newMean = m1Stats.getMean();					
 						
 //			double adj = newMean[0];
 			for( int j = 0; j < m; j++ )
@@ -135,12 +151,15 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @param ranking
 	 * @return
 	 */
-	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking, int maxPtsMultiplier, double eps) {
-		double[] result = multivariateExp(mean, variance, ranking, maxPtsMultiplier, eps).expValues;				
-		return computeConditional(result, ranking);
+	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking, int maxPtsMultiplier, Double eps) {
+		MVNParams params = getTransformedParams(mean, variance, ranking);
+		double[] result = MultivariateNormal.exp(
+				params.mu, params.sigma, params.lower, params.upper,
+				maxPtsMultiplier, eps, eps).expValues;				
+		return computeConditionalExp(result, ranking);
 	}
 
-	public static double[] computeConditional(double[] mvnexp, int[] ranking) {
+	public static double[] computeConditionalExp(double[] mvnexp, int[] ranking) {
 		double[] vals = new double[mvnexp.length];
 		
 		// First value is the highest order statistic
@@ -155,7 +174,20 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		return vals;
 	}
 	
-	public static ExpResult multivariateExp(RealVector mean, RealVector variance, int[] ranking, int maxPtsScale, Double eps) {
+	public static class MVNParams {
+		public final RealVector mu;
+		public final RealMatrix sigma;
+		public final double[] lower;
+		public final double[] upper;
+		MVNParams(RealVector mu, RealMatrix sigma, double[] lower, double[] upper) {
+			this.mu = mu; 
+			this.sigma = sigma;
+			this.lower = lower; 
+			this.upper = upper;
+		}
+	}
+	
+	public static MVNParams getTransformedParams(RealVector mean, RealVector variance, int[] ranking) {
 		int n = ranking.length;
 		
 		// Initialize diagonal variance matrix
@@ -188,7 +220,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());		
 		
-		return MultivariateNormal.exp(mu, sigma, lower, upper, maxPtsScale, eps, eps);
+		return new MVNParams(mu, sigma, lower, upper);
 	}
 
 	@Override
@@ -197,9 +229,17 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		List<int[]> rankings = profile.getIndices(ordering);		
 		
 		int m = ordering.size();
-		double[] strParams = getParameters(rankings, m);		
+		double[] strParams = getParameters(rankings, m);
+		NormalNoiseModel<T> nn;
 		
-		NormalNoiseModel<T> nn = new NormalNoiseModel<T>(ordering, strParams, Math.sqrt(FIXED_VARIANCE));
+		// Create either a fixed or changing variance model
+		if ( floatVariance ) {
+			double[] sds = lastVariance.map(new Sqrt()).toArray();			
+			nn = new NormalNoiseModel<T>(ordering, strParams, sds);				
+		} else {
+			nn = new NormalNoiseModel<T>(ordering, strParams, Math.sqrt(FIXED_VARIANCE));
+		}
+		
 		nn.setFittedLikelihood(lastLL);
 		return nn;		
 	}

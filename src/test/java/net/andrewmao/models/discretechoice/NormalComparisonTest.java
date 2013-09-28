@@ -30,24 +30,32 @@ public class NormalComparisonTest {
 	static int starting_samples = 3000;	
 	static int additional_samples = 500;		
 	
-	static OrderedNormalEM em = new OrderedNormalEM(iters, abseps, releps);	
-	static OrderedNormalMCEM mcemFixed = new OrderedNormalMCEM(false, iters, abseps, releps, starting_samples, additional_samples);
-	static OrderedNormalMCEM mcemVar = new OrderedNormalMCEM(true, iters, abseps, releps, starting_samples, additional_samples);
+	static OrderedNormalEM emFixed = new OrderedNormalEM(false, iters, abseps, releps);
+	static OrderedNormalEM emVar = new OrderedNormalEM(true, iters, abseps, releps);	
+	static OrderedNormalMCEM mcemFixed = new OrderedNormalMCEM(false, iters, abseps, releps, 
+			starting_samples, additional_samples);
+	static OrderedNormalMCEM mcemVar = new OrderedNormalMCEM(true, iters, abseps, releps, 
+			starting_samples, additional_samples);
 		
 	List<int[]> rankings;	
 	
-	double[] emParams, mcemFixedParams, mcemVarParams;
-	double emLL, mcemFixedLL, mcemVarLL;
+	double[] emFixedParams, emVarParams, mcemFixedParams, mcemVarParams;
+	double emFixedLL, emVarLL, mcemFixedLL, mcemVarLL;
 
 	public NormalComparisonTest(List<int[]> rankings) {		
 		this.rankings = rankings;
 		
 		NormalDistribution sample = new NormalDistribution();
 		
-		emParams = em.getParameters(rankings, candidates);
-		emLL = em.lastLL;
-		System.out.println("EM params, LL: " + emLL);
-		System.out.println(Arrays.toString(emParams));		
+		emFixedParams = emFixed.getParameters(rankings, candidates);
+		emFixedLL = emFixed.lastLL;
+		System.out.println("EM Fixed params, LL: " + emFixedLL);
+		System.out.println(Arrays.toString(emFixedParams));		
+		
+		emVarParams = emVar.getParameters(rankings, candidates);
+		emVarLL = emVar.lastLL;
+		System.out.println("EM Var params, LL: " + emVarLL);
+		System.out.println(Arrays.toString(emVarParams));
 		
 		mcemFixed.setup(new double[candidates]);
 		mcemFixedParams = mcemFixed.getParameters(rankings, candidates);
@@ -78,18 +86,28 @@ public class NormalComparisonTest {
 
 	@Test
 	public void testFixedParams() {
-		assertArrayEquals(emParams, mcemFixedParams, 0.02);		
+		assertArrayEquals(emFixedParams, mcemFixedParams, 0.02);		
+	}
+	
+	@Test
+	public void testVarParams() {
+		assertArrayEquals(emVarParams, mcemVarParams, 0.02);
 	}
 	
 	@Test
 	public void testVarLL() {
-		assertTrue(mcemVarLL > emLL);
+		assertTrue(mcemVarLL > emFixedLL);
 		assertTrue(mcemVarLL > mcemFixedLL);						
 	}
 	
 	@Test
 	public void testFixedLLEqual() {
-		assertEquals(emLL, mcemFixedLL, Math.abs(emLL * 10 * releps));
+		assertEquals(emFixedLL, mcemFixedLL, Math.abs(emFixedLL * 10 * releps));
+	}
+	
+	@Test
+	public void testVarLLEqual() {
+		assertEquals(emVarLL, mcemVarLL, Math.abs(emVarLL * 10 * releps));
 	}
 
 }

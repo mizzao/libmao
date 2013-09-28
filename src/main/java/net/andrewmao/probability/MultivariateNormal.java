@@ -1,6 +1,7 @@
 package net.andrewmao.probability;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import net.andrewmao.misc.LibraryReplicator;
 
@@ -79,9 +80,9 @@ public class MultivariateNormal {
 		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, new double[n]);
 		
 		// Copy bounds arrays because we modify them
-		lower = lower.clone();
-		upper = upper.clone();
-		int[] infin = getSetInfin(n, lower, upper);				
+		double[] adjLower = lower.clone();
+		double[] adjUpper = upper.clone();
+		int[] infin = getSetInfin(n, adjLower, adjUpper);				
 		
 		DoubleByReference abseps_ref = (abseps == null ) ? cdf_default_abseps : new DoubleByReference(abseps);
 		DoubleByReference releps_ref = (releps == null ) ? cdf_default_releps : new DoubleByReference(releps);
@@ -91,11 +92,23 @@ public class MultivariateNormal {
 		DoubleByReference value = new DoubleByReference(0);
 		IntByReference inform = new IntByReference(0);
 						
-		lib.mvndst_(new IntByReference(n), lower, upper, infin, correl, 
-				maxpts, abseps_ref, releps_ref, error, value, inform);			
+		lib.mvndst_(new IntByReference(n), adjLower, adjUpper, infin, correl, 
+				maxpts, abseps_ref, releps_ref, error, value, inform);							
 		
 		int exitCode = inform.getValue();		
 		if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
+		
+		if( Double.isInfinite(value.getValue()) || Double.isNaN(value.getValue()) ) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("Error computing CDF; possible concurrent thread access\n");
+			sb.append("inform is ").append(exitCode).append("\n");
+			sb.append("Mean: ").append(Arrays.toString(mean.toArray())).append("\n");
+			sb.append("Sigma: ").append(Arrays.deepToString(sigma.getData())).append("\n");
+			sb.append("Lower: ").append(Arrays.toString(lower)).append("\n");
+			sb.append("Upper: ").append(Arrays.toString(upper)).append("\n");
+			sb.append("Maxpts: ").append(maxPts).append("\n");			
+			throw new RuntimeException(sb.toString());
+		}
 				
 		return new CDFResult(value.getValue(), error.getValue(), exitCode == 0);
 	}

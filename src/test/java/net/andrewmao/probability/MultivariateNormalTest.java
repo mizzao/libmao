@@ -7,6 +7,7 @@ import java.util.Random;
 
 import net.andrewmao.math.RandomSelection;
 import net.andrewmao.models.discretechoice.OrderedNormalEM;
+import net.andrewmao.models.discretechoice.OrderedNormalEM.MVNParams;
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.TestParameterGen;
 import net.andrewmao.probability.MultivariateNormal.CDFResult;
@@ -70,6 +71,41 @@ public class MultivariateNormalTest {
 		
 		assertEquals(Math.pow(0.5, 4), value, MultivariateNormal.cdf_default_abseps.getValue());
 	}
+	
+	@Test
+	public void testCDFNan() {
+		// These parameters caused the code to return a NaN
+		double[] mean = new double[] {
+				-0.16014433764135572, 0.23296920873087068, -1.0831027264270603, 0.8340188690166026, -0.24358107061636136, 0.9365121582217176, -0.7711081639504794, 1.2578460898256763, -0.8879043596823241
+		};	
+		
+		double[][] sigma = new double[][] {
+				new double[] { 3.7597841747150964, -1.2926666840840324, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+				new double[] {-1.2926666840840324, 1.867208915797311, -0.5745422317132788, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 },
+				new double[] {0.0, -0.5745422317132788, 1.5586282095674566, -0.9840859778541778, 0.0, 0.0, 0.0, 0.0, 0.0},
+				new double[] {0.0, 0.0, -0.9840859778541778, 2.397939732320359, -1.4138537544661813, 0.0, 0.0, 0.0, 0.0},
+				new double[] {0.0, 0.0, 0.0, -1.4138537544661813, 2.076517167771443, -0.6626634133052616, 0.0, 0.0, 0.0},
+				new double[] {0.0, 0.0, 0.0, 0.0, -0.6626634133052616, 1.8950077530026093, -1.2323443396973477, 0.0, 0.0},
+				new double[] {0.0, 0.0, 0.0, 0.0, 0.0, -1.2323443396973477, 2.232344339697348, -1.0, 0.0},
+				new double[] {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 2.00110835898604, -1.00110835898604},
+				new double[] {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.00110835898604, 1.9730874712358166}										
+		};
+		
+		double[] lower = new double[] {
+				0.08259050655133376, -0.17049123959278323, 0.8675577283898703, -0.5385880887445085, 0.16903466295523986, -0.6803116755153749, 0.5161010093364202, -0.8891851498427454, 0.6321105211138612
+		};
+		
+		double[] upper = new double[lower.length];
+		Arrays.fill(upper, Double.POSITIVE_INFINITY);
+		
+		RealVector meanV = new ArrayRealVector(mean);
+		RealMatrix sigmaM = new Array2DRowRealMatrix(sigma);
+		
+		CDFResult result = MultivariateNormal.cdf(meanV, sigmaM, lower, upper);
+				
+		assertFalse(Double.isNaN(result.cdf));
+		System.out.println("NaN bug result: " + result.cdf);
+	}
 		
 	@Test 
 	public void testCDFError() {
@@ -129,7 +165,10 @@ public class MultivariateNormalTest {
 			RealVector var = TestParameterGen.randomVarVector(m);
 			RandomSelection.shuffle(ranking, rnd);
 			
-			ExpResult result = OrderedNormalEM.multivariateExp(mean, var, ranking, OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null);
+			MVNParams params = OrderedNormalEM.getTransformedParams(mean, var, ranking);
+			ExpResult result = MultivariateNormal.exp(
+					params.mu, params.sigma, params.lower, params.upper,
+					OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null, null);			 
 			
 			if( !result.converged ) convergeFail++;			
 		}

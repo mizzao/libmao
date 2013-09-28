@@ -36,7 +36,7 @@ public class SinglePairEquivalenceTest {
 	static PlackettLuceModel pl = new PlackettLuceModel(true);
 	
 	static ThurstoneMostellerModel tm = new ThurstoneMostellerModel();
-	static OrderedNormalEM on = new OrderedNormalEM(max_em_iters, accuracy_probit, accuracy_probit);
+	static OrderedNormalEM on = new OrderedNormalEM(false, max_em_iters, accuracy_probit, accuracy_probit);
 	
 	OrderedNormalMCEM mcem = new OrderedNormalMCEM(false, max_em_iters, 
 			accuracy_probit, accuracy_probit, starting_samples, additional_samples);
