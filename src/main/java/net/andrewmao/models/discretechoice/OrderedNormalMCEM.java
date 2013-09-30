@@ -87,7 +87,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 			variance = new ArrayRealVector(m, 1.0d);
 		}		
 		
-		ll = new NormalLogLikelihood(delta, variance, MCEMModel.exec);
+		ll = new NormalLogLikelihood(delta, variance, EstimatorUtils.threadPool);
 				
 		counts = HashMultiset.create();			
 		for( int[] ranking : rankings )
@@ -128,7 +128,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		 */
 		double[] eM1 = m1Stats.getMean();
 		double[] eM2 = null;
-		if( floatVariance) eM2 = m2Stats.getMean();
+		if( floatVariance ) eM2 = m2Stats.getMean();
 		
 		for( int i = 0; i < eM1.length; i++ ) {
 			double m = eM1[i];
@@ -137,17 +137,11 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 			if( floatVariance ) variance.setEntry(i, eM2[i] - m*m);
 		}
 					
-		/* adjust the mean and variance values to prevent drift:
+		/* 
+		 * adjust the mean and variance values to prevent drift:
 		 * first subtract means so that first value is 0
 		 * then scale variance to 1
-		 */
-				
-		// Dunno what hossein was thinking with this, doesn't seem to work well
-//		delta.setEntry(0, 1); 
-//		variance.setEntry(0, 1);
-		
-		// Testing to see if parameters converge
-//		variance.set(1);		
+		 */	
 		
 		// Adjust all variables so that first var is 1 		 
 		if( floatVariance ) {

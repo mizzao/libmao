@@ -5,8 +5,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.andrewmao.models.noise.NoiseModel;
@@ -23,10 +21,7 @@ import org.apache.commons.math3.linear.RealVector;
  * @param <T>
  */
 public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilityEstimator<M> {	
-	
-	// Make all MCEMs share the same threadpool.
-	static final ExecutorService exec = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-	
+
 	int maxIters;
 	double abseps;
 	double releps;
@@ -61,7 +56,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 		 * NOT reentrant. Don't call this from multiple threads.
 		 */		
 		
-		ecs = new ExecutorCompletionService<T>(exec);
+		ecs = new ExecutorCompletionService<T>(EstimatorUtils.threadPool);
 		submittedJobs = new AtomicInteger(0);
 		
 		initialize(rankings, numItems);

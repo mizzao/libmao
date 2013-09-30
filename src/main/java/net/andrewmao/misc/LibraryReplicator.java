@@ -64,24 +64,25 @@ public class LibraryReplicator<C> {
 	private class BlockingInvocationHandler implements InvocationHandler {
 		@Override
 		public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
-			C instance = null;
-			
-			// Grab a copy of the library out of the queue			
-			do {
-				try { instance = libQueue.take(); }
-				catch(InterruptedException e) {}
-			} while(instance == null);
-			
-			// Invoke the method
-			Object result = method.invoke(instance, args);
-			
-			// Return the library to the queue
-			while(true) {
-				try { libQueue.put(instance); break; }
-				catch( InterruptedException e ) {} 
-			} 
-			
-			return result;
+			C instance = null;			
+						
+			try {
+				// Grab a copy of the library out of the queue
+				do {
+					try { instance = libQueue.take(); }
+					catch(InterruptedException e) {}
+				} while(instance == null);	
+				
+				// Invoke the method
+				return method.invoke(instance, args);	
+			}
+			finally {				
+				// Return the library to the queue, even if there is an exception
+				while( instance != null ) {
+					try { libQueue.put(instance); break; }
+					catch( InterruptedException e ) {} 
+				} 	
+			}																
 		}		
 	}
 	

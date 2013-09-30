@@ -51,7 +51,7 @@ public class NormalCondExpTest {
 	
 	@Before
 	public void setUp() throws Exception {
-		condExpMVN = OrderedNormalEM.conditionalExp(mean, var, ranking, 2<<14, 1e-8);
+		condExpMVN = OrderedNormalEM.conditionalMean(mean, var, ranking, 2<<14, 1e-8, 1e-8).m1;
 	}
 
 	@After
@@ -75,7 +75,7 @@ public class NormalCondExpTest {
 	@Test
 	public void testConditionalExpectationQuick() {
 		System.out.println("Testing bias ");
-		double[] condExpMVNQuick = OrderedNormalEM.conditionalExp(mean, var, ranking, 2<<12, 1e-5);		
+		double[] condExpMVNQuick = OrderedNormalEM.conditionalMean(mean, var, ranking, 2<<12, 1e-5, 1e-5).m1;		
 						
 		System.out.println("MVN Quick: " + Arrays.toString(condExpMVNQuick));		
 		System.out.println("MVN Accurate: " + Arrays.toString(condExpMVN));

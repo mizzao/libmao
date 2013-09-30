@@ -1,7 +1,11 @@
 package net.andrewmao.models.discretechoice;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.apache.commons.math3.analysis.function.Sqrt;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
@@ -16,6 +20,7 @@ import com.google.common.primitives.Ints;
 
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.probability.MultivariateNormal;
+import net.andrewmao.probability.MultivariateNormal.EX2Result;
 import net.andrewmao.probability.MultivariateNormal.ExpResult;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import net.andrewmao.stat.MultivariateMean;
@@ -57,10 +62,10 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	public double[] getParameters(List<int[]> rankings, int numItems) {
 		int m = numItems;		
 		
-		RealVector mean = new ArrayRealVector(m, 0.0d);
+		final RealVector mean = new ArrayRealVector(m, 0.0d);
 //		RealVector mean = new ArrayRealVector(new NormalDistribution(0,1).sample(m), false);
 		
-		RealVector variance = new ArrayRealVector(m, FIXED_VARIANCE);
+		final RealVector variance = new ArrayRealVector(m, FIXED_VARIANCE);
 				
 		MultivariateMean m1Stats = new MultivariateMean(m), m2Stats = null;
 		if( floatVariance ) m2Stats = new MultivariateMean(m);
@@ -76,51 +81,106 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			m1Stats.clear();
 			if( floatVariance ) m2Stats.clear();
 			
+			System.out.println("Starting iteration " + i);
+			
 			/* 
 			 * E-step: compute conditional expectation
 			 * only need to compute over unique rankings
 			 */				
-			double currentLL = 0;
+			double currentLL = 0;						
 			
-			for( Entry<List<Integer>> e : counts.entrySet() ) {
-				int[] ranking = Ints.toArray(e.getElement());	
-				int duplicity = e.getCount();								
-				
-				if( floatVariance ) {
-					
+			// TODO: abstract this silly control logic
+			if( floatVariance ) {				
+				List<Callable<M2Result>> tasks = new ArrayList<Callable<M2Result>>(counts.entrySet().size());	
+				for( Entry<List<Integer>> e : counts.entrySet() ) {
+					final int[] ranking = Ints.toArray(e.getElement());	
+					final int duplicity = e.getCount();								
+																	
+					tasks.add(new Callable<M2Result>() {
+						@Override
+						public M2Result call() throws Exception {
+							ConditionalM2 condMoments = conditionalMoments(mean, variance, ranking, maxPtsScale, abseps, releps);
+							return new M2Result(condMoments, duplicity);
+						}						
+					});																							
+				}				
+				try {
+					for (Future<M2Result> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
+						M2Result sample = future.get();
+						
+						for( int j = 0; j < sample.duplicity; j++ ) {
+							m1Stats.addValue(sample.result.m1);
+							m2Stats.addValue(sample.result.m2);
+						}					
+						
+						currentLL += sample.duplicity * Math.log(sample.result.cdf);
+					}
+				} catch (InterruptedException | ExecutionException e) {
+					throw new RuntimeException(e);				
 				}
-				else {
-					// TODO parallelize this
-					MVNParams params = getTransformedParams(mean, variance, ranking);
-					ExpResult result = MultivariateNormal.exp(
-							params.mu, params.sigma, params.lower, params.upper,
-							maxPtsScale, abseps, releps);
-					double[] condMean = computeConditionalExp(result.expValues, ranking);				
-
-					// Add this ll, expectation a number of times				
-					for( int j = 0; j < duplicity; j++ ) {
-						m1Stats.addValue(condMean);
-					}				
-					currentLL += duplicity * Math.log(result.cdf);
-				}
+			}
+			else {	
+				List<Callable<M1Result>> tasks = new ArrayList<Callable<M1Result>>(counts.entrySet().size());	
+				for( Entry<List<Integer>> e : counts.entrySet() ) {
+					final int[] ranking = Ints.toArray(e.getElement());	
+					final int duplicity = e.getCount();								
+																	
+					tasks.add(new Callable<M1Result>() {
+						@Override
+						public M1Result call() throws Exception {
+							ConditionalM1 condMoment = conditionalMean(mean, variance, ranking, maxPtsScale, abseps, releps);
+							return new M1Result(condMoment, duplicity);
+						}					
+					});																							
+				}				
+				try {
+					for (Future<M1Result> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
+						M1Result sample = future.get();
+						
+						// Add this ll, expectation a number of times
+						for( int j = 0; j < sample.duplicity; j++ ) {
+							m1Stats.addValue(sample.result.m1);						
+						}					
+						
+						currentLL += sample.duplicity * Math.log(sample.result.cdf);
+					}
+				} catch (InterruptedException | ExecutionException e) {
+					throw new RuntimeException(e);				
+				}																			
 			}
 			
 			// M-step: update mean
-			double[] newMean = m1Stats.getMean();					
-						
-//			double adj = newMean[0];
-			for( int j = 0; j < m; j++ )
-				mean.setEntry(j, newMean[j]);
-//				mean.setEntry(j, newMean[j] - adj);
+			double[] eM1 = m1Stats.getMean();											
+			double[] eM2 = null;
+			if( floatVariance ) eM2 = m2Stats.getMean();
+			
+			for( int j = 0; j < m; j++ ) {
+				double m1j = eM1[j];
+				mean.setEntry(j, m1j);			
+				
+				if( floatVariance ) variance.setEntry(j, eM2[j] - m1j*m1j);
+			}
+			
+			// Adjust all variables so that first var is 1 		 
+			if( floatVariance ) {
+				double var = variance.getEntry(0);
+				double sd = Math.sqrt(var);
+				variance.mapDivideToSelf(var);
+				mean.mapDivideToSelf(sd);
+			}
+			
+			// Re-center means - first mean is 0
+			mean.mapSubtractToSelf(mean.getEntry(0));
 			
 			/*
 			 * Check out how we did - log likelihood for the old mean is given for free above 
 			 * almost 2x speedup over re-computing the LL from scratch			 
-			 */					
-//			System.out.printf("Likelihood: %f\n", currentLL);
+			 */								
 			double absImpr = currentLL - ll;
 			double relImpr = -absImpr / ll;
 			ll = lastLL = currentLL;
+			
+			System.out.printf("Likelihood: %f\n", ll);
 			
 			if( absImpr < abseps ) {
 //				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
@@ -142,6 +202,57 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 //		return mean.toArray();
 	}
 
+	private class M1Result {
+		final ConditionalM1 result;
+		final int duplicity;		
+		M1Result(ConditionalM1 result, int duplicity) {
+			this.result = result;
+			this.duplicity = duplicity;
+		}	
+	}
+	
+	private class M2Result {
+		final ConditionalM2 result;
+		final int duplicity;		
+		M2Result(ConditionalM2 result, int duplicity) {
+			this.result = result;
+			this.duplicity = duplicity;
+		}	
+	}
+
+	public static class ConditionalM1 {
+		public final double cdf;
+		public final double[] m1;
+		private ConditionalM1(int[] ranking, ExpResult yResult) {
+			this.cdf = yResult.cdf;			
+			this.m1 = new double[yResult.expValues.length];
+			
+			// First value is the highest order statistic
+			double str = yResult.expValues[0];
+			m1[ranking[0]-1] = str;			
+			
+			// Rest of values assigned by differences
+			for( int i = 1; i < m1.length; i++ )
+				m1[ranking[i]-1] = (str -= yResult.expValues[i]);			
+		}
+	}
+	
+	public static class ConditionalM2 extends ConditionalM1 {
+		public final double[] m2;
+		private ConditionalM2(int[] ranking, EX2Result yResult) {
+			super(ranking, yResult);
+			this.m2 = new double[yResult.expValues.length];
+			
+			// E X_1^2 = E Y_1^2
+			double x_i2 = yResult.eX2Values[0];
+			m2[ranking[0]-1] = x_i2;
+			
+			// E X_2^2 = E Y_2^2 - E X_1^2 + 2 E X_2 E X_1
+			for( int i = 1; i < m2.length; i++ )
+				m2[ranking[i]-1] = (x_i2 = yResult.eX2Values[i] - x_i2 + 2*m1[i]*m1[i-1]);							
+		}
+	}
+	
 	/**
 	 * Compute the conditional expectation for this ranking using the multivariate normal expectation
 	 * Equivalent to the MCMC Gibbs sampler with fixed mean 
@@ -151,29 +262,30 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @param ranking
 	 * @return
 	 */
-	public static double[] conditionalExp(RealVector mean, RealVector variance, int[] ranking, int maxPtsMultiplier, Double eps) {
+	public static ConditionalM1 conditionalMean(
+			RealVector mean, RealVector variance, int[] ranking, 
+			int maxPtsMultiplier, Double abseps, Double releps) {
 		MVNParams params = getTransformedParams(mean, variance, ranking);
-		double[] result = MultivariateNormal.exp(
-				params.mu, params.sigma, params.lower, params.upper,
-				maxPtsMultiplier, eps, eps).expValues;				
-		return computeConditionalExp(result, ranking);
-	}
-
-	public static double[] computeConditionalExp(double[] mvnexp, int[] ranking) {
-		double[] vals = new double[mvnexp.length];
-		
-		// First value is the highest order statistic
-		double str = mvnexp[0];
-		vals[ranking[0]-1] = str;
-		
-		// Rest of values assigned by differences
-		for( int i = 1; i < vals.length; i++ ) {
-			vals[ranking[i]-1] = (str -= mvnexp[i]);
-		}
-		
-		return vals;
+		ExpResult result = MultivariateNormal.exp(params.mu, params.sigma, params.lower, params.upper, maxPtsMultiplier, abseps, releps);				
+		return new ConditionalM1(ranking, result);
 	}
 	
+	/**
+	 * Compute the conditional first and second moments for this ranking
+	 * 
+	 * @param mean
+	 * @param variance
+	 * @param ranking
+	 * @return
+	 */
+	public static ConditionalM2 conditionalMoments(
+			RealVector mean, RealVector variance, int[] ranking, 
+			int maxPtsMultiplier, double abseps, double releps) {
+		MVNParams params = getTransformedParams(mean, variance, ranking);
+		EX2Result result = MultivariateNormal.eX2(params.mu, params.sigma, params.lower, params.upper, maxPtsMultiplier, abseps, releps);				
+		return new ConditionalM2(ranking, result);
+	}
+
 	public static class MVNParams {
 		public final RealVector mu;
 		public final RealMatrix sigma;
