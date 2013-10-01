@@ -31,9 +31,10 @@ public class CondorcetEstimator implements OrdinalEstimator<CondorcetModel<?>> {
 	@Override
 	public <T> CondorcetModel<T> fitModelOrdinal(final PreferenceProfile<T> profile) {
 		// Find optimal kemeny rankings
-		Kemeny k = new Kemeny();
+		Kemeny k = new Kemeny();			
 		
 		List<List<T>> bestRankings = k.getAllRankings(profile);
+//		System.out.println(bestRankings.size() + " rankings found");
 		final List<T> someRanking = bestRankings.get(0);
 		
 //		double bestLL = Double.POSITIVE_INFINITY;

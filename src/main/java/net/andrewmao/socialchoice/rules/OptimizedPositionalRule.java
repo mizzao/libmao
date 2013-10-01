@@ -81,7 +81,7 @@ public abstract class OptimizedPositionalRule<T> extends PositionalVotingRule {
 			// Count the number of times each preference appears in each position			
 
 			// This map induces the ordering on the T. Its comparator is important!
-			Map<T, int[]> counts = profile.getCounts();
+			Map<T, int[]> counts = profile.getPositionCounts();
 			
 			IloLinearNumExpr[] totals = new IloLinearNumExpr[numCandidates];
 			

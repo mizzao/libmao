@@ -10,6 +10,10 @@ import java.util.Random;
 import java.util.TreeMap;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.mutable.MutableInt;
+
+import com.google.common.collect.ArrayTable;
+import com.google.common.collect.Table;
 
 import net.andrewmao.math.RandomSelection;
 
@@ -68,7 +72,12 @@ public class PreferenceProfile<T> {
 		return rankings;
 	}
 
-	public Map<T, int[]> getCounts() {
+	/**
+	 * Returns the number of times each candidate has appeared in a particular place,
+	 * with an array in the same order as the initial data.
+	 * @return
+	 */
+	public Map<T, int[]> getPositionCounts() {
 		Map<T, int[]> counts = new TreeMap<T, int[]>();
 		
 		for( T t : profile[0] ) counts.put(t, new int[profile[0].length]);
@@ -79,6 +88,35 @@ public class PreferenceProfile<T> {
 		}
 		
 		return counts;
+	}
+	
+	/**
+	 * Computes the number of times one item appears in a ranking above another.
+	 * See also {@link #getNumCorrect(Object, Object, Comparator)} to compute this for a single pair of items.
+	 * @return
+	 */
+	public Table<T, T, MutableInt> getPairwiseCounts() {
+		List<T> keys = Arrays.asList(getSortedCandidates());
+		
+		Table<T, T, MutableInt> table = ArrayTable.create(keys, keys);
+		
+		// Initialize table
+		for( int i = 0; i < keys.size(); i++ ) {
+			for( int j = 0; j < keys.size(); j++ ) {
+				if (i == j) continue;
+				table.put(keys.get(i), keys.get(j), new MutableInt());
+			}
+		}
+		
+		for( T[] ranking : profile ) {
+			for( int i = 0; i < ranking.length; i++ ) {
+				for( int j = i+1; j < ranking.length; j++ ) {
+					table.get(ranking[i], ranking[j]).increment();
+				}
+			}
+		}
+		
+		return table;
 	}
 	
 	/**
