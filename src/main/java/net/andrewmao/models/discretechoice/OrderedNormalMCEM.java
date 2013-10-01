@@ -14,7 +14,6 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
 import com.google.common.primitives.Ints;
 
-import net.andrewmao.models.discretechoice.NormalGibbsSampler.NormalMoments;
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;

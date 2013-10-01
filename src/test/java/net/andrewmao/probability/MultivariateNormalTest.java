@@ -284,6 +284,9 @@ public class MultivariateNormalTest {
 			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
 	}
 	
+	/*
+	 * Make sure the dodgy error calculation for the second moment is correct
+	 */
 	@Test
 	public void testEX2Error() {
 		fail("Not implemented");
@@ -313,11 +316,47 @@ public class MultivariateNormalTest {
 			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue() * scale * scale);		
 	}
 	
-	/*
-	 * Make sure the dodgy error calculation for the second moment is correct
-	 */
 	@Test
 	public void testEX2ScaleBounds() {
-		fail("Not implemented");
+		int n = 4;
+		final double scale = 2.0d;
+		final double limit = 1.96;
+					
+		double[] upper196 = new double[n];
+		
+		for( int i = 0; i < upper196.length; i++ ) {			
+			upper196[i] = limit;
+		}
+		
+		double[] values = MultivariateNormal.eX2(mean4, sigmaI4, lower0, upper196).eX2Values;				
+		
+		System.out.println("Obtained expected squared values:");		
+		System.out.println(Arrays.toString(values));		
+		
+		// Rescale sigma and bounds, and test
+		RealMatrix sigma = sigmaI4.copy();
+		sigma.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
+			@Override
+			public double visit(int row, int column, double value) {				
+				return row == column ? value * scale * scale : 0;
+			}
+		});
+		
+		double[] lower = lower0.clone();
+		double[] upperScaled = upper196.clone();
+		
+		for( int i = 0; i < upper196.length; i++ ) {
+			lower[i] = lower[i] * scale;
+			upperScaled[i] = upperScaled[i] * scale;
+		}
+		
+		double[] values2 = MultivariateNormal.eX2(mean4, sigma, lower, upperScaled).eX2Values;				
+		
+		System.out.println("Obtained expected values after scaling:");		
+		System.out.println(Arrays.toString(values2));
+				
+		for( int i = 0; i < values.length; i++ ) {
+			assertEquals(values[i], values2[i] / (scale * scale), MultivariateNormal.exp_default_releps.getValue());
+		}
 	}
 }

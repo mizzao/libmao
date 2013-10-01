@@ -91,58 +91,60 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			
 			// TODO: abstract this silly control logic
 			if( floatVariance ) {				
-				List<Callable<M2Result>> tasks = new ArrayList<Callable<M2Result>>(counts.entrySet().size());	
+				List<Callable<NormalMoments>> tasks = new ArrayList<Callable<NormalMoments>>(counts.entrySet().size());	
 				for( Entry<List<Integer>> e : counts.entrySet() ) {
 					final int[] ranking = Ints.toArray(e.getElement());	
-					final int duplicity = e.getCount();								
+					final int weight = e.getCount();								
 																	
-					tasks.add(new Callable<M2Result>() {
+					tasks.add(new Callable<NormalMoments>() {
 						@Override
-						public M2Result call() throws Exception {
-							ConditionalM2 condMoments = conditionalMoments(mean, variance, ranking, maxPtsScale, abseps, releps);
-							return new M2Result(condMoments, duplicity);
+						public NormalMoments call() throws Exception {
+							NormalMoments moments = conditionalMoments(mean, variance, ranking, maxPtsScale, abseps, releps);
+							moments.setWeight(weight);
+							return moments;							
 						}						
 					});																							
 				}				
 				try {
-					for (Future<M2Result> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
-						M2Result sample = future.get();
+					for (Future<NormalMoments> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
+						NormalMoments sample = future.get();
 						
-						for( int j = 0; j < sample.duplicity; j++ ) {
-							m1Stats.addValue(sample.result.m1);
-							m2Stats.addValue(sample.result.m2);
+						for( int j = 0; j < sample.weight; j++ ) {
+							m1Stats.addValue(sample.m1);
+							m2Stats.addValue(sample.m2);
 						}					
 						
-						currentLL += sample.duplicity * Math.log(sample.result.cdf);
+						currentLL += sample.weight * Math.log(sample.cdf);
 					}
 				} catch (InterruptedException | ExecutionException e) {
 					throw new RuntimeException(e);				
 				}
 			}
 			else {	
-				List<Callable<M1Result>> tasks = new ArrayList<Callable<M1Result>>(counts.entrySet().size());	
+				List<Callable<NormalMoments>> tasks = new ArrayList<Callable<NormalMoments>>(counts.entrySet().size());	
 				for( Entry<List<Integer>> e : counts.entrySet() ) {
 					final int[] ranking = Ints.toArray(e.getElement());	
-					final int duplicity = e.getCount();								
+					final int weight = e.getCount();								
 																	
-					tasks.add(new Callable<M1Result>() {
+					tasks.add(new Callable<NormalMoments>() {
 						@Override
-						public M1Result call() throws Exception {
-							ConditionalM1 condMoment = conditionalMean(mean, variance, ranking, maxPtsScale, abseps, releps);
-							return new M1Result(condMoment, duplicity);
+						public NormalMoments call() throws Exception {
+							NormalMoments means = conditionalMean(mean, variance, ranking, maxPtsScale, abseps, releps);
+							means.setWeight(weight);
+							return means;							
 						}					
 					});																							
 				}				
 				try {
-					for (Future<M1Result> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
-						M1Result sample = future.get();
+					for (Future<NormalMoments> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
+						NormalMoments sample = future.get();
 						
 						// Add this ll, expectation a number of times
-						for( int j = 0; j < sample.duplicity; j++ ) {
-							m1Stats.addValue(sample.result.m1);						
+						for( int j = 0; j < sample.weight; j++ ) {
+							m1Stats.addValue(sample.m1);						
 						}					
 						
-						currentLL += sample.duplicity * Math.log(sample.result.cdf);
+						currentLL += sample.weight * Math.log(sample.cdf);
 					}
 				} catch (InterruptedException | ExecutionException e) {
 					throw new RuntimeException(e);				
@@ -202,57 +204,6 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 //		return mean.toArray();
 	}
 
-	private class M1Result {
-		final ConditionalM1 result;
-		final int duplicity;		
-		M1Result(ConditionalM1 result, int duplicity) {
-			this.result = result;
-			this.duplicity = duplicity;
-		}	
-	}
-	
-	private class M2Result {
-		final ConditionalM2 result;
-		final int duplicity;		
-		M2Result(ConditionalM2 result, int duplicity) {
-			this.result = result;
-			this.duplicity = duplicity;
-		}	
-	}
-
-	public static class ConditionalM1 {
-		public final double cdf;
-		public final double[] m1;
-		private ConditionalM1(int[] ranking, ExpResult yResult) {
-			this.cdf = yResult.cdf;			
-			this.m1 = new double[yResult.expValues.length];
-			
-			// First value is the highest order statistic
-			double str = yResult.expValues[0];
-			m1[ranking[0]-1] = str;			
-			
-			// Rest of values assigned by differences
-			for( int i = 1; i < m1.length; i++ )
-				m1[ranking[i]-1] = (str -= yResult.expValues[i]);			
-		}
-	}
-	
-	public static class ConditionalM2 extends ConditionalM1 {
-		public final double[] m2;
-		private ConditionalM2(int[] ranking, EX2Result yResult) {
-			super(ranking, yResult);
-			this.m2 = new double[yResult.expValues.length];
-			
-			// E X_1^2 = E Y_1^2
-			double x_i2 = yResult.eX2Values[0];
-			m2[ranking[0]-1] = x_i2;
-			
-			// E X_2^2 = E Y_2^2 - E X_1^2 + 2 E X_2 E X_1
-			for( int i = 1; i < m2.length; i++ )
-				m2[ranking[i]-1] = (x_i2 = yResult.eX2Values[i] - x_i2 + 2*m1[i]*m1[i-1]);							
-		}
-	}
-	
 	/**
 	 * Compute the conditional expectation for this ranking using the multivariate normal expectation
 	 * Equivalent to the MCMC Gibbs sampler with fixed mean 
@@ -262,12 +213,13 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @param ranking
 	 * @return
 	 */
-	public static ConditionalM1 conditionalMean(
+	public static NormalMoments conditionalMean(
 			RealVector mean, RealVector variance, int[] ranking, 
 			int maxPtsMultiplier, Double abseps, Double releps) {
 		MVNParams params = getTransformedParams(mean, variance, ranking);
-		ExpResult result = MultivariateNormal.exp(params.mu, params.sigma, params.lower, params.upper, maxPtsMultiplier, abseps, releps);				
-		return new ConditionalM1(ranking, result);
+		ExpResult result = MultivariateNormal.exp(params.mu, params.sigma, params.lower, params.upper, maxPtsMultiplier, abseps, releps);		
+		double[] m1 = conditionalM1(ranking, result);		
+		return new NormalMoments(m1, result.cdf);
 	}
 	
 	/**
@@ -278,12 +230,48 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	 * @param ranking
 	 * @return
 	 */
-	public static ConditionalM2 conditionalMoments(
+	public static NormalMoments conditionalMoments(
 			RealVector mean, RealVector variance, int[] ranking, 
 			int maxPtsMultiplier, double abseps, double releps) {
 		MVNParams params = getTransformedParams(mean, variance, ranking);
-		EX2Result result = MultivariateNormal.eX2(params.mu, params.sigma, params.lower, params.upper, maxPtsMultiplier, abseps, releps);				
-		return new ConditionalM2(ranking, result);
+		EX2Result result = MultivariateNormal.eX2(params.mu, params.sigma, params.lower, params.upper, maxPtsMultiplier, abseps, releps);
+		double[] m1 = conditionalM1(ranking, result);
+		double[] m2 = conditionalM2(ranking, result, m1);
+		return new NormalMoments(m1, m2, result.cdf);
+	}
+
+	private static double[] conditionalM1(int[] ranking, ExpResult yResult) {		
+		double[] m1 = new double[yResult.expValues.length];
+	
+		// First value is the highest order statistic
+		double str = yResult.expValues[0];
+		m1[ranking[0]-1] = str;			
+	
+		// Rest of values assigned by differences
+		for( int i = 1; i < m1.length; i++ )
+			m1[ranking[i]-1] = (str -= yResult.expValues[i]);
+	
+		return m1;
+	}
+
+	private static double[] conditionalM2(int[] ranking, EX2Result yResult, double[] m1) {			
+		double[] m2 = new double[yResult.expValues.length];
+	
+		// E X_1^2 = E Y_1^2
+		double x_i2 = yResult.eX2Values[0];
+		m2[ranking[0]-1] = x_i2;
+	
+		// E X_2^2 = E Y_2^2 - E X_1^2 + 2 E X_2 E X_1
+		/*
+		 * FIXME this is incorrect. 
+		 * although X_1 and X_2 are marginally uncorrelated,
+		 * they are correlated when conditioning on this ranking, so it is wrong.
+		 * Must calculate this some other way (probably using sigma matrices) and eve's law
+		 */
+		for( int i = 1; i < m2.length; i++ )
+			m2[ranking[i]-1] = (x_i2 = yResult.eX2Values[i] - x_i2 + 2*m1[i]*m1[i-1]);							
+		
+		return m2;
 	}
 
 	public static class MVNParams {

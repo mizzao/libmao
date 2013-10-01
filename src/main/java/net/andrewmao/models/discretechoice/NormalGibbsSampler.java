@@ -17,7 +17,7 @@ import org.apache.commons.math3.linear.RealVector;
  * @author mao
  *
  */
-class NormalGibbsSampler implements Callable<net.andrewmao.models.discretechoice.NormalGibbsSampler.NormalMoments> {
+class NormalGibbsSampler implements Callable<NormalMoments> {
 	
 	static final double MAX_IGNORE_PCT = 0.1d;
 	static final int MAX_IGNORE = 2000;
@@ -171,17 +171,6 @@ class NormalGibbsSampler implements Callable<net.andrewmao.models.discretechoice
 //		if( i < current.length - 1 ) current[i] = Math.max(
 //				current[i], 
 //				Math.nextUp(current[i+1]));
-	}
-
-	static class NormalMoments {
-		final double[] m1;
-		final double[] m2;
-		final int weight;
-		private NormalMoments(double[] m1, double[] m2, int weight) {
-			this.m1 = m1;
-			this.m2 = m2;
-			this.weight = weight;
-		}
 	}
 	
 }
