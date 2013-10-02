@@ -12,6 +12,11 @@ import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 
+/**
+ * Convenience class for generating parameters for testing noise models
+ * @author mao
+ *
+ */
 public class TestParameterGen {
 
 	static Random rnd = new Random();

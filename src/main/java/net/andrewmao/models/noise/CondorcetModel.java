@@ -6,14 +6,16 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.math3.stat.descriptive.moment.Mean;
 
 
 import net.andrewmao.math.RandomSelection;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
-import net.andrewmao.socialchoice.rules.SocialChoiceMetric;
+import net.andrewmao.socialchoice.rules.RankingMetric;
 
 /**
  * Generates preference profiles with Condorcet noise
+ * Also known as Mallows model
  * @author mao
  *
  * @param <T>
@@ -112,11 +114,42 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 	}
 
 	@Override
-	public double computeMetric(SocialChoiceMetric<T> metric) {	
+	public double computeMetric(RankingMetric<T> metric) {	
 		if( candidatesMixed != null )
 			return metric.computeAverage(candidatesMixed);
 		else			
 			return metric.compute(candidates);
+	}
+
+	@Override
+	public double marginalProbability(T winner, T loser) {
+		if( candidatesMixed != null ) {
+			Mean m = new Mean();
+			for( List<T> ranking : candidatesMixed ) {
+				m.increment(mallowsPairwiseProb(ranking.indexOf(winner) - ranking.indexOf(loser), phi));
+			}
+			return m.getResult();
+		}
+		else
+			return mallowsPairwiseProb(candidates.indexOf(winner) - candidates.indexOf(loser), phi);
+	}
+
+	static double mallowsPairwiseProb(int difference, double phi) {
+		int c = difference > 0 ? difference : -difference;		
+		double num = 1, denom1 = 1, denom2 = 1;
+		
+		double phi_k = 1;
+		for( int k = 1; k < c; k++ ) {
+			phi_k *= phi;
+			num += (k+1) * phi_k;
+			denom1 += phi_k;
+			denom2 += phi_k;
+		}
+		// Extra iteration for second part of denom
+		denom2 += phi_k * phi;
+		
+		double prob = num / denom1 / denom2;		
+		return difference > 0 ? prob : 1-prob;
 	}
 
 	@Override

@@ -6,7 +6,7 @@ import java.util.List;
 
 import net.andrewmao.models.discretechoice.ScoredItems;
 
-public abstract class SocialChoiceMetric<T> {
+public abstract class RankingMetric<T> {
 	
 	public abstract double compute(List<T> ranking);	
 	public abstract double computeByScore(ScoredItems<T> scores);
@@ -23,9 +23,9 @@ public abstract class SocialChoiceMetric<T> {
 		return total / count;
 	}
 	
-	public static SocialChoiceMetric<Integer> getNumMistakesMetric() {
+	public static RankingMetric<Integer> getNumMistakesMetric() {
 		
-		return new SocialChoiceMetric<Integer>() {
+		return new RankingMetric<Integer>() {
 			@Override
 			public double compute(List<Integer> ranking) {				
 				double mistakes = 0;
@@ -76,8 +76,8 @@ public abstract class SocialChoiceMetric<T> {
 		};
 	}
 
-	public static SocialChoiceMetric<Integer> getFirstPlaceWrongMetric() {		
-		return new SocialChoiceMetric<Integer>() {
+	public static RankingMetric<Integer> getFirstPlaceWrongMetric() {		
+		return new RankingMetric<Integer>() {
 			@Override
 			public double compute(List<Integer> ranking) {				
 				List<Integer> sorted = new ArrayList<Integer>(ranking);

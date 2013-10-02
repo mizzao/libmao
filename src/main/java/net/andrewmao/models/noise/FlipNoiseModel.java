@@ -6,7 +6,7 @@ import java.util.Random;
 
 import net.andrewmao.math.RandomSelection;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
-import net.andrewmao.socialchoice.rules.SocialChoiceMetric;
+import net.andrewmao.socialchoice.rules.RankingMetric;
 
 /**
  * Generates preference profiles with an average of X flips per ranking
@@ -52,7 +52,12 @@ public class FlipNoiseModel<T> extends NoiseModel<T> {
 	}
 
 	@Override
-	public double computeMetric(SocialChoiceMetric<T> metric) {
+	public double computeMetric(RankingMetric<T> metric) {
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
+	public double marginalProbability(T winner, T loser) {
 		throw new UnsupportedOperationException();
 	}
 

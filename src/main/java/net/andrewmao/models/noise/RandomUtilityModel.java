@@ -8,7 +8,7 @@ import java.util.Random;
 
 import net.andrewmao.models.discretechoice.ScoredItems;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
-import net.andrewmao.socialchoice.rules.SocialChoiceMetric;
+import net.andrewmao.socialchoice.rules.RankingMetric;
 
 public abstract class RandomUtilityModel<T> extends NoiseModel<T> {
 		
@@ -105,7 +105,7 @@ public abstract class RandomUtilityModel<T> extends NoiseModel<T> {
 		});
 	}
 
-	public double computeMetric(SocialChoiceMetric<T> metric) {
+	public double computeMetric(RankingMetric<T> metric) {
 		return metric.computeByScore(strMap);
 	}
 }

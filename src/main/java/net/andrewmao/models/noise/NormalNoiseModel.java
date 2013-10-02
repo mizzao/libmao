@@ -7,6 +7,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 import net.andrewmao.math.RandomGeneration;
+import net.andrewmao.probability.NormalDist;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 /**
@@ -90,6 +91,15 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	
 	public double[] getSigmas() {
 		return sds;
+	}
+
+	@Override
+	public double marginalProbability(T winner, T loser) {
+		int w = candidates.indexOf(winner);
+		int l = candidates.indexOf(loser);
+				
+		double s_w = sds[w], s_l = sds[l];				
+		return NormalDist.cdf01((strParams[w] - strParams[l])/Math.sqrt(s_w*s_w + s_l*s_l));
 	}
 
 	@Override

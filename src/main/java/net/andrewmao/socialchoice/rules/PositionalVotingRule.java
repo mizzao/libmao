@@ -37,7 +37,7 @@ public abstract class PositionalVotingRule extends ScoredVotingRule {
 		return normalized;
 	}
 
-	public <T> void prettyPrint(PreferenceProfile<T> prefs, SocialChoiceMetric<T> m) {	
+	public <T> void prettyPrint(PreferenceProfile<T> prefs, RankingMetric<T> m) {	
 		ScoredItems<T> scores = getNormalizedScores(prefs);
 		
 		for(Map.Entry<T, MutableDouble> e : scores.entrySet())

@@ -18,6 +18,9 @@ import org.junit.Test;
 
 public class ThurstoneNoiseTest {
 	
+	// Lots of room over the 16 decimals that the normal approximation is supposed to give
+	static final double EXACT_TOL = 1e-12; 
+	
 	Character[] ls = new Character[] { 'a', 'b', 'c', 'd' };
 	List<Character> letters = Arrays.asList(ls);
 	
@@ -49,23 +52,38 @@ public class ThurstoneNoiseTest {
 						
 		PreferenceProfile<Character> prefs = gen.sampleProfile(size, new Random());
 		
-		System.out.println(1.0 * prefs.getNumCorrect('a', 'b', comp) / size);
-		System.out.println(dist.cumulativeProbability(strDiff));
+		double prob1 = dist.cumulativeProbability(strDiff);
+//		System.out.println(1.0 * prefs.getNumCorrect('a', 'b', comp) / size);
+//		System.out.println(prob1);
+		assertEquals(prob1, gen.marginalProbability('a', 'b'), EXACT_TOL);
+		assertEquals(prob1, gen.marginalProbability('b', 'c'), EXACT_TOL);
+		assertEquals(prob1, gen.marginalProbability('c', 'd'), EXACT_TOL);
+		assertEquals(1-prob1, gen.marginalProbability('d', 'c'), EXACT_TOL);
+		assertEquals(1-prob1, gen.marginalProbability('c', 'b'), EXACT_TOL);
+		assertEquals(1-prob1, gen.marginalProbability('b', 'a'), EXACT_TOL);
 		
-		System.out.println(1.0 * prefs.getNumCorrect('a', 'c', comp) / size);
-		System.out.println(dist.cumulativeProbability(2*strDiff));
+		double prob2 = dist.cumulativeProbability(2*strDiff);
+//		System.out.println(1.0 * prefs.getNumCorrect('a', 'c', comp) / size);
+//		System.out.println(prob2);
+		assertEquals(prob2, gen.marginalProbability('a', 'c'), EXACT_TOL);
+		assertEquals(prob2, gen.marginalProbability('b', 'd'), EXACT_TOL);
+		assertEquals(1-prob2, gen.marginalProbability('c', 'a'), EXACT_TOL);
+		assertEquals(1-prob2, gen.marginalProbability('d', 'b'), EXACT_TOL);
 		
-		System.out.println(1.0 * prefs.getNumCorrect('a', 'd', comp) / size);
-		System.out.println(dist.cumulativeProbability(3*strDiff));
+		double prob3 = dist.cumulativeProbability(3*strDiff);
+//		System.out.println(1.0 * prefs.getNumCorrect('a', 'd', comp) / size);
+//		System.out.println(prob3);
+		assertEquals(prob3, gen.marginalProbability('a', 'd'), EXACT_TOL);
+		assertEquals(1-prob3, gen.marginalProbability('d', 'a'), EXACT_TOL);		
 				
-		assertEquals(1.0 * prefs.getNumCorrect('a', 'b', comp) / size, dist.cumulativeProbability(strDiff), tol);
-		assertEquals(1.0 * prefs.getNumCorrect('b', 'c', comp) / size, dist.cumulativeProbability(strDiff), tol);
-		assertEquals(1.0 * prefs.getNumCorrect('c', 'd', comp) / size, dist.cumulativeProbability(strDiff), tol);
+		assertEquals(prob1, 1.0 * prefs.getNumCorrect('a', 'b', comp) / size, tol);
+		assertEquals(prob1, 1.0 * prefs.getNumCorrect('b', 'c', comp) / size, tol);
+		assertEquals(prob1, 1.0 * prefs.getNumCorrect('c', 'd', comp) / size, tol);
 		
-		assertEquals(1.0 * prefs.getNumCorrect('a', 'c', comp) / size, dist.cumulativeProbability(2*strDiff), tol);
-		assertEquals(1.0 * prefs.getNumCorrect('b', 'd', comp) / size, dist.cumulativeProbability(2*strDiff), tol);
+		assertEquals(prob2, 1.0 * prefs.getNumCorrect('a', 'c', comp) / size, tol);
+		assertEquals(prob2, 1.0 * prefs.getNumCorrect('b', 'd', comp) / size, tol);
 		
-		assertEquals(1.0 * prefs.getNumCorrect('a', 'd', comp) / size, dist.cumulativeProbability(3*strDiff), tol);
+		assertEquals(prob3, 1.0 * prefs.getNumCorrect('a', 'd', comp) / size, tol);
 	}
 
 }

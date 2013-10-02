@@ -5,7 +5,7 @@ import java.util.Random;
 
 import net.andrewmao.models.noise.NoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
-import net.andrewmao.socialchoice.rules.SocialChoiceMetric;
+import net.andrewmao.socialchoice.rules.RankingMetric;
 
 
 /**
@@ -53,8 +53,13 @@ public class RandomFlipGenerator<T> extends NoiseModel<T> {
 	}
 
 	@Override
-	public double computeMetric(SocialChoiceMetric<T> metric) {		
+	public double computeMetric(RankingMetric<T> metric) {		
 		return metric.compute(candidates);
+	}
+
+	@Override
+	public double marginalProbability(T winner, T loser) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

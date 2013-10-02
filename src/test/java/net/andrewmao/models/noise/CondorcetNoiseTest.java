@@ -57,6 +57,7 @@ public class CondorcetNoiseTest {
 		System.out.println(params);
 		
 		// TODO parse model from string
+		fail("Not implemented");
 	}
 	
 	@Test
@@ -154,22 +155,38 @@ public class CondorcetNoiseTest {
 				double pct = 1.0 * corr / size;
 				System.out.printf("%d, %d: %d/%d (%.04f) ", cs[i], cs[j], corr, size, pct);
 				
-				if( j - i == 1) {
-					assertTrue(Math.abs(pct - p) < tol);
-					System.out.println("Model: " + p);
-				}
-				else if(j - i == 2) {
-					double prob = (1 + 2*phi)/(1+phi)/(1 + phi + phi*phi);
-					assertTrue(Math.abs(pct - prob) < tol);
-					System.out.println("Model: " + prob);
-				}
-				else if(j - i == 3) {
-					double prob = (1+2*phi+3*phi*phi)/(1+phi+phi*phi)/(1+phi+phi*phi+phi*phi*phi);
-					assertTrue(Math.abs(pct - prob) < tol);
-					System.out.println("Model: " + prob);
-				}
+				double prob = CondorcetModel.mallowsPairwiseProb(j-i, phi); 
+				assertEquals(prob, pct, tol);
+				System.out.println("Model: " + prob);
 			}
 		}				
 	}
 
+	@Test
+	public void testMallowsProb1() {
+		double p = 0.8;
+		double phi = (1-p)/p;
+		
+		assertEquals(p, CondorcetModel.mallowsPairwiseProb(1, phi), Double.MIN_NORMAL);
+	}
+	
+	@Test
+	public void testMallowsProb2() {
+		double p = 0.8;
+		double phi = (1-p)/p;
+		
+		double prob = (1 + 2*phi)/(1+phi)/(1 + phi + phi*phi);
+		
+		assertEquals(prob, CondorcetModel.mallowsPairwiseProb(2, phi), Double.MIN_NORMAL);		
+	}
+	
+	@Test
+	public void testMallowsProb3() {
+		double p = 0.8;
+		double phi = (1-p)/p;
+		
+		double prob = (1+2*phi+3*phi*phi)/(1+phi+phi*phi)/(1+phi+phi*phi+phi*phi*phi);
+		
+		assertEquals(prob, CondorcetModel.mallowsPairwiseProb(3, phi), Double.MIN_NORMAL);
+	}
 }

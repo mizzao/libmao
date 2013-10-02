@@ -71,6 +71,14 @@ public class GumbelNoiseModel<T> extends RandomUtilityModel<T> {
 		return new PreferenceProfile<T>(profile);
 	}
 		
+	@Override
+	public double marginalProbability(T winner, T loser) {
+		int idxWinner = candidates.indexOf(winner);
+		int idxLoser = candidates.indexOf(loser);
+		// This is just the logit function
+		return 1d / (2 + Math.expm1(strParams[idxLoser] - strParams[idxWinner]));
+	}
+
 	@Override	
 	public double logLikelihood(PreferenceProfile<T> profile) {
 		// The gumbel model log likelihood.
