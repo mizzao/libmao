@@ -31,6 +31,10 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 	
 	volatile double lastComputedLL;
 	
+	/**
+	 * 
+	 * @param failMM whether to throw an exception of the MM algorithm fails to converge
+	 */
 	public PlackettLuceModel(boolean failMM) {
 		this.failMM = failMM;
 	}

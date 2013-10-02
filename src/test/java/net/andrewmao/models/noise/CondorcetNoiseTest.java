@@ -141,8 +141,7 @@ public class CondorcetNoiseTest {
 	public void testGeneration() {		
 		int size = 10000;
 		double tol = 0.02;
-		double p = 0.8;
-		double phi = (1-p)/p;
+		double p = 0.8;		
 		
 		System.out.println("Testing p = " + p);
 		gen = new CondorcetModel<Integer>(numbers, p);		
@@ -154,8 +153,8 @@ public class CondorcetNoiseTest {
 				int corr = prefs.getNumCorrect(cs[i], cs[j], comp);
 				double pct = 1.0 * corr / size;
 				System.out.printf("%d, %d: %d/%d (%.04f) ", cs[i], cs[j], corr, size, pct);
-				
-				double prob = CondorcetModel.mallowsPairwiseProb(j-i, phi); 
+												
+				double prob = gen.marginalProbability(cs[i], cs[j]); 
 				assertEquals(prob, pct, tol);
 				System.out.println("Model: " + prob);
 			}

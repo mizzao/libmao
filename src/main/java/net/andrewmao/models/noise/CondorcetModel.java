@@ -122,19 +122,18 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 	}
 
 	@Override
-	public double marginalProbability(T winner, T loser) {
+	public double marginalProbability(T winner, T loser) {		
 		if( candidatesMixed != null ) {
 			Mean m = new Mean();
-			for( List<T> ranking : candidatesMixed ) {
-				m.increment(mallowsPairwiseProb(ranking.indexOf(winner) - ranking.indexOf(loser), phi));
-			}
+			for( List<T> ranking : candidatesMixed )
+				m.increment(mallowsPairwiseProb(ranking.indexOf(loser) - ranking.indexOf(winner), phi));			
 			return m.getResult();
 		}
 		else
-			return mallowsPairwiseProb(candidates.indexOf(winner) - candidates.indexOf(loser), phi);
+			return mallowsPairwiseProb(candidates.indexOf(loser) - candidates.indexOf(winner), phi);
 	}
 
-	static double mallowsPairwiseProb(int difference, double phi) {
+	static double mallowsPairwiseProb(int difference, double phi) {		
 		int c = difference > 0 ? difference : -difference;		
 		double num = 1, denom1 = 1, denom2 = 1;
 		
