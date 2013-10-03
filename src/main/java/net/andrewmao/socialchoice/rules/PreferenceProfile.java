@@ -232,4 +232,12 @@ public class PreferenceProfile<T> {
 		return new PreferenceProfile<T>(newProfile);
 	}
 	
+	@SuppressWarnings("unchecked")
+	public static <T> PreferenceProfile<T> singleton(List<T> ranking) {
+		T[] arr = ranking.toArray((T[]) Array.newInstance(ranking.get(0).getClass(), ranking.size()));
+		T[][] arr2 = (T[][]) Array.newInstance(arr.getClass(), 1);
+		arr2[0] = arr;
+		return new PreferenceProfile<T>(arr2);
+	}
+	
 }

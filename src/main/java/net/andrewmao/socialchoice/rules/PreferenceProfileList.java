@@ -1,5 +1,6 @@
 package net.andrewmao.socialchoice.rules;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -66,6 +67,25 @@ public class PreferenceProfileList<T> extends ArrayList<PreferenceProfile<T>> {
 		}
 		
 		return shrunken;
+	}
+	
+	public PreferenceProfile<T> concatenate() {
+		int size = 0;
+		for(PreferenceProfile<T> profile : this) {
+			size += profile.profile.length;
+		}
+						
+		@SuppressWarnings("unchecked")
+		T[][] arr = (T[][]) Array.newInstance(this.get(0).profile.getClass().getComponentType(), size);
+		// = new T[size][];
+		
+		int idx = 0;
+		for( PreferenceProfile<T> profile : this) {
+			System.arraycopy(profile.profile, 0, arr, idx, profile.profile.length);
+			idx += profile.profile.length;
+		}
+		
+		return new PreferenceProfile<T>(arr);
 	}
 
 	public static <T> PreferenceProfileList<T> singleton(

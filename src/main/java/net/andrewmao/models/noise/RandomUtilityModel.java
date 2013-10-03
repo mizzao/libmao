@@ -105,7 +105,7 @@ public abstract class RandomUtilityModel<T> extends NoiseModel<T> {
 		});
 	}
 
-	public double computeMetric(RankingMetric<T> metric) {
+	public double computeMLMetric(RankingMetric<T> metric) {
 		return metric.computeByScore(strMap);
 	}
 }

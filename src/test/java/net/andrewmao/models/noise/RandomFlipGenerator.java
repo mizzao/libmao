@@ -53,7 +53,7 @@ public class RandomFlipGenerator<T> extends NoiseModel<T> {
 	}
 
 	@Override
-	public double computeMetric(RankingMetric<T> metric) {		
+	public double computeMLMetric(RankingMetric<T> metric) {		
 		return metric.compute(candidates);
 	}
 

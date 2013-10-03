@@ -114,7 +114,7 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 	}
 
 	@Override
-	public double computeMetric(RankingMetric<T> metric) {	
+	public double computeMLMetric(RankingMetric<T> metric) {	
 		if( candidatesMixed != null )
 			return metric.computeAverage(candidatesMixed);
 		else			
@@ -153,7 +153,10 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 
 	@Override
 	public double logLikelihood(PreferenceProfile<T> profile) {
-		return profileLogLikelihood(profile, candidates, phi);
+		if( candidatesMixed != null )
+			throw new UnsupportedOperationException("Likelihood needs implementation for multiple rankings");
+		else
+			return profileLogLikelihood(profile, candidates, phi);
 	}
 
 	public static <T> double profileLogLikelihood(

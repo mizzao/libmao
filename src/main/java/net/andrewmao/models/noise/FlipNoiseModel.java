@@ -52,7 +52,7 @@ public class FlipNoiseModel<T> extends NoiseModel<T> {
 	}
 
 	@Override
-	public double computeMetric(RankingMetric<T> metric) {
+	public double computeMLMetric(RankingMetric<T> metric) {
 		throw new UnsupportedOperationException();
 	}
 
