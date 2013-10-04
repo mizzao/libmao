@@ -10,6 +10,7 @@ import java.util.concurrent.Future;
 import org.apache.commons.lang.mutable.MutableDouble;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.DiagonalMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -69,6 +70,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 		MultivariateMean m1Stats = new MultivariateMean(m), m2Stats = null;
 		if( floatVariance ) m2Stats = new MultivariateMean(m);
 		double ll = Double.NEGATIVE_INFINITY;
+		MutableDouble currentLL = new MutableDouble(0);
 		
 		// Pre-compute a single hash of rankings
 		Multiset<List<Integer>> counts = HashMultiset.create();			
@@ -85,10 +87,8 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 			/* 
 			 * E-step: compute conditional expectation
 			 * only need to compute over unique rankings
-			 */			
-			MutableDouble currentLL = new MutableDouble(0);										
-			List<Callable<NormalMoments>> tasks = new ArrayList<Callable<NormalMoments>>(counts.entrySet().size());
-									
+			 */															
+			List<Callable<NormalMoments>> tasks = new ArrayList<Callable<NormalMoments>>(counts.entrySet().size());									
 			for( Entry<List<Integer>> e : counts.entrySet() ) {
 				final int[] ranking = Ints.toArray(e.getElement());	
 				final int weight = e.getCount();								
@@ -104,13 +104,13 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 					}						
 				});																							
 			}				
-
+			// Reset likelihood and aggregate stats
+			currentLL.setValue(0);
 			collectData(tasks, m1Stats, m2Stats, currentLL);
 			
 			// M-step: update mean
 			double[] eM1 = m1Stats.getMean();											
-			double[] eM2 = null;
-			if( floatVariance ) eM2 = m2Stats.getMean();
+			double[] eM2 = floatVariance ? m2Stats.getMean() : null;
 			
 			for( int j = 0; j < m; j++ ) {
 				double m1j = eM1[j];
@@ -132,12 +132,17 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 			/*
 			 * Check out how we did - log likelihood for the old mean is given for free above 
 			 * almost 2x speedup over re-computing the LL from scratch			 
-			 */								
-			double absImpr = currentLL.doubleValue() - ll;
+			 */					
+			double newLL = currentLL.doubleValue();
+			double absImpr = newLL - ll;
 			double relImpr = -absImpr / ll;
-			ll = lastLL = currentLL.doubleValue();
+			ll = lastLL = newLL;
 			
+//			System.out.println(mean);
+//			System.out.println(variance);
 			System.out.printf("Likelihood: %f\n", ll);
+						
+//			if( i < maxIter ) continue;
 			
 			if( absImpr < abseps ) {
 //				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
@@ -153,17 +158,16 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 	}
 
 	private void collectData(List<Callable<NormalMoments>> tasks, 
-			MultivariateMean m1Stats, MultivariateMean m2Stats, MutableDouble currentLL) {
-		currentLL.setValue(0);
+			MultivariateMean m1Stats, MultivariateMean m2Stats, MutableDouble currentLL) {		
 		try {
 			for (Future<NormalMoments> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
-				NormalMoments sample = future.get();
+				NormalMoments datum = future.get();
 				
-				for( int j = 0; j < sample.weight; j++ ) {
-					m1Stats.addValue(sample.m1);
-					if( floatVariance ) m2Stats.addValue(sample.m2);
-				}					
-				currentLL.add(sample.weight * Math.log(sample.cdf));
+				for( int j = 0; j < datum.weight; j++ ) {
+					m1Stats.addValue(datum.m1);
+					if( floatVariance ) m2Stats.addValue(datum.m2);
+				}				
+				currentLL.add(datum.weight * Math.log(datum.cdf));
 			}
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);				
@@ -254,13 +258,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 	}
 	
 	public static MVNParams getTransformedParams(RealVector mean, RealVector variance, int[] ranking) {
-		int n = ranking.length;
+		int n = ranking.length;				
+		DiagonalMatrix d = new DiagonalMatrix(variance.toArray(), false); // No copying necessary
 		
-		// Initialize diagonal variance matrix
-		RealMatrix d = new Array2DRowRealMatrix(n, n);
-		for( int i = 0; i < n; i++ ) 
-			d.setEntry(i, i, variance.getEntry(i));		
-					
 		/*
 		 * Compute means and covariances of normal RVs
 		 * of the highest value, then representing differences

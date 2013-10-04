@@ -86,6 +86,8 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>, P> extends RandomUti
 			System.out.printf("Likelihood: %f\n", newLL);
 			double absImpr = newLL - ll;
 			double relImpr = -absImpr / ll;
+						
+			if( i < maxIters ) continue;
 			
 			if( absImpr < abseps ) {
 //				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);

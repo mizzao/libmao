@@ -226,9 +226,9 @@ public class MultivariateNormal {
 		int n = mean.getDimension();		
 		
 		if( n != sigma.getRowDimension() || !sigma.isSquare() )
-			throw new RuntimeException("mean and varcov dimensions differ");
+			throw new IllegalArgumentException("mean and varcov dimensions differ");
 		if( n != upper.length || n != lower.length ) 
-			throw new RuntimeException("mean and limit dimensions differ");
+			throw new IllegalArgumentException("mean and limit dimensions differ");
 		
 		return n;
 	}

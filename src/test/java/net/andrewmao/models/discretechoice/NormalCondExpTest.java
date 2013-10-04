@@ -5,13 +5,9 @@ import static org.junit.Assert.*;
 import java.util.Arrays;
 import java.util.Collection;
 
-import net.andrewmao.models.discretechoice.OrderedNormalEM.MVNParams;
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.TestParameterGen;
-import net.andrewmao.probability.MultivariateNormal;
 import net.andrewmao.probability.MultivariateNormal.CDFResult;
-import net.andrewmao.probability.MultivariateNormal.ExpResult;
-
 import org.apache.commons.math3.linear.RealVector;
 import org.junit.After;
 import org.junit.Before;
@@ -69,14 +65,10 @@ public class NormalCondExpTest {
 		// Ensure that we can use the conditional expectation MVN value to estimate likelihood		
 		
 		NormalLogLikelihood ll = new NormalLogLikelihood(mean, var);
-		CDFResult cdf = ll.multivariateProb(ranking);
+		CDFResult cdf = ll.multivariateProb(ranking);		
 		
-		MVNParams params = OrderedNormalEM.getTransformedParams(mean, var, ranking);
-		ExpResult exp = MultivariateNormal.exp(
-				params.mu, params.sigma, params.lower, params.upper,
-				OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null, null);
-		
-		assertEquals(cdf.cdf, exp.cdf, 1e-4);
+		assertEquals(cdf.cdf, condExpMVN.cdf, 1e-4);
+		assertEquals(cdf.cdf, condExpMVNVar.cdf, 1e-4);		
 	}
 	
 	@Test
@@ -110,6 +102,7 @@ public class NormalCondExpTest {
 		System.out.println("MVN Quick M2: " + Arrays.toString(condExpMVNQuick.m2));
 		
 		assertArrayEquals(condExpMVNVar.m1, condExpMVNQuick.m1, tol);
+		fail("Second moment of Integral is not implemented correctly");
 		assertArrayEquals(condExpMVNVar.m2, condExpMVNQuick.m2, tol);
 	}
 	

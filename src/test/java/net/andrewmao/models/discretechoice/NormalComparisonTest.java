@@ -20,10 +20,13 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class NormalComparisonTest {
 	
+	static final double MEAN_TOL = 0.02;
+	
 	static int candidates = 4;
 	static int trials = 5;
 	static int voters = 10;
 		
+	static int maxPtsScale = 1<<14;
 	static double abseps = 1e-5;
 	static double releps = 1e-5;
 	
@@ -34,37 +37,40 @@ public class NormalComparisonTest {
 	static OrderedNormalEM emFixed = new OrderedNormalEM(false, iters, abseps, releps);
 	static OrderedNormalEM emVar = new OrderedNormalEM(true, iters, abseps, releps);	
 	static OrderedNormalMCEM mcemFixed = new OrderedNormalMCEM(false, iters, abseps, releps, 
-			1<<12, starting_samples, additional_samples);
+			maxPtsScale, starting_samples, additional_samples);
 	static OrderedNormalMCEM mcemVar = new OrderedNormalMCEM(true, iters, abseps, releps, 
-			1<<12, starting_samples, additional_samples);
+			maxPtsScale, starting_samples, additional_samples);
 		
 	List<int[]> rankings;	
 	
-	MeanVarParams emFixedParams, emVarParams, mcemFixedParams, mcemVarParams;
-	double emFixedLL, emVarLL, mcemFixedLL, mcemVarLL;
+	final MeanVarParams emFixedParams, emVarParams, mcemFixedParams, mcemVarParams;
+	final double emFixedLL, emVarLL, mcemFixedLL, mcemVarLL;
 
 	public NormalComparisonTest(List<int[]> rankings) {		
 		this.rankings = rankings;
 		
 		NormalDistribution sample = new NormalDistribution();
+		double[] start = sample.sample(candidates);
 		
 		emFixedParams = emFixed.getParameters(rankings, candidates);
 		emFixedLL = emFixed.lastLL;
 		System.out.println("EM Fixed params, LL: " + emFixedLL);
 		System.out.println(Arrays.toString(emFixedParams.mean));		
+				
+//		emVarParams = emVar.getParameters(rankings, candidates);
+//		emVarLL = emVar.lastLL;
+		emVarParams = null;
+		emVarLL = 0;
+//		System.out.println("EM Var params, LL: " + emVarLL);
+//		System.out.println(Arrays.toString(emVarParams.mean));
 		
-		emVarParams = emVar.getParameters(rankings, candidates);
-		emVarLL = emVar.lastLL;
-		System.out.println("EM Var params, LL: " + emVarLL);
-		System.out.println(Arrays.toString(emVarParams.mean));
-		
-		mcemFixed.setup(new double[candidates]);
+		mcemFixed.setup(start);
 		mcemFixedParams = mcemFixed.getParameters(rankings, candidates);
 		mcemFixedLL = mcemFixed.lastLL;
 		System.out.println("MCEM Fixed params, LL: " + mcemFixedLL );
 		System.out.println(Arrays.toString(mcemFixedParams.mean));
 		
-		mcemVar.setup(sample.sample(candidates));
+		mcemVar.setup(start);
 		mcemVarParams = mcemVar.getParameters(rankings, candidates);
 		mcemVarLL = mcemVar.lastLL;
 		System.out.println("MCEM Var params, LL: " + mcemVarLL );
@@ -87,18 +93,30 @@ public class NormalComparisonTest {
 
 	@Test
 	public void testFixedParams() {
-		assertArrayEquals(emFixedParams.mean, mcemFixedParams.mean, 0.02);		
+		assertArrayEquals(emFixedParams.mean, mcemFixedParams.mean, MEAN_TOL);		
 	}
 	
 	@Test
-	public void testVarParams() {
-		assertArrayEquals(emVarParams.mean, mcemVarParams.mean, 0.02);
+	public void testVaryingMeanParams() {
+		fail("EM Var params not implemented correctly");
+		assertArrayEquals(emVarParams.mean, mcemVarParams.mean, MEAN_TOL);
 	}
 	
 	@Test
-	public void testVarLL() {
-		assertTrue(mcemVarLL > emFixedLL);
-		assertTrue(mcemVarLL > mcemFixedLL);						
+	public void testVaryingVarParams() {
+		fail("EM Var params not implemented correctly");
+		assertArrayEquals(emVarParams.variance, mcemVarParams.variance, 0.05);
+	}
+		
+	@Test
+	public void testEMVarLL() {
+		fail("EM Var params not implemented correctly");
+		assertTrue(emVarLL > emFixedLL);								
+	}
+	
+	@Test
+	public void testMCEMVarLL() {
+		assertTrue(mcemVarLL > mcemFixedLL);
 	}
 	
 	@Test
@@ -108,6 +126,7 @@ public class NormalComparisonTest {
 	
 	@Test
 	public void testVarLLEqual() {
+		fail("EM Var params not implemented correctly");
 		assertEquals(emVarLL, mcemVarLL, Math.abs(emVarLL * 10 * releps));
 	}
 

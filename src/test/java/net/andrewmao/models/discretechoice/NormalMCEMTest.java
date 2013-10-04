@@ -18,6 +18,8 @@ import org.junit.Test;
 
 public class NormalMCEMTest {
 	
+	static final double tol = 0.02;
+	
 	static Character[] stuff = new Character[] { 'A', 'B', 'C', 'D' };
 	static final List<Character> stuffList = Arrays.asList(stuff);	
 	
@@ -120,8 +122,8 @@ public class NormalMCEMTest {
 		System.out.println(Arrays.toString(fittedSds));
 		
 		// This assertion must have first element of means be 0, and variances adjusted to 1
-		assertArrayEquals(means, fittedMeans, 0.05);
-		assertArrayEquals(sds, fittedSds, 0.05);
+		assertArrayEquals(means, fittedMeans, tol);
+		assertArrayEquals(sds, fittedSds, tol);
 	}
 	
 }

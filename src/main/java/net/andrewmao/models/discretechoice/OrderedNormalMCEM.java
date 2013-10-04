@@ -39,11 +39,11 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	
 	RealVector delta, variance;
 	NormalLogLikelihood ll;
-	volatile double lastLL;
-	Multiset<List<Integer>> counts;
+	volatile double lastLL;	
 	
 	List<int[]> rankings;
 	int numItems;	
+	Multiset<List<Integer>> counts;
 
 	/**
 	 * Created an ordered normal model using MCEM. A fixed variance is set to 1.
@@ -131,8 +131,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		 * M-step: re-compute parameters
 		 */
 		double[] eM1 = m1Stats.getMean();
-		double[] eM2 = null;
-		if( floatVariance ) eM2 = m2Stats.getMean();
+		double[] eM2 = floatVariance ? m2Stats.getMean() : null;
 		
 		for( int i = 0; i < eM1.length; i++ ) {
 			double m = eM1[i];
@@ -157,9 +156,8 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		// Re-center means - first mean is 0
 		delta.mapSubtractToSelf(delta.getEntry(0));
 		
-//		System.out.println(delta);
-//		System.out.println(variance);
-				
+		System.out.println(delta);
+		System.out.println(variance);				
 	}	
 
 	@Override

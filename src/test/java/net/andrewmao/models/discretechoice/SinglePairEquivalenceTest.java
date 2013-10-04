@@ -80,6 +80,11 @@ public class SinglePairEquivalenceTest {
 	}
 	
 	@Test
+	public void testLogitMetricExpectation() {
+		fail("Not Implemented");
+	}
+	
+	@Test
 	public void testProbitModels() {		
 		/*
 		 * Tests the equivalency of BT and PL on data for two alternatives.
@@ -112,4 +117,8 @@ public class SinglePairEquivalenceTest {
 				
 	}
 
+	@Test
+	public void testProbitMetricExpectation() {
+		fail("Not Implemented");
+	}
 }
