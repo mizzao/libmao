@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import net.andrewmao.models.noise.GumbelNoiseModel;
+import net.andrewmao.models.noise.MeanParams;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.analysis.function.Log;
@@ -20,7 +21,7 @@ import org.apache.commons.math3.linear.RealVector;
  *
  * @param <T>
  */
-public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?>> {
+public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?>, MeanParams> {
 	
 	static final double PL_MAX_ITERS = 500;
 	
@@ -40,7 +41,7 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 	}
 	
 	@Override
-	public double[] getParameters(List<int[]> rankings, int numItems) {
+	public MeanParams getParameters(List<int[]> rankings, int numItems) {
 		int m = numItems; // # of items, indexed by i
 		int n = rankings.size(); // # of contests, indexed by j
 		
@@ -126,7 +127,7 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 		
 		// Return scaled and with log
 		double scalar = gamma.getEntry(0);
-		return gamma.mapDivide(scalar).map(new Log()).toArray();
+		return new MeanParams(gamma.mapDivide(scalar).map(new Log()).toArray());
 	}
 
 	@Override
@@ -134,7 +135,7 @@ public class PlackettLuceModel extends RandomUtilityEstimator<GumbelNoiseModel<?
 		List<T> ordering = Arrays.asList(profile.getSortedCandidates());				
 		List<int[]> rankings = profile.getIndices(ordering);		
 		
-		double[] strParams = getParameters(rankings, ordering.size());
+		double[] strParams = getParameters(rankings, ordering.size()).mean;
 		
 		GumbelNoiseModel<T> gnm = new GumbelNoiseModel<T>(ordering, strParams);
 		gnm.setFittedLikelihood(lastComputedLL);

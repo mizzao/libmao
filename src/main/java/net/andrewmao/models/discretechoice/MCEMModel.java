@@ -9,9 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import net.andrewmao.models.noise.NoiseModel;
 
-import org.apache.commons.math3.linear.ArrayRealVector;
-import org.apache.commons.math3.linear.RealVector;
-
 /**
  * Implementation of Azari, Parkes, Xia paper on RUM 
  * via MC-EM, using multithreading
@@ -20,7 +17,7 @@ import org.apache.commons.math3.linear.RealVector;
  *
  * @param <T>
  */
-public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilityEstimator<M> {	
+public abstract class MCEMModel<T, M extends NoiseModel<?>, P> extends RandomUtilityEstimator<M, P> {	
 
 	int maxIters;
 	double abseps;
@@ -47,11 +44,11 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 	protected abstract void eStep(int iter);
 	protected abstract void addData(T data);
 	protected abstract void mStep();
-	protected abstract double[] getCurrentParameters();
+	protected abstract P getCurrentParameters();
 	protected abstract double getLogLikelihood();
 		
 	@Override
-	public synchronized double[] getParameters(List<int[]> rankings, int numItems) {
+	public synchronized P getParameters(List<int[]> rankings, int numItems) {
 		/*
 		 * NOT reentrant. Don't call this from multiple threads.
 		 */		
@@ -61,11 +58,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 		
 		initialize(rankings, numItems);
 		double ll = Double.NEGATIVE_INFINITY;
-//		double absImpr = Double.POSITIVE_INFINITY;
-		
-//		RealVector oldParams = null; 
-		RealVector params = null;
-		
+ 
 		for( int i = 0; i < maxIters; i++ ) {
 			submittedJobs.set(0);
 			
@@ -88,11 +81,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 			}						
 									
 			mStep();			
-						
-			params = new ArrayRealVector(getCurrentParameters());
-//			if( i > 0 )
-//				absImpr = params.subtract(oldParams).getNorm();			
-						
+				
 			double newLL = getLogLikelihood();
 			System.out.printf("Likelihood: %f\n", newLL);
 			double absImpr = newLL - ll;
@@ -107,11 +96,10 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>> extends RandomUtilit
 				break;
 			}
 			
-//			oldParams = params;
 			ll = newLL;
 		}		
 		
-		return (params.toArray());
+		return getCurrentParameters();
 	}
 
 	void addJob(Callable<T> job) {

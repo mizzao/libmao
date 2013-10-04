@@ -7,7 +7,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import org.apache.commons.math3.analysis.function.Sqrt;
+import org.apache.commons.lang.mutable.MutableDouble;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
@@ -18,6 +18,7 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
 import com.google.common.primitives.Ints;
 
+import net.andrewmao.models.noise.MeanVarParams;
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.probability.MultivariateNormal;
 import net.andrewmao.probability.MultivariateNormal.EX2Result;
@@ -32,14 +33,13 @@ import net.andrewmao.stat.MultivariateMean;
  * @author mao
  *
  */
-public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>> {	
+public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>, MeanVarParams> {	
 	
 	public static final double FIXED_VARIANCE = 1.0d;
 	
 	public static final int EM_MAXPTS_MULTIPLIER = 1 << 14;
 	
-	volatile double lastLL;
-	volatile RealVector lastVariance;
+	volatile double lastLL;	
 	
 	private final boolean floatVariance;
 	private final int maxIter;
@@ -59,12 +59,11 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	}
 
 	@Override
-	public double[] getParameters(List<int[]> rankings, int numItems) {
+	public MeanVarParams getParameters(List<int[]> rankings, int numItems) {
 		int m = numItems;		
 		
 		final RealVector mean = new ArrayRealVector(m, 0.0d);
-//		RealVector mean = new ArrayRealVector(new NormalDistribution(0,1).sample(m), false);
-		
+//		RealVector mean = new ArrayRealVector(new NormalDistribution(0,1).sample(m), false);		
 		final RealVector variance = new ArrayRealVector(m, FIXED_VARIANCE);
 				
 		MultivariateMean m1Stats = new MultivariateMean(m), m2Stats = null;
@@ -75,7 +74,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 		Multiset<List<Integer>> counts = HashMultiset.create();			
 		for( int[] ranking : rankings )
 			counts.add(Ints.asList(ranking));
-		
+				
 		for(int i = 0; i < maxIter; i++ ) {
 			// Need to empty out the previous iteration's means. Nasty bug ;) 
 			m1Stats.clear();
@@ -86,70 +85,27 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			/* 
 			 * E-step: compute conditional expectation
 			 * only need to compute over unique rankings
-			 */				
-			double currentLL = 0;						
-			
-			// TODO: abstract this silly control logic
-			if( floatVariance ) {				
-				List<Callable<NormalMoments>> tasks = new ArrayList<Callable<NormalMoments>>(counts.entrySet().size());	
-				for( Entry<List<Integer>> e : counts.entrySet() ) {
-					final int[] ranking = Ints.toArray(e.getElement());	
-					final int weight = e.getCount();								
-																	
-					tasks.add(new Callable<NormalMoments>() {
-						@Override
-						public NormalMoments call() throws Exception {
-							NormalMoments moments = conditionalMoments(mean, variance, ranking, maxPtsScale, abseps, releps);
-							moments.setWeight(weight);
-							return moments;							
-						}						
-					});																							
-				}				
-				try {
-					for (Future<NormalMoments> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
-						NormalMoments sample = future.get();
-						
-						for( int j = 0; j < sample.weight; j++ ) {
-							m1Stats.addValue(sample.m1);
-							m2Stats.addValue(sample.m2);
-						}					
-						
-						currentLL += sample.weight * Math.log(sample.cdf);
-					}
-				} catch (InterruptedException | ExecutionException e) {
-					throw new RuntimeException(e);				
-				}
-			}
-			else {	
-				List<Callable<NormalMoments>> tasks = new ArrayList<Callable<NormalMoments>>(counts.entrySet().size());	
-				for( Entry<List<Integer>> e : counts.entrySet() ) {
-					final int[] ranking = Ints.toArray(e.getElement());	
-					final int weight = e.getCount();								
-																	
-					tasks.add(new Callable<NormalMoments>() {
-						@Override
-						public NormalMoments call() throws Exception {
-							NormalMoments means = conditionalMean(mean, variance, ranking, maxPtsScale, abseps, releps);
-							means.setWeight(weight);
-							return means;							
-						}					
-					});																							
-				}				
-				try {
-					for (Future<NormalMoments> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
-						NormalMoments sample = future.get();
-						
-						// Add this ll, expectation a number of times
-						for( int j = 0; j < sample.weight; j++ ) {
-							m1Stats.addValue(sample.m1);						
-						}					
-						
-						currentLL += sample.weight * Math.log(sample.cdf);
-					}
-				} catch (InterruptedException | ExecutionException e) {
-					throw new RuntimeException(e);				
-				}																			
-			}
+			 */			
+			MutableDouble currentLL = new MutableDouble(0);										
+			List<Callable<NormalMoments>> tasks = new ArrayList<Callable<NormalMoments>>(counts.entrySet().size());
+									
+			for( Entry<List<Integer>> e : counts.entrySet() ) {
+				final int[] ranking = Ints.toArray(e.getElement());	
+				final int weight = e.getCount();								
+
+				tasks.add(new Callable<NormalMoments>() {
+					@Override
+					public NormalMoments call() throws Exception {
+						NormalMoments moments = floatVariance ? 
+								conditionalMoments(mean, variance, ranking, maxPtsScale, abseps, releps) :
+									conditionalMean(mean, variance, ranking, maxPtsScale, abseps, releps);
+						moments.setWeight(weight);
+						return moments;							
+					}						
+				});																							
+			}				
+
+			collectData(tasks, m1Stats, m2Stats, currentLL);
 			
 			// M-step: update mean
 			double[] eM1 = m1Stats.getMean();											
@@ -165,10 +121,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			
 			// Adjust all variables so that first var is 1 		 
 			if( floatVariance ) {
-				double var = variance.getEntry(0);
-				double sd = Math.sqrt(var);
+				double var = variance.getEntry(0);				
 				variance.mapDivideToSelf(var);
-				mean.mapDivideToSelf(sd);
+				mean.mapDivideToSelf(Math.sqrt(var));
 			}
 			
 			// Re-center means - first mean is 0
@@ -178,9 +133,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 			 * Check out how we did - log likelihood for the old mean is given for free above 
 			 * almost 2x speedup over re-computing the LL from scratch			 
 			 */								
-			double absImpr = currentLL - ll;
+			double absImpr = currentLL.doubleValue() - ll;
 			double relImpr = -absImpr / ll;
-			ll = lastLL = currentLL;
+			ll = lastLL = currentLL.doubleValue();
 			
 			System.out.printf("Likelihood: %f\n", ll);
 			
@@ -192,16 +147,27 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 //				System.out.printf("Relative tolerance reached: %f < %f\n", relImpr, releps);
 				break;
 			}			
-		}
-		
-		// Re-center means so first is 0
-		double[] params = mean.toArray();
-		double adj = params[0];
-		for( int i = 0; i < params.length; i++ )
-			params[i] -= adj;		
-		return params;
-		
-//		return mean.toArray();
+		}				
+				
+		return new MeanVarParams(mean.toArray(), variance.toArray());		
+	}
+
+	private void collectData(List<Callable<NormalMoments>> tasks, 
+			MultivariateMean m1Stats, MultivariateMean m2Stats, MutableDouble currentLL) {
+		currentLL.setValue(0);
+		try {
+			for (Future<NormalMoments> future : EstimatorUtils.threadPool.invokeAll(tasks)) {
+				NormalMoments sample = future.get();
+				
+				for( int j = 0; j < sample.weight; j++ ) {
+					m1Stats.addValue(sample.m1);
+					if( floatVariance ) m2Stats.addValue(sample.m2);
+				}					
+				currentLL.add(sample.weight * Math.log(sample.cdf));
+			}
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);				
+		}		
 	}
 
 	/**
@@ -327,18 +293,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>>
 	public <T> NormalNoiseModel<T> fitModelOrdinal(PreferenceProfile<T> profile) {
 		List<T> ordering = Arrays.asList(profile.getSortedCandidates());
 		List<int[]> rankings = profile.getIndices(ordering);		
-		
-		int m = ordering.size();
-		double[] strParams = getParameters(rankings, m);
-		NormalNoiseModel<T> nn;
-		
-		// Create either a fixed or changing variance model
-		if ( floatVariance ) {
-			double[] sds = lastVariance.map(new Sqrt()).toArray();			
-			nn = new NormalNoiseModel<T>(ordering, strParams, sds);				
-		} else {
-			nn = new NormalNoiseModel<T>(ordering, strParams, Math.sqrt(FIXED_VARIANCE));
-		}
+				
+		MeanVarParams params = getParameters(rankings, ordering.size());								
+		NormalNoiseModel<T> nn = new NormalNoiseModel<T>(ordering, params);						
 		
 		nn.setFittedLikelihood(lastLL);
 		return nn;		

@@ -31,19 +31,20 @@ public class NormalCondExpTest {
 	static int trials = 10;	
 	static int gibbsSamplesHigh = 100000;
 	
-	static double tol = 0.05;
+	static double tol = 0.04;
 	
 	RealVector mean, var;
 	int[] ranking;
-
-	NormalMoments condExpMVN;
+	
+	NormalMoments condExpMVN, condExpMVNVar;
 	
 	public NormalCondExpTest(RealVector mean, RealVector var, int[] ranking) {
 		this.mean = mean;
 		this.var = var;
 		this.ranking = ranking;
 		
-		this.condExpMVN = OrderedNormalEM.conditionalMoments(mean, var, ranking, 2<<14, 1e-8, 1e-8);
+		this.condExpMVN = OrderedNormalEM.conditionalMean(mean, var, ranking, 2<<14, 1e-8, 1e-8);
+		this.condExpMVNVar = OrderedNormalEM.conditionalMoments(mean, var, ranking, 2<<14, 1e-8, 1e-8);
 		
 		System.out.println();
 	}
@@ -67,7 +68,8 @@ public class NormalCondExpTest {
 	public void testLLEquivalence() {				
 		// Ensure that we can use the conditional expectation MVN value to estimate likelihood		
 		
-		CDFResult cdf = NormalLogLikelihood.multivariateProb(mean, var, ranking);
+		NormalLogLikelihood ll = new NormalLogLikelihood(mean, var);
+		CDFResult cdf = ll.multivariateProb(ranking);
 		
 		MVNParams params = OrderedNormalEM.getTransformedParams(mean, var, ranking);
 		ExpResult exp = MultivariateNormal.exp(
@@ -93,22 +95,22 @@ public class NormalCondExpTest {
 	}
 
 	@Test
-	public void testConditionalExpectationMeanVar() {
+	public void testConditionalExpectationQuickVar() {
 		System.out.println("Testing bias with two moments");
 		NormalMoments condExpMVNQuick = OrderedNormalEM.conditionalMoments(mean, var, ranking, 2<<12, 1e-5, 1e-5);		
 						
 		System.out.println("MVN Quick: " + Arrays.toString(condExpMVNQuick.m1));		
-		System.out.println("MVN Accurate: " + Arrays.toString(condExpMVN.m1));
+		System.out.println("MVN Accurate: " + Arrays.toString(condExpMVNVar.m1));
 		
 		// check rankings are consistent
 		assertTrue("MVN Quick conditional expectation is inconsistent", checkConsistency(condExpMVNQuick));
-		assertTrue("MVN conditional expectation is inconsistent", checkConsistency(condExpMVN));				
+		assertTrue("MVN conditional expectation is inconsistent", checkConsistency(condExpMVNVar));				
 		
-		System.out.println("MVN M2: " + Arrays.toString(condExpMVN.m2));		
+		System.out.println("MVN M2: " + Arrays.toString(condExpMVNVar.m2));		
 		System.out.println("MVN Quick M2: " + Arrays.toString(condExpMVNQuick.m2));
 		
-		assertArrayEquals(condExpMVN.m1, condExpMVNQuick.m1, tol);
-		assertArrayEquals(condExpMVN.m2, condExpMVNQuick.m2, tol);
+		assertArrayEquals(condExpMVNVar.m1, condExpMVNQuick.m1, tol);
+		assertArrayEquals(condExpMVNVar.m2, condExpMVNQuick.m2, tol);
 	}
 	
 	@Test
@@ -131,18 +133,18 @@ public class NormalCondExpTest {
 		System.out.println("Testing Gibbs with variance ");
 		NormalMoments condExpGibbs = new NormalGibbsSampler(mean, var, ranking, gibbsSamplesHigh, true).call();
 				
-		System.out.println("MVN: " + Arrays.toString(condExpMVN.m1));		
+		System.out.println("MVN: " + Arrays.toString(condExpMVNVar.m1));		
 		System.out.println("Gibbs: " + Arrays.toString(condExpGibbs.m1));
 		
 		// check rankings are consistent
-		assertTrue("MVN conditional expectation is inconsistent", checkConsistency(condExpMVN));
+		assertTrue("MVN conditional expectation is inconsistent", checkConsistency(condExpMVNVar));
 		assertTrue("Gibbs conditional expectation is inconsistent", checkConsistency(condExpGibbs));				
 		
-		System.out.println("MVN M2: " + Arrays.toString(condExpMVN.m2));		
+		System.out.println("MVN M2: " + Arrays.toString(condExpMVNVar.m2));		
 		System.out.println("Gibbs M2: " + Arrays.toString(condExpGibbs.m2));
 		
-		assertArrayEquals(condExpMVN.m1, condExpGibbs.m1, tol);
-		assertArrayEquals(condExpMVN.m2, condExpGibbs.m2, tol);
+		assertArrayEquals(condExpMVNVar.m1, condExpGibbs.m1, tol);
+		assertArrayEquals(condExpMVNVar.m2, condExpGibbs.m2, tol);
 	}
 
 	private boolean checkConsistency(NormalMoments condExp) {

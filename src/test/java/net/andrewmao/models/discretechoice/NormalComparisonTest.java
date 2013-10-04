@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import net.andrewmao.models.noise.MeanVarParams;
 import net.andrewmao.models.noise.TestParameterGen;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
@@ -33,13 +34,13 @@ public class NormalComparisonTest {
 	static OrderedNormalEM emFixed = new OrderedNormalEM(false, iters, abseps, releps);
 	static OrderedNormalEM emVar = new OrderedNormalEM(true, iters, abseps, releps);	
 	static OrderedNormalMCEM mcemFixed = new OrderedNormalMCEM(false, iters, abseps, releps, 
-			starting_samples, additional_samples);
+			1<<12, starting_samples, additional_samples);
 	static OrderedNormalMCEM mcemVar = new OrderedNormalMCEM(true, iters, abseps, releps, 
-			starting_samples, additional_samples);
+			1<<12, starting_samples, additional_samples);
 		
 	List<int[]> rankings;	
 	
-	double[] emFixedParams, emVarParams, mcemFixedParams, mcemVarParams;
+	MeanVarParams emFixedParams, emVarParams, mcemFixedParams, mcemVarParams;
 	double emFixedLL, emVarLL, mcemFixedLL, mcemVarLL;
 
 	public NormalComparisonTest(List<int[]> rankings) {		
@@ -50,24 +51,24 @@ public class NormalComparisonTest {
 		emFixedParams = emFixed.getParameters(rankings, candidates);
 		emFixedLL = emFixed.lastLL;
 		System.out.println("EM Fixed params, LL: " + emFixedLL);
-		System.out.println(Arrays.toString(emFixedParams));		
+		System.out.println(Arrays.toString(emFixedParams.mean));		
 		
 		emVarParams = emVar.getParameters(rankings, candidates);
 		emVarLL = emVar.lastLL;
 		System.out.println("EM Var params, LL: " + emVarLL);
-		System.out.println(Arrays.toString(emVarParams));
+		System.out.println(Arrays.toString(emVarParams.mean));
 		
 		mcemFixed.setup(new double[candidates]);
 		mcemFixedParams = mcemFixed.getParameters(rankings, candidates);
 		mcemFixedLL = mcemFixed.lastLL;
 		System.out.println("MCEM Fixed params, LL: " + mcemFixedLL );
-		System.out.println(Arrays.toString(mcemFixedParams));
+		System.out.println(Arrays.toString(mcemFixedParams.mean));
 		
 		mcemVar.setup(sample.sample(candidates));
 		mcemVarParams = mcemVar.getParameters(rankings, candidates);
 		mcemVarLL = mcemVar.lastLL;
 		System.out.println("MCEM Var params, LL: " + mcemVarLL );
-		System.out.println(Arrays.toString(mcemVarParams));
+		System.out.println(Arrays.toString(mcemVarParams.mean));
 	}
 	
 	@Parameters
@@ -86,12 +87,12 @@ public class NormalComparisonTest {
 
 	@Test
 	public void testFixedParams() {
-		assertArrayEquals(emFixedParams, mcemFixedParams, 0.02);		
+		assertArrayEquals(emFixedParams.mean, mcemFixedParams.mean, 0.02);		
 	}
 	
 	@Test
 	public void testVarParams() {
-		assertArrayEquals(emVarParams, mcemVarParams, 0.02);
+		assertArrayEquals(emVarParams.mean, mcemVarParams.mean, 0.02);
 	}
 	
 	@Test

@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.util.Collection;
 
+import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.models.noise.TestParameterGen;
 import net.andrewmao.probability.Num;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
@@ -39,7 +40,7 @@ public class SinglePairEquivalenceTest {
 	static OrderedNormalEM on = new OrderedNormalEM(false, max_em_iters, accuracy_probit, accuracy_probit);
 	
 	OrderedNormalMCEM mcem = new OrderedNormalMCEM(false, max_em_iters, 
-			accuracy_probit, accuracy_probit, starting_samples, additional_samples);
+			accuracy_probit, accuracy_probit, 1<<12, starting_samples, additional_samples);
 	
 	static NormalDistribution stdNormal = new NormalDistribution();
 	
@@ -83,24 +84,31 @@ public class SinglePairEquivalenceTest {
 		/*
 		 * Tests the equivalency of BT and PL on data for two alternatives.
 		 */
-		double[] tmParams = tm.fitModelOrdinal(prefs).getValueMap().toArray();			
-		double[] onParams = on.fitModelOrdinal(prefs).getValueMap().toArray();
+		NormalNoiseModel<?> tmFitted = tm.fitModelOrdinal(prefs); 
+		double[] tmParams = tmFitted.getValueMap().toArray();
+		NormalNoiseModel<?> onFitted = on.fitModelOrdinal(prefs);
+		double[] onParams = onFitted.getValueMap().toArray();
 		
 		mcem.setup(stdNormal.sample(2));
-		double[] mcemParams = mcem.fitModelOrdinal(prefs).getValueMap().toArray();
+		NormalNoiseModel<?> mcemFitted = mcem.fitModelOrdinal(prefs); 
+		double[] mcemParams = mcemFitted.getValueMap().toArray();
 
-		double tmDiff = (tmParams[0] - tmParams[1]) * Num.RAC2;
+		System.out.println("TM: " + tmFitted.toParamString());
+		System.out.println("MVN: " + onFitted.toParamString());
+		System.out.println("MCEM: " + mcemFitted.toParamString());
+		
+		double tmDiff = (tmParams[0] - tmParams[1]) * Num.RAC2; // Uses a variance of sqrt(1/2) so we need to adjust
 		double onDiff = onParams[0] - onParams[1];
 		double mcemDiff = mcemParams[0] - mcemParams[1];
 		
-		System.out.printf("TM: %.04f, MCEM: %.04f, MVNEM: %.04f\n", tmDiff, mcemDiff, onDiff);
+		System.out.printf("TM: %.04f, MCEM: %.04f, Integral-EM: %.04f\n", tmDiff, mcemDiff, onDiff);
 		
-		// Check against Thurstone, making adjustment
-		assertTrue("Fixed-var EM differs from Thurstone", Math.abs(onDiff/tmDiff-1) < tol_probit);
-		assertTrue("MCEM differs from Thurstone", Math.abs(mcemDiff/tmDiff-1) < tol_probit);		
+		// Check against Thurstone, making adjustment		
+		assertEquals("Fixed-var EM differs from Thurstone", 0, Math.abs(onDiff/tmDiff-1), tol_probit);
+		assertEquals("MCEM differs from Thurstone", 0, Math.abs(mcemDiff/tmDiff-1), tol_probit);		
 		
 		// Check two EMs against each other
-		assertTrue("EM models differ", Math.abs(onDiff/mcemDiff-1) < tol_probit);
+		assertEquals("EM models differ", 0, Math.abs(onDiff/mcemDiff-1), tol_probit);
 				
 	}
 

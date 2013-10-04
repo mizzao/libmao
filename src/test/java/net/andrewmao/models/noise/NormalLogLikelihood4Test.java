@@ -48,7 +48,7 @@ public class NormalLogLikelihood4Test {
 		NormalLogLikelihood ll = new NormalLogLikelihood(mean, var);
 
 		double smartLL = ll.logLikelihood(rankings);
-		double dumbll = ll.logLikelihoodDumb(rankings);
+		double dumbll = ll.logLikelihoodNaive(rankings);
 
 		assertTrue(Math.abs((dumbll - smartLL)/ smartLL) < tol);			
 		

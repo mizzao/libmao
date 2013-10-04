@@ -77,4 +77,7 @@ public class CondorcetEstimator implements OrdinalEstimator<CondorcetModel<?>> {
 		return cm;
 	}
 
+	public String toString() {
+		return this.getClass().getSimpleName();
+	}
 }

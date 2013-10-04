@@ -29,6 +29,8 @@ import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.PowellOptimizer;
 
 public class ThurstoneMostellerModel extends PairwiseDiscreteChoiceEstimator<NormalNoiseModel<?>> {
 	
+	public static final double THURSTONE_SIGMA = Math.sqrt(0.5);
+	
 	public static final AtomicInteger cgUses = new AtomicInteger();
 	public static final AtomicInteger powellUses = new AtomicInteger();		
 	
@@ -120,7 +122,7 @@ public class ThurstoneMostellerModel extends PairwiseDiscreteChoiceEstimator<Nor
 		
 		double[] strParams = getParameters(wins);
 		
-		return new NormalNoiseModel<T>(ordering, strParams);		
+		return new NormalNoiseModel<T>(ordering, strParams, THURSTONE_SIGMA);		
 	}
 
 }

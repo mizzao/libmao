@@ -22,7 +22,7 @@ public class ThurstoneMostellerTest {
 		
 		List<Integer> stuff = Arrays.asList(new Integer[] {1, 2, 3, 4});
 		
-		NoiseModel<Integer> rfg = new NormalNoiseModel<Integer>(stuff, 0.2);
+		NoiseModel<Integer> rfg = new NormalNoiseModel<Integer>(stuff, 0.2, ThurstoneMostellerModel.THURSTONE_SIGMA);
 		
 		PreferenceProfile<Integer> generated = rfg.sampleProfile(1000, new Random());
 		

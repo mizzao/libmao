@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 
+import net.andrewmao.models.discretechoice.ThurstoneMostellerModel;
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
@@ -47,7 +48,7 @@ public class ThurstoneNoiseTest {
 		
 		NormalDistribution dist = new NormalDistribution(0, 1);
 		
-		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(letters, strDiff);
+		NormalNoiseModel<Character> gen = new NormalNoiseModel<Character>(letters, strDiff, ThurstoneMostellerModel.THURSTONE_SIGMA);
 		System.out.println(gen.toParamString());
 						
 		PreferenceProfile<Character> prefs = gen.sampleProfile(size, new Random());

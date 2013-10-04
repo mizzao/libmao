@@ -17,4 +17,8 @@ public class EstimatorUtils {
 		});
 	}
 	
+	public static void shutdown() {
+		threadPool.shutdown();
+	}
+	
 }

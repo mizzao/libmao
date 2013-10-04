@@ -76,12 +76,11 @@ public class MultivariateNormal {
 	
 	public static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
 			int maxPts, Double abseps, Double releps) {				
-		int n = checkErrors(mean, sigma, lower, upper);
-		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, new double[n]);
-		
 		// Copy bounds arrays because we modify them
 		double[] adjLower = lower.clone();
 		double[] adjUpper = upper.clone();
+		int n = checkErrors(mean, sigma, adjLower, adjUpper);
+		double[] correl = getCorrelAdjustLimits(mean, sigma, adjLower, adjUpper, new double[n]);		
 		int[] infin = getSetInfin(n, adjLower, adjUpper);				
 		
 		DoubleByReference abseps_ref = (abseps == null ) ? cdf_default_abseps : new DoubleByReference(abseps);
@@ -119,14 +118,13 @@ public class MultivariateNormal {
 
 	public static ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
 			int maxPts, Double abseps, Double releps) {
-		int n = checkErrors(mean, sigma, lower, upper);
-		double[] sds = new double[n];
-		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, sds);
-		
 		// Copy bounds arrays because we modify them
-		lower = lower.clone();
-		upper = upper.clone();
-		int[] infin = getSetInfin(n, lower, upper);
+		double[] adjLower = lower.clone();
+		double[] adjUpper = upper.clone();
+		int n = checkErrors(mean, sigma, adjLower, adjUpper);
+		double[] sds = new double[n];
+		double[] correl = getCorrelAdjustLimits(mean, sigma, adjLower, adjUpper, sds);		
+		int[] infin = getSetInfin(n, adjLower, adjUpper);		
 		
 		DoubleByReference abseps_ref = (abseps == null ) ? exp_default_abseps : new DoubleByReference(abseps);
 		DoubleByReference releps_ref = (releps == null ) ? exp_default_releps : new DoubleByReference(releps);
@@ -136,7 +134,7 @@ public class MultivariateNormal {
 		double[] values = new double[n+1];		
 		IntByReference inform = new IntByReference(0);										
 												
-		lib.mvnexp_(new IntByReference(n), lower, upper, infin, correl, 
+		lib.mvnexp_(new IntByReference(n), adjLower, adjUpper, infin, correl, 
 				maxpts, abseps_ref, releps_ref, errors, values, inform);			
 		
 		int exitCode = inform.getValue();		
@@ -165,14 +163,13 @@ public class MultivariateNormal {
 	
 	public static EX2Result eX2(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
 			int maxPts, Double abseps, Double releps) {
-		int n = checkErrors(mean, sigma, lower, upper);
-		double[] sds = new double[n];
-		double[] correl = getCorrelAdjustLimits(mean, sigma, lower, upper, sds);
-		
 		// Copy bounds arrays because we modify them
-		lower = lower.clone();
-		upper = upper.clone();
-		int[] infin = getSetInfin(n, lower, upper);
+		double[] adjLower = lower.clone();
+		double[] adjUpper = upper.clone();
+		int n = checkErrors(mean, sigma, adjLower, adjUpper);
+		double[] sds = new double[n];
+		double[] correl = getCorrelAdjustLimits(mean, sigma, adjLower, adjUpper, sds);		
+		int[] infin = getSetInfin(n, adjLower, adjUpper);
 		
 		DoubleByReference abseps_ref = (abseps == null ) ? exp_default_abseps : new DoubleByReference(abseps);
 		DoubleByReference releps_ref = (releps == null ) ? exp_default_releps : new DoubleByReference(releps);
@@ -182,7 +179,7 @@ public class MultivariateNormal {
 		double[] values = new double[2*n+1];						
 		IntByReference inform = new IntByReference(0);										
 												
-		lib.mvnxpp_(new IntByReference(n), lower, upper, infin, correl, 
+		lib.mvnxpp_(new IntByReference(n), adjLower, adjUpper, infin, correl, 
 				maxpts, abseps_ref, releps_ref, errors, values, inform);			
 		
 		int exitCode = inform.getValue();		

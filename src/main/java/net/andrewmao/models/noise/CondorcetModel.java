@@ -9,6 +9,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
 
 
+import net.andrewmao.math.NumericUtils;
 import net.andrewmao.math.RandomSelection;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import net.andrewmao.socialchoice.rules.RankingMetric;
@@ -153,10 +154,18 @@ public class CondorcetModel<T> extends NoiseModel<T> {
 
 	@Override
 	public double logLikelihood(PreferenceProfile<T> profile) {
-		if( candidatesMixed != null )
-			throw new UnsupportedOperationException("Likelihood needs implementation for multiple rankings");
-		else
+		if( candidatesMixed != null ) {
+			// Need to do log-sum-exp here
+			double[] logProbs = new double[candidatesMixed.size()];
+			int i = 0;
+			for( List<T> candidates: candidatesMixed )
+				logProbs[i++] = profileLogLikelihood(profile, candidates, phi);
+			// Average the sum by subtracting log(n)
+			return NumericUtils.getLogSumExp(logProbs) - Math.log(logProbs.length);			
+		}			
+		else {
 			return profileLogLikelihood(profile, candidates, phi);
+		}
 	}
 
 	public static <T> double profileLogLikelihood(

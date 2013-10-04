@@ -18,17 +18,15 @@ import net.andrewmao.socialchoice.rules.PreferenceProfile;
  *
  */
 public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
-
-	public static final double THURSTONE_SIGMA = Math.sqrt(0.5);
 	
 	private final double[] sds;
 	
-	public NormalNoiseModel(List<T> candidates, double[] strengths) {
-		super(candidates, strengths);
+	public NormalNoiseModel(List<T> ordering, MeanVarParams params) {
+		super(ordering, params.mean);
 		
-		sds = new double[candidates.size()];		
-		for( int j = 0; j < candidates.size(); j++ ) 
-			sds[j] = THURSTONE_SIGMA;
+		sds = new double[params.variance.length];
+		for( int j = 0; j < sds.length; j++ )
+			sds[j] = Math.sqrt(params.variance[j]);
 	}
 	
 	public NormalNoiseModel(List<T> candidates, double[] strengths, double[] sds) {
@@ -60,17 +58,6 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 		sds = new double[candidates.size()];		
 		for( int j = 0; j < candidates.size(); j++ ) 
 			sds[j] = stdev;
-	}
-
-	/**
-	 * Initializes a Thurstone model with the same difference between adjacent candidates
-	 * @param candidates
-	 * @param rnd
-	 * @param adjStrDiff
-	 */
-	public NormalNoiseModel(List<T> candidates, double adjStrDiff) {
-		// Generate normal random variables with variance 0.5
-		this(candidates, adjStrDiff, THURSTONE_SIGMA);
 	}
 
 	@Override

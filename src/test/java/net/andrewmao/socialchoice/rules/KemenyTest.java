@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import net.andrewmao.models.discretechoice.ThurstoneMostellerModel;
 import net.andrewmao.models.noise.CondorcetEstimator;
 import net.andrewmao.models.noise.CondorcetModel;
 import net.andrewmao.models.noise.NoiseModel;
@@ -135,7 +136,7 @@ public class KemenyTest {
 		int trials = 1000;
 		
 		List<Integer> stuff = Arrays.asList(new Integer[] {1, 2, 3, 4});		
-		NoiseModel<Integer> rfg = new NormalNoiseModel<Integer>(stuff, 0.2);
+		NoiseModel<Integer> rfg = new NormalNoiseModel<Integer>(stuff, 0.2, ThurstoneMostellerModel.THURSTONE_SIGMA);
 		
 		for( int i = 0; i < trials; i++ ) {
 			PreferenceProfile<Integer> generated = rfg.sampleProfile(10, new Random());

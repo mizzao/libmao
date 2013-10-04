@@ -21,4 +21,7 @@ public abstract class RankingMetric<T> {
 		return total / count;
 	}		
 	
+	public String toString() {
+		return this.getClass().getSimpleName();
+	}
 }

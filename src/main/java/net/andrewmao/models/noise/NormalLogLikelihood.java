@@ -28,6 +28,10 @@ public class NormalLogLikelihood {
 	RealVector variance;
 	ExecutorService exec = null;
 	
+	Integer maxPtsScale = null;
+	Double abseps = null;
+	Double releps = null;
+	
 	/**
 	 * Create a likelihood using the vectors as reference parameters.
 	 * @param mean
@@ -40,6 +44,15 @@ public class NormalLogLikelihood {
 	
 	public NormalLogLikelihood(RealVector mean, RealVector variance, ExecutorService exec) {
 		this(mean, variance);
+		this.exec = exec;
+	}
+	
+	public NormalLogLikelihood(RealVector mean, RealVector variance, int maxPtsScale, double abseps, double releps, ExecutorService exec) {
+		this(mean, variance);
+		
+		this.maxPtsScale = maxPtsScale;
+		this.abseps = abseps;
+		this.releps = releps;
 		this.exec = exec;
 	}
 
@@ -101,7 +114,12 @@ public class NormalLogLikelihood {
 		return ll;
 	}
 
-	public double logLikelihoodDumb(List<int[]> indices) {
+	/**
+	 * Non-parallelized, non-aggregated version of the likelihood
+	 * @param indices
+	 * @return
+	 */
+	public double logLikelihoodNaive(List<int[]> indices) {
 		double ll = 0;
 		for( int[] ranking : indices )
 			ll += singleRankingLL(ranking);
@@ -138,10 +156,10 @@ public class NormalLogLikelihood {
 	 * @return
 	 */
 	double multivariateLL(int[] ranking) {		
-		return Math.log(multivariateProb(mean, variance, ranking).cdf);					
+		return Math.log(multivariateProb(ranking).cdf);					
 	}
 
-	public static CDFResult multivariateProb(RealVector mean, RealVector variance, int[] ranking) {
+	public CDFResult multivariateProb(int[] ranking) {
 		int n = ranking.length;
 		
 		// Initialize diagonal variance matrix
@@ -164,7 +182,10 @@ public class NormalLogLikelihood {
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());	
 		
-		return MultivariateNormal.cdf(mu, sigma, lower, upper);		
+		if( maxPtsScale == null )
+			return MultivariateNormal.cdf(mu, sigma, lower, upper);
+		else
+			return MultivariateNormal.cdf(mu, sigma, lower, upper, maxPtsScale * n, abseps, releps);
 	}
 
 	double bivariateLL(int[] ranking) {

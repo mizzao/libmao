@@ -120,7 +120,8 @@ public class MultivariateNormalTest {
 			RealVector var = TestParameterGen.randomVarVector(m);
 			RandomSelection.shuffle(ranking, rnd);
 			
-			CDFResult result = NormalLogLikelihood.multivariateProb(mean, var, ranking);
+			NormalLogLikelihood ll = new NormalLogLikelihood(mean, var);
+			CDFResult result = ll.multivariateProb(ranking);
 			if( !result.converged ) {				
 				convergeFail++;
 			}
