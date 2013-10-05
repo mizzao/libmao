@@ -38,25 +38,17 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 	
 	public static final double FIXED_VARIANCE = 1.0d;
 	
-	public static final int EM_MAXPTS_MULTIPLIER = 1 << 14;
-	
-	volatile double lastLL;	
-	
 	private final boolean floatVariance;
 	private final int maxIter;
-	private final double abseps, releps;
-	private final int maxPtsScale;
+	private final double abseps, releps;	
 	
-	public OrderedNormalEM(boolean floatVariance, int maxIter, double abseps, double releps, int maxPtsScale) {
+	private MultivariateNormal mvn = MultivariateNormal.DEFAULT_INSTANCE;
+	
+	public OrderedNormalEM(boolean floatVariance, int maxIter, double abseps, double releps) {
 		this.floatVariance = floatVariance;
 		this.maxIter = maxIter;
 		this.abseps = abseps;
 		this.releps = releps;
-		this.maxPtsScale = maxPtsScale;
-	}
-	
-	public OrderedNormalEM(boolean floatVariance, int maxIter, double abseps, double releps) {
-		this(floatVariance, maxIter, abseps, releps, EM_MAXPTS_MULTIPLIER);
 	}
 
 	@Override
@@ -70,7 +62,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 		MultivariateMean m1Stats = new MultivariateMean(m), m2Stats = null;
 		if( floatVariance ) m2Stats = new MultivariateMean(m);
 		double ll = Double.NEGATIVE_INFINITY;
-		MutableDouble currentLL = new MutableDouble(0);
+		MutableDouble currentLL = new MutableDouble();
 		
 		// Pre-compute a single hash of rankings
 		Multiset<List<Integer>> counts = HashMultiset.create();			
@@ -80,7 +72,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 		for(int i = 0; i < maxIter; i++ ) {
 			// Need to empty out the previous iteration's means. Nasty bug ;) 
 			m1Stats.clear();
-			if( floatVariance ) m2Stats.clear();
+			if( floatVariance ) m2Stats.clear();			
+			// Reset likelihood
+			currentLL.setValue(0);
 			
 			System.out.println("Starting iteration " + i);
 			
@@ -97,15 +91,14 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 					@Override
 					public NormalMoments call() throws Exception {
 						NormalMoments moments = floatVariance ? 
-								conditionalMoments(mean, variance, ranking, maxPtsScale, abseps, releps) :
-									conditionalMean(mean, variance, ranking, maxPtsScale, abseps, releps);
+								conditionalMoments(mean, variance, ranking, mvn) :
+									conditionalMean(mean, variance, ranking, mvn);
 						moments.setWeight(weight);
 						return moments;							
 					}						
 				});																							
 			}				
-			// Reset likelihood and aggregate stats
-			currentLL.setValue(0);
+
 			collectData(tasks, m1Stats, m2Stats, currentLL);
 			
 			// M-step: update mean
@@ -136,13 +129,11 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 			double newLL = currentLL.doubleValue();
 			double absImpr = newLL - ll;
 			double relImpr = -absImpr / ll;
-			ll = lastLL = newLL;
+			ll = newLL;
 			
 //			System.out.println(mean);
 //			System.out.println(variance);
-			System.out.printf("Likelihood: %f\n", ll);
-						
-//			if( i < maxIter ) continue;
+			System.out.printf("Likelihood: %f\n", ll);						
 			
 			if( absImpr < abseps ) {
 //				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
@@ -154,7 +145,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 			}			
 		}				
 				
-		return new MeanVarParams(mean.toArray(), variance.toArray());		
+		return new MeanVarParams(mean.toArray(), variance.toArray(), ll);		
 	}
 
 	private void collectData(List<Callable<NormalMoments>> tasks, 
@@ -184,10 +175,10 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 	 * @return
 	 */
 	public static NormalMoments conditionalMean(
-			RealVector mean, RealVector variance, int[] ranking, 
-			int maxPtsMultiplier, Double abseps, Double releps) {
+			RealVector mean, RealVector variance, 
+			int[] ranking, MultivariateNormal mvn) {
 		MVNParams params = getTransformedParams(mean, variance, ranking);
-		ExpResult result = MultivariateNormal.exp(params.mu, params.sigma, params.lower, params.upper, maxPtsMultiplier, abseps, releps);		
+		ExpResult result = mvn.exp(params.mu, params.sigma, params.lower, params.upper);		
 		double[] m1 = conditionalM1(ranking, result);		
 		return new NormalMoments(m1, result.cdf);
 	}
@@ -201,10 +192,10 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 	 * @return
 	 */
 	public static NormalMoments conditionalMoments(
-			RealVector mean, RealVector variance, int[] ranking, 
-			int maxPtsMultiplier, double abseps, double releps) {
+			RealVector mean, RealVector variance, 
+			int[] ranking, MultivariateNormal mvn) {
 		MVNParams params = getTransformedParams(mean, variance, ranking);
-		EX2Result result = MultivariateNormal.eX2(params.mu, params.sigma, params.lower, params.upper, maxPtsMultiplier, abseps, releps);
+		EX2Result result = mvn.eX2(params.mu, params.sigma, params.lower, params.upper);
 		double[] m1 = conditionalM1(ranking, result);
 		double[] m2 = conditionalM2(ranking, result, m1);
 		return new NormalMoments(m1, m2, result.cdf);
@@ -295,9 +286,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 		List<int[]> rankings = profile.getIndices(ordering);		
 				
 		MeanVarParams params = getParameters(rankings, ordering.size());								
-		NormalNoiseModel<T> nn = new NormalNoiseModel<T>(ordering, params);						
+		NormalNoiseModel<T> nn = new NormalNoiseModel<T>(ordering, params);								
+		nn.setFittedLikelihood(params.fittedLikelihood);
 		
-		nn.setFittedLikelihood(lastLL);
 		return nn;		
 	}
 

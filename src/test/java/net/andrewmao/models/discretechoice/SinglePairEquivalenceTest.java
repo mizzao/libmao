@@ -40,7 +40,7 @@ public class SinglePairEquivalenceTest {
 	static OrderedNormalEM on = new OrderedNormalEM(false, max_em_iters, accuracy_probit, accuracy_probit);
 	
 	OrderedNormalMCEM mcem = new OrderedNormalMCEM(false, max_em_iters, 
-			accuracy_probit, accuracy_probit, 1<<12, starting_samples, additional_samples);
+			accuracy_probit, accuracy_probit, starting_samples, additional_samples);
 	
 	static NormalDistribution stdNormal = new NormalDistribution();
 	
@@ -49,6 +49,8 @@ public class SinglePairEquivalenceTest {
 	
 	public SinglePairEquivalenceTest(PreferenceProfile<Character> prefs) {
 		this.prefs = prefs;
+		
+		System.out.println();
 	}
 
 	@Parameters
@@ -91,15 +93,15 @@ public class SinglePairEquivalenceTest {
 		 */
 		NormalNoiseModel<?> tmFitted = tm.fitModelOrdinal(prefs); 
 		double[] tmParams = tmFitted.getValueMap().toArray();
+		System.out.println("TM: " + tmFitted.toParamString());
+		
 		NormalNoiseModel<?> onFitted = on.fitModelOrdinal(prefs);
 		double[] onParams = onFitted.getValueMap().toArray();
+		System.out.println("MVN: " + onFitted.toParamString());
 		
 		mcem.setup(stdNormal.sample(2));
 		NormalNoiseModel<?> mcemFitted = mcem.fitModelOrdinal(prefs); 
-		double[] mcemParams = mcemFitted.getValueMap().toArray();
-
-		System.out.println("TM: " + tmFitted.toParamString());
-		System.out.println("MVN: " + onFitted.toParamString());
+		double[] mcemParams = mcemFitted.getValueMap().toArray();				
 		System.out.println("MCEM: " + mcemFitted.toParamString());
 		
 		double tmDiff = (tmParams[0] - tmParams[1]) * Num.RAC2; // Uses a variance of sqrt(1/2) so we need to adjust

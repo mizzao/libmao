@@ -26,7 +26,6 @@ public class NormalComparisonTest {
 	static int trials = 5;
 	static int voters = 10;
 		
-	static int maxPtsScale = 1<<14;
 	static double abseps = 1e-5;
 	static double releps = 1e-5;
 	
@@ -37,9 +36,9 @@ public class NormalComparisonTest {
 	static OrderedNormalEM emFixed = new OrderedNormalEM(false, iters, abseps, releps);
 	static OrderedNormalEM emVar = new OrderedNormalEM(true, iters, abseps, releps);	
 	static OrderedNormalMCEM mcemFixed = new OrderedNormalMCEM(false, iters, abseps, releps, 
-			maxPtsScale, starting_samples, additional_samples);
+			starting_samples, additional_samples);
 	static OrderedNormalMCEM mcemVar = new OrderedNormalMCEM(true, iters, abseps, releps, 
-			maxPtsScale, starting_samples, additional_samples);
+			starting_samples, additional_samples);
 		
 	List<int[]> rankings;	
 	
@@ -53,7 +52,7 @@ public class NormalComparisonTest {
 		double[] start = sample.sample(candidates);
 		
 		emFixedParams = emFixed.getParameters(rankings, candidates);
-		emFixedLL = emFixed.lastLL;
+		emFixedLL = emFixedParams.fittedLikelihood;
 		System.out.println("EM Fixed params, LL: " + emFixedLL);
 		System.out.println(Arrays.toString(emFixedParams.mean));		
 				
@@ -66,13 +65,13 @@ public class NormalComparisonTest {
 		
 		mcemFixed.setup(start);
 		mcemFixedParams = mcemFixed.getParameters(rankings, candidates);
-		mcemFixedLL = mcemFixed.lastLL;
+		mcemFixedLL = mcemFixedParams.fittedLikelihood;
 		System.out.println("MCEM Fixed params, LL: " + mcemFixedLL );
 		System.out.println(Arrays.toString(mcemFixedParams.mean));
 		
 		mcemVar.setup(start);
 		mcemVarParams = mcemVar.getParameters(rankings, candidates);
-		mcemVarLL = mcemVar.lastLL;
+		mcemVarLL = mcemVarParams.fittedLikelihood;
 		System.out.println("MCEM Var params, LL: " + mcemVarLL );
 		System.out.println(Arrays.toString(mcemVarParams.mean));
 	}

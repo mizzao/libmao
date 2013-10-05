@@ -44,8 +44,8 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>, P> extends RandomUti
 	protected abstract void eStep(int iter);
 	protected abstract void addData(T data);
 	protected abstract void mStep();
-	protected abstract P getCurrentParameters();
 	protected abstract double getLogLikelihood();
+	protected abstract P getFinalParameters();	
 		
 	@Override
 	public synchronized P getParameters(List<int[]> rankings, int numItems) {
@@ -87,8 +87,6 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>, P> extends RandomUti
 			double absImpr = newLL - ll;
 			double relImpr = -absImpr / ll;
 						
-			if( i < maxIters ) continue;
-			
 			if( absImpr < abseps ) {
 //				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);
 				break;
@@ -101,7 +99,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>, P> extends RandomUti
 			ll = newLL;
 		}		
 		
-		return getCurrentParameters();
+		return getFinalParameters();
 	}
 
 	void addJob(Callable<T> job) {

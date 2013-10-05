@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
+import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealVector;
+
 import net.andrewmao.math.RandomGeneration;
 import net.andrewmao.probability.NormalDist;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
@@ -20,6 +24,7 @@ import net.andrewmao.socialchoice.rules.PreferenceProfile;
 public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 	
 	private final double[] sds;
+	private NormalLogLikelihood ll = null;
 	
 	public NormalNoiseModel(List<T> ordering, MeanVarParams params) {
 		super(ordering, params.mean);
@@ -91,7 +96,16 @@ public class NormalNoiseModel<T> extends RandomUtilityModel<T> {
 
 	@Override
 	public double logLikelihood(PreferenceProfile<T> profile) {		
-		return new NormalLogLikelihood(super.strParams, sds).logLikelihood(profile, candidates);		
+		if( ll == null ) {
+			RealVector mean = new ArrayRealVector(super.strParams);
+			RealVector variance = new ArrayRealVector(sds).mapToSelf(
+					new UnivariateFunction() {				
+						public double value(double x) {return x * x;}
+					});
+			ll = new NormalLogLikelihood(mean, variance); 
+		}
+		
+		return ll.logLikelihood(profile, candidates);		
 	}
 	
 	static String splitRegex = "[\\[\\] ,]+";

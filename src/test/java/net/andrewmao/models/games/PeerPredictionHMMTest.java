@@ -73,6 +73,11 @@ public class PeerPredictionHMMTest {
 		}		
 		
 	}
+	
+	@Test
+	public void testWithDifferentSignalProbs() {
+		fail("Needs to be implemented");
+	}
 
 	static <O extends Observation> List<List<O>> generateSequences(Hmm<O> hmm, int n, int len)
 	{

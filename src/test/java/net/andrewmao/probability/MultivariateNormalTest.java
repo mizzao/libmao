@@ -38,6 +38,8 @@ public class MultivariateNormalTest {
 	double[] lowerInf = new double[n];
 	double[] upperInf = new double[n];	
 	
+	MultivariateNormal mvn = MultivariateNormal.DEFAULT_INSTANCE;
+	
 	public MultivariateNormalTest() {
 		sigmaI4.walkInOptimizedOrder(new DefaultRealMatrixChangingVisitor() {
 			@Override
@@ -64,12 +66,12 @@ public class MultivariateNormalTest {
 
 	@Test
 	public void testCDF() {		
-		double value = MultivariateNormal.cdf(mean4, sigmaI4, lower0, upperInf).cdf;
+		double value = mvn.cdf(mean4, sigmaI4, lower0, upperInf).cdf;
 		
 		System.out.println("Obtained cdf:");
 		System.out.println(value);
 		
-		assertEquals(Math.pow(0.5, 4), value, MultivariateNormal.cdf_default_abseps.getValue());
+		assertEquals(Math.pow(0.5, 4), value, mvn.cdf_abseps);
 	}
 	
 	@Test
@@ -101,7 +103,7 @@ public class MultivariateNormalTest {
 		RealVector meanV = new ArrayRealVector(mean);
 		RealMatrix sigmaM = new Array2DRowRealMatrix(sigma);
 		
-		CDFResult result = MultivariateNormal.cdf(meanV, sigmaM, lower, upper);
+		CDFResult result = mvn.cdf(meanV, sigmaM, lower, upper);
 				
 		assertFalse(Double.isNaN(result.cdf));
 		System.out.println("NaN bug result: " + result.cdf);
@@ -136,21 +138,21 @@ public class MultivariateNormalTest {
 	@Test
 	public void testExpectation() {
 		double expected = Math.sqrt(2.0/Math.PI);
-		double[] values = MultivariateNormal.exp(mean4, sigmaI4, lower0, upperInf).expValues;
+		double[] values = mvn.exp(mean4, sigmaI4, lower0, upperInf).expValues;
 		
 		System.out.println("Obtained expected values:");		
 		System.out.println(Arrays.toString(values));						
 		
 		for( double d : values )
-			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
+			assertEquals(expected, d, mvn.exp_releps);		
 		
-		values = MultivariateNormal.eX2(mean4, sigmaI4, lower0, upperInf).expValues;
+		values = mvn.eX2(mean4, sigmaI4, lower0, upperInf).expValues;
 		
 		System.out.println("Obtained expected values from 2nd order:");		
 		System.out.println(Arrays.toString(values));						
 		
 		for( double d : values )
-			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
+			assertEquals(expected, d, mvn.exp_releps);		
 	}
 
 	@Test 
@@ -167,9 +169,7 @@ public class MultivariateNormalTest {
 			RandomSelection.shuffle(ranking, rnd);
 			
 			MVNParams params = OrderedNormalEM.getTransformedParams(mean, var, ranking);
-			ExpResult result = MultivariateNormal.exp(
-					params.mu, params.sigma, params.lower, params.upper,
-					OrderedNormalEM.EM_MAXPTS_MULTIPLIER, null, null);			 
+			ExpResult result = mvn.exp(params.mu, params.sigma, params.lower, params.upper);			 
 			
 			if( !result.converged ) convergeFail++;			
 		}
@@ -193,13 +193,13 @@ public class MultivariateNormalTest {
 			}
 		});
 		
-		double[] values = MultivariateNormal.exp(mean4, sigma, lower0, upperInf).expValues;
+		double[] values = mvn.exp(mean4, sigma, lower0, upperInf).expValues;
 		
 		System.out.println("Obtained expected values:");		
 		System.out.println(Arrays.toString(values));		
 		
 		for( double d : values )
-			assertEquals(scale * Math.sqrt(2.0/Math.PI), d, MultivariateNormal.exp_default_releps.getValue() * scale);		
+			assertEquals(scale * Math.sqrt(2.0/Math.PI), d, mvn.exp_releps * scale);		
 	}
 	
 	@Test
@@ -210,13 +210,12 @@ public class MultivariateNormalTest {
 		final double scale = 2.0d;
 		final double limit = 1.96;
 					
-		double[] upper196 = new double[n];
-		
+		double[] upper196 = new double[n];		
 		for( int i = 0; i < upper196.length; i++ ) {			
 			upper196[i] = limit;
 		}
 		
-		double[] values = MultivariateNormal.exp(mean4, sigmaI4, lower0, upper196).expValues;				
+		double[] values = mvn.exp(mean4, sigmaI4, lower0, upper196).expValues;				
 		
 		System.out.println("Obtained expected values:");		
 		System.out.println(Arrays.toString(values));		
@@ -238,30 +237,30 @@ public class MultivariateNormalTest {
 			upperScaled[i] = upperScaled[i] * scale;
 		}
 		
-		double[] values2 = MultivariateNormal.exp(mean4, sigma, lower, upperScaled).expValues;				
+		double[] values2 = mvn.exp(mean4, sigma, lower, upperScaled).expValues;				
 		
 		System.out.println("Obtained expected values after scaling:");		
 		System.out.println(Arrays.toString(values2));
 				
 		for( int i = 0; i < values.length; i++ ) {
-			assertEquals(values[i], values2[i] / scale, MultivariateNormal.exp_default_releps.getValue());
+			assertEquals(values[i], values2[i] / scale, mvn.exp_releps);
 		}
 	}
 	
 	@Test
 	public void testExpectationInf() {							
-		double[] values = MultivariateNormal.exp(mean4, sigmaI4, lowerInf, upperInf).expValues;
+		double[] values = mvn.exp(mean4, sigmaI4, lowerInf, upperInf).expValues;
 		
 		System.out.println("Obtained expected values:");		
 		System.out.println(Arrays.toString(values));		
 		
 		for( double d : values )
-			assertEquals(0, d, MultivariateNormal.exp_default_releps.getValue());		
+			assertEquals(0, d, mvn.exp_releps);		
 	}
 
 	@Test
 	public void testEX2Octant() {		
-		double[] values = MultivariateNormal.eX2(mean4, sigmaI4, lower0, upperInf).eX2Values;
+		double[] values = mvn.eX2(mean4, sigmaI4, lower0, upperInf).eX2Values;
 		
 		System.out.println("Obtained ex2 values:");		
 		System.out.println(Arrays.toString(values));		
@@ -269,12 +268,12 @@ public class MultivariateNormalTest {
 		double expected = 1d; // Mean of chi-square distribution with k=1
 		
 		for( double d : values )
-			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
+			assertEquals(expected, d, mvn.exp_releps);		
 	}
 	
 	@Test
 	public void testEX2Inf() {		
-		double[] values = MultivariateNormal.eX2(mean4, sigmaI4, lowerInf, upperInf).eX2Values;
+		double[] values = mvn.eX2(mean4, sigmaI4, lowerInf, upperInf).eX2Values;
 		
 		System.out.println("Obtained ex2 values:");		
 		System.out.println(Arrays.toString(values));		
@@ -282,7 +281,7 @@ public class MultivariateNormalTest {
 		double expected = 1d; // Mean of chi-square distribution with k=1
 		
 		for( double d : values )
-			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue());		
+			assertEquals(expected, d, mvn.exp_releps);		
 	}
 	
 	/*
@@ -306,7 +305,7 @@ public class MultivariateNormalTest {
 			}
 		});
 		
-		double[] values = MultivariateNormal.eX2(mean4, sigma, lower0, upperInf).eX2Values;
+		double[] values = mvn.eX2(mean4, sigma, lower0, upperInf).eX2Values;
 		
 		System.out.println("Obtained ex2 scaled values:");		
 		System.out.println(Arrays.toString(values));		
@@ -314,7 +313,7 @@ public class MultivariateNormalTest {
 		double expected = scale * scale; // E[Y^2] = a^2E[X^2] for Y = aX
 		
 		for( double d : values )
-			assertEquals(expected, d, MultivariateNormal.exp_default_releps.getValue() * scale * scale);		
+			assertEquals(expected, d, mvn.exp_releps * scale * scale);		
 	}
 	
 	@Test
@@ -329,7 +328,7 @@ public class MultivariateNormalTest {
 			upper196[i] = limit;
 		}
 		
-		double[] values = MultivariateNormal.eX2(mean4, sigmaI4, lower0, upper196).eX2Values;				
+		double[] values = mvn.eX2(mean4, sigmaI4, lower0, upper196).eX2Values;				
 		
 		System.out.println("Obtained expected squared values:");		
 		System.out.println(Arrays.toString(values));		
@@ -351,13 +350,13 @@ public class MultivariateNormalTest {
 			upperScaled[i] = upperScaled[i] * scale;
 		}
 		
-		double[] values2 = MultivariateNormal.eX2(mean4, sigma, lower, upperScaled).eX2Values;				
+		double[] values2 = mvn.eX2(mean4, sigma, lower, upperScaled).eX2Values;				
 		
 		System.out.println("Obtained expected values after scaling:");		
 		System.out.println(Arrays.toString(values2));
 				
 		for( int i = 0; i < values.length; i++ ) {
-			assertEquals(values[i], values2[i] / (scale * scale), MultivariateNormal.exp_default_releps.getValue());
+			assertEquals(values[i], values2[i] / (scale * scale), mvn.exp_releps);
 		}
 	}
 }

@@ -25,6 +25,8 @@ public class MultivariateNormalThreadedTest {
 	static final int trials = 2000;
 	static final Random rnd = new Random();
 	
+	final MultivariateNormal mvn = MultivariateNormal.DEFAULT_INSTANCE;
+	
 	@Before
 	public void setUp() throws Exception {
 	}
@@ -72,8 +74,8 @@ public class MultivariateNormalThreadedTest {
 			double expected = Math.pow(0.5, 4); 
 			
 			for( int i = 0; i < trials; i++ ) {				
-				double value = MultivariateNormal.cdf(mean, sigma, lower, upper).cdf;				
-				assertEquals(expected, value, MultivariateNormal.cdf_default_abseps.getValue());	
+				double value = mvn.cdf(mean, sigma, lower, upper).cdf;				
+				assertEquals(expected, value, mvn.cdf_abseps);	
 			}	
 			
 			return null;
@@ -102,10 +104,10 @@ public class MultivariateNormalThreadedTest {
 				upper[i] = Double.POSITIVE_INFINITY;
 			
 			for( int i = 0; i < trials; i++ ) {
-				double[] values = MultivariateNormal.exp(mean, sigma, lower, upper).expValues;							
+				double[] values = mvn.exp(mean, sigma, lower, upper).expValues;							
 				
 				for( double d : values )
-					assertEquals(Math.sqrt(2.0/Math.PI), d, MultivariateNormal.exp_default_releps.getValue());	
+					assertEquals(Math.sqrt(2.0/Math.PI), d, mvn.exp_releps);	
 			}			
 			
 			return null;

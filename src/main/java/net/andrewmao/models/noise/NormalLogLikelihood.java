@@ -13,7 +13,7 @@ import net.andrewmao.probability.NormalDist;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
-import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.DiagonalMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -26,48 +26,28 @@ public class NormalLogLikelihood {
 
 	RealVector mean;
 	RealVector variance;
-	ExecutorService exec = null;
 	
-	Integer maxPtsScale = null;
-	Double abseps = null;
-	Double releps = null;
+	final ExecutorService exec;	
+	final MultivariateNormal mvn;
 	
+	public NormalLogLikelihood(RealVector mean, RealVector variance, ExecutorService exec, MultivariateNormal mvn) {		
+		this.mean = mean;
+		this.variance = variance;				
+		this.exec = exec;
+		this.mvn = mvn;
+	}
+
+	public NormalLogLikelihood(RealVector mean, RealVector variance, ExecutorService exec) {
+		this(mean, variance, exec, MultivariateNormal.DEFAULT_INSTANCE);		
+	}
+
 	/**
 	 * Create a likelihood using the vectors as reference parameters.
 	 * @param mean
 	 * @param variance
 	 */
 	public NormalLogLikelihood(RealVector mean, RealVector variance) {
-		this.mean = mean;
-		this.variance = variance;
-	}
-	
-	public NormalLogLikelihood(RealVector mean, RealVector variance, ExecutorService exec) {
-		this(mean, variance);
-		this.exec = exec;
-	}
-	
-	public NormalLogLikelihood(RealVector mean, RealVector variance, int maxPtsScale, double abseps, double releps, ExecutorService exec) {
-		this(mean, variance);
-		
-		this.maxPtsScale = maxPtsScale;
-		this.abseps = abseps;
-		this.releps = releps;
-		this.exec = exec;
-	}
-
-	/**
-	 * Create a likelihood using the fixed values given.
-	 * @param mean
-	 * @param sd
-	 */
-	public NormalLogLikelihood(double[] mean, double[] sd) {
-		
-		this.mean = new ArrayRealVector(mean);
-		this.variance = new ArrayRealVector(sd.length);
-		
-		for( int i = 0; i < sd.length; i++ )
-			variance.setEntry(i, sd[i] * sd[i]);		
+		this(mean, variance, null, MultivariateNormal.DEFAULT_INSTANCE);		
 	}
 	
 	public <T> double logLikelihood(PreferenceProfile<T> candidates, List<T> ordering) {
@@ -161,11 +141,7 @@ public class NormalLogLikelihood {
 
 	public CDFResult multivariateProb(int[] ranking) {
 		int n = ranking.length;
-		
-		// Initialize diagonal variance matrix
-		RealMatrix d = new Array2DRowRealMatrix(n, n);
-		for( int i = 0; i < n; i++ ) 
-			d.setEntry(i, i, variance.getEntry(i));
+		RealMatrix d = new DiagonalMatrix(variance.toArray(), false);		
 		
 		double[] lower = new double[n-1];
 		double[] upper = new double[n-1];
@@ -181,11 +157,8 @@ public class NormalLogLikelihood {
 				
 		RealVector mu = a.transpose().preMultiply(mean);
 		RealMatrix sigma = a.multiply(d).multiply(a.transpose());	
-		
-		if( maxPtsScale == null )
-			return MultivariateNormal.cdf(mu, sigma, lower, upper);
-		else
-			return MultivariateNormal.cdf(mu, sigma, lower, upper, maxPtsScale * n, abseps, releps);
+				
+		return mvn.cdf(mu, sigma, lower, upper);
 	}
 
 	double bivariateLL(int[] ranking) {

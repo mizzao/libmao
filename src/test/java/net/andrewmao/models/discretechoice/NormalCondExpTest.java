@@ -7,6 +7,7 @@ import java.util.Collection;
 
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.TestParameterGen;
+import net.andrewmao.probability.MultivariateNormal;
 import net.andrewmao.probability.MultivariateNormal.CDFResult;
 import org.apache.commons.math3.linear.RealVector;
 import org.junit.After;
@@ -34,13 +35,16 @@ public class NormalCondExpTest {
 	
 	NormalMoments condExpMVN, condExpMVNVar;
 	
+	MultivariateNormal mvnPrecise = new MultivariateNormal(1<<17, 1e-6, 1e-5, 1e-4, 1e-3, true);
+	MultivariateNormal mvn = MultivariateNormal.DEFAULT_INSTANCE;
+	
 	public NormalCondExpTest(RealVector mean, RealVector var, int[] ranking) {
 		this.mean = mean;
 		this.var = var;
 		this.ranking = ranking;
 		
-		this.condExpMVN = OrderedNormalEM.conditionalMean(mean, var, ranking, 2<<14, 1e-8, 1e-8);
-		this.condExpMVNVar = OrderedNormalEM.conditionalMoments(mean, var, ranking, 2<<14, 1e-8, 1e-8);
+		this.condExpMVN = OrderedNormalEM.conditionalMean(mean, var, ranking, mvnPrecise);
+		this.condExpMVNVar = OrderedNormalEM.conditionalMoments(mean, var, ranking, mvnPrecise);
 		
 		System.out.println();
 	}
@@ -74,7 +78,7 @@ public class NormalCondExpTest {
 	@Test
 	public void testConditionalExpectationQuick() {
 		System.out.println("Testing bias ");
-		NormalMoments condExpMVNQuick = OrderedNormalEM.conditionalMean(mean, var, ranking, 2<<12, 1e-5, 1e-5);		
+		NormalMoments condExpMVNQuick = OrderedNormalEM.conditionalMean(mean, var, ranking, mvn);		
 						
 		System.out.println("MVN Quick: " + Arrays.toString(condExpMVNQuick.m1));		
 		System.out.println("MVN Accurate: " + Arrays.toString(condExpMVN.m1));
@@ -89,7 +93,7 @@ public class NormalCondExpTest {
 	@Test
 	public void testConditionalExpectationQuickVar() {
 		System.out.println("Testing bias with two moments");
-		NormalMoments condExpMVNQuick = OrderedNormalEM.conditionalMoments(mean, var, ranking, 2<<12, 1e-5, 1e-5);		
+		NormalMoments condExpMVNQuick = OrderedNormalEM.conditionalMoments(mean, var, ranking, mvn);		
 						
 		System.out.println("MVN Quick: " + Arrays.toString(condExpMVNQuick.m1));		
 		System.out.println("MVN Accurate: " + Arrays.toString(condExpMVNVar.m1));

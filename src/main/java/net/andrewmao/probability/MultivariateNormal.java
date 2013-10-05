@@ -5,6 +5,7 @@ import java.util.Arrays;
 
 import net.andrewmao.misc.LibraryReplicator;
 
+import org.apache.commons.math3.exception.ConvergenceException;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
 
@@ -25,16 +26,47 @@ public class MultivariateNormal {
 		}
 	}
 	
-	static final int cdf_maxpts_multiplier = 1 << 13;
-	static final int exp_maxpts_multiplier = 1 << 14;
+	public static final MultivariateNormal DEFAULT_INSTANCE = new MultivariateNormal();
+
+	static final int MAX_RETRIES = 5;
+	
+	static final int default_maxpts_multiplier = 1<<15;
 	
 	// These value errors are unit tested to a certain fail percentage.
-	static final DoubleByReference cdf_default_abseps = new DoubleByReference(1e-5);
-	static final DoubleByReference cdf_default_releps = new DoubleByReference(1e-5);	
+	static final double cdf_default_abseps = 1e-5;
+	static final double cdf_default_releps = 1e-5;	
 	// These values are a little looser because ANY value could have it
-	static final DoubleByReference exp_default_abseps = new DoubleByReference(0.0005);
-	static final DoubleByReference exp_default_releps = new DoubleByReference(0.0005);			 
+	static final double exp_default_abseps = 0.0005;
+	static final double exp_default_releps = 0.0005;			 
 	
+	public final boolean safeComputation;
+	public final int maxptsMultiplier;
+	public final double cdf_abseps, cdf_releps, exp_abseps, exp_releps;
+	
+	public MultivariateNormal(int maxPtsMultiplier, 
+			double cdf_abseps, double cdf_releps,
+			double exp_abseps, double exp_releps, 
+			boolean safe) {
+		this.maxptsMultiplier = maxPtsMultiplier;
+		this.cdf_abseps = cdf_abseps;
+		this.cdf_releps = cdf_releps;
+		this.exp_abseps = exp_abseps;
+		this.exp_releps = exp_releps;
+		this.safeComputation = safe;
+	}
+	
+	/**
+	 * Create a multivariate normal with default accuracies of
+	 * 1e-5 for CDF and 0.0005 for expected values,
+	 * and safe computation (will retry until convergence)
+	 */
+	public MultivariateNormal() {
+		this(default_maxpts_multiplier, 
+				cdf_default_abseps, cdf_default_releps, 
+				exp_default_abseps, exp_default_releps, 
+				true);
+	}
+
 	public static class CDFResult {
 		public final double cdf;
 		public final double cdfError;
@@ -42,7 +74,7 @@ public class MultivariateNormal {
 		private CDFResult(double cdfValue, double cdfError, boolean converged) {
 			this.cdf = cdfValue;
 			this.cdfError = cdfError;
-			this.converged = converged;
+			this.converged = converged;			
 		}		
 	}
 	
@@ -70,12 +102,21 @@ public class MultivariateNormal {
 		}
 	}
 
-	public static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
-		return cdf(mean, sigma, lower, upper, cdf_maxpts_multiplier * mean.getDimension(), null, null);
+	public CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
+		CDFResult result = null;
+		int iter = 0;
+		int maxpts = maxptsMultiplier * mean.getDimension();
+		do {			
+			if(++iter > MAX_RETRIES || maxpts < 0) throw new ConvergenceException();
+//			if( iter > 0 ) System.out.println("Trying again with " + maxpts);
+			result = cdf(mean, sigma, lower, upper, maxpts, cdf_abseps, cdf_releps);
+			maxpts <<= 1;
+		} while(safeComputation && !result.converged);
+		return result;
 	}
 	
-	public static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
-			int maxPts, Double abseps, Double releps) {				
+	static CDFResult cdf(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
+			int maxPts, double abseps, double releps) {				
 		// Copy bounds arrays because we modify them
 		double[] adjLower = lower.clone();
 		double[] adjUpper = upper.clone();
@@ -83,8 +124,8 @@ public class MultivariateNormal {
 		double[] correl = getCorrelAdjustLimits(mean, sigma, adjLower, adjUpper, new double[n]);		
 		int[] infin = getSetInfin(n, adjLower, adjUpper);				
 		
-		DoubleByReference abseps_ref = (abseps == null ) ? cdf_default_abseps : new DoubleByReference(abseps);
-		DoubleByReference releps_ref = (releps == null ) ? cdf_default_releps : new DoubleByReference(releps);
+		DoubleByReference abseps_ref = new DoubleByReference(abseps);
+		DoubleByReference releps_ref = new DoubleByReference(releps);
 		
 		IntByReference maxpts = new IntByReference(maxPts);		
 		DoubleByReference error = new DoubleByReference(0);
@@ -112,12 +153,21 @@ public class MultivariateNormal {
 		return new CDFResult(value.getValue(), error.getValue(), exitCode == 0);
 	}
 	
-	public static ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
-		return exp(mean, sigma, lower, upper, exp_maxpts_multiplier * mean.getDimension(), null, null);
+	public ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {		
+		ExpResult result = null;
+		int iter = 0;
+		int maxpts = maxptsMultiplier * mean.getDimension();
+		do {
+			if(++iter > MAX_RETRIES || maxpts < 0) throw new ConvergenceException(); 
+//			if( iter > 0 ) System.out.println("Trying again with " + maxpts);
+			result = exp(mean, sigma, lower, upper, maxpts, exp_abseps, exp_releps);
+			maxpts <<= 1;
+		} while(safeComputation && !result.converged);
+		return result;
 	}
 
-	public static ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
-			int maxPts, Double abseps, Double releps) {
+	static ExpResult exp(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
+			int maxPts, double abseps, double releps) {
 		// Copy bounds arrays because we modify them
 		double[] adjLower = lower.clone();
 		double[] adjUpper = upper.clone();
@@ -126,8 +176,8 @@ public class MultivariateNormal {
 		double[] correl = getCorrelAdjustLimits(mean, sigma, adjLower, adjUpper, sds);		
 		int[] infin = getSetInfin(n, adjLower, adjUpper);		
 		
-		DoubleByReference abseps_ref = (abseps == null ) ? exp_default_abseps : new DoubleByReference(abseps);
-		DoubleByReference releps_ref = (releps == null ) ? exp_default_releps : new DoubleByReference(releps);
+		DoubleByReference abseps_ref = new DoubleByReference(abseps);
+		DoubleByReference releps_ref = new DoubleByReference(releps);
 		
 		IntByReference maxpts = new IntByReference(maxPts);				
 		double[] errors = new double[n+1];
@@ -157,12 +207,21 @@ public class MultivariateNormal {
 		return new ExpResult(values[0], errors[0], result, resultErrors, exitCode == 0);
 	}
 
-	public static EX2Result eX2(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {
-		return eX2(mean, sigma, lower, upper, exp_maxpts_multiplier * mean.getDimension(), null, null);
+	public EX2Result eX2(RealVector mean, RealMatrix sigma, double[] lower, double[] upper) {		
+		EX2Result result = null;
+		int iter = 0;
+		int maxpts = maxptsMultiplier * mean.getDimension();
+		do {
+			if(++iter > MAX_RETRIES || maxpts < 0) throw new ConvergenceException();
+//			if( iter > 0 ) System.out.println("Trying again with " + maxpts);
+			result = eX2(mean, sigma, lower, upper, maxpts, exp_abseps, exp_releps);
+			maxpts <<= 1;
+		} while(safeComputation && !result.converged);
+		return result;
 	}
 	
-	public static EX2Result eX2(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
-			int maxPts, Double abseps, Double releps) {
+	static EX2Result eX2(RealVector mean, RealMatrix sigma, double[] lower, double[] upper,
+			int maxPts, double abseps, double releps) {
 		// Copy bounds arrays because we modify them
 		double[] adjLower = lower.clone();
 		double[] adjUpper = upper.clone();
@@ -171,8 +230,8 @@ public class MultivariateNormal {
 		double[] correl = getCorrelAdjustLimits(mean, sigma, adjLower, adjUpper, sds);		
 		int[] infin = getSetInfin(n, adjLower, adjUpper);
 		
-		DoubleByReference abseps_ref = (abseps == null ) ? exp_default_abseps : new DoubleByReference(abseps);
-		DoubleByReference releps_ref = (releps == null ) ? exp_default_releps : new DoubleByReference(releps);
+		DoubleByReference abseps_ref = new DoubleByReference(abseps);
+		DoubleByReference releps_ref = new DoubleByReference(releps);
 		
 		IntByReference maxpts = new IntByReference(maxPts);				
 		double[] errors = new double[2*n+1];

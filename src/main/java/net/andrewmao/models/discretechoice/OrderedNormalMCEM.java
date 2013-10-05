@@ -16,6 +16,7 @@ import com.google.common.primitives.Ints;
 import net.andrewmao.models.noise.MeanVarParams;
 import net.andrewmao.models.noise.NormalLogLikelihood;
 import net.andrewmao.models.noise.NormalNoiseModel;
+import net.andrewmao.probability.MultivariateNormal;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
 import net.andrewmao.stat.MultivariateMean;
 
@@ -31,31 +32,29 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 
 	final boolean floatVariance;
 	final int startingSamples;
-	final int incrSamples;
-	final Integer maxPtsScale;
+	final int incrSamples;	
 	
 	MultivariateMean m1Stats;
 	MultivariateMean m2Stats;
 	
 	RealVector delta, variance;
-	NormalLogLikelihood ll;
-	volatile double lastLL;	
+	NormalLogLikelihood ll;	
+	volatile double lastLL;
 	
 	List<int[]> rankings;
 	int numItems;	
 	Multiset<List<Integer>> counts;
-
+	
 	/**
 	 * Created an ordered normal model using MCEM. A fixed variance is set to 1.
 	 * 
 	 * @param floatVariance whether the variance should be allowed to change during EM.
 	 */
-	public OrderedNormalMCEM(boolean floatVariance, int maxIters, double abseps, double releps, Integer maxPtsScale, int startingSamples, int incrSamples) {
+	public OrderedNormalMCEM(boolean floatVariance, int maxIters, double abseps, double releps, int startingSamples, int incrSamples) {
 		super(maxIters, abseps, releps);		
 		this.floatVariance = floatVariance;		
 		this.startingSamples = startingSamples;
-		this.incrSamples = incrSamples;
-		this.maxPtsScale = maxPtsScale;
+		this.incrSamples = incrSamples;		
 	}
 	
 	/**
@@ -67,7 +66,7 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 	 * @param releps
 	 */
 	public OrderedNormalMCEM(boolean floatVariance, int maxIters, double abseps, double releps) {
-		this(floatVariance, maxIters, abseps, releps, null, 2000, 300);
+		this(floatVariance, maxIters, abseps, releps, 2000, 300);
 	}
 	
 	@Override
@@ -87,11 +86,9 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		else {
 			variance = new ArrayRealVector(m, 1.0d);
 		}		
-		
-		if( maxPtsScale != null )
-			ll = new NormalLogLikelihood(delta, variance, maxPtsScale, abseps, releps, EstimatorUtils.threadPool);
-		else
-			ll = new NormalLogLikelihood(delta, variance, EstimatorUtils.threadPool);
+				
+		ll = new NormalLogLikelihood(delta, variance, 
+				EstimatorUtils.threadPool, MultivariateNormal.DEFAULT_INSTANCE);
 				
 		counts = HashMultiset.create();			
 		for( int[] ranking : rankings )
@@ -156,19 +153,21 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		// Re-center means - first mean is 0
 		delta.mapSubtractToSelf(delta.getEntry(0));
 		
-		System.out.println(delta);
-		System.out.println(variance);				
+//		System.out.println(delta);
+//		System.out.println(variance);			
 	}	
 
 	@Override
-	protected MeanVarParams getCurrentParameters() {
-		return new MeanVarParams(delta.toArray(), variance.toArray());
-	}
-
-	public double getLogLikelihood() {		
+	protected double getLogLikelihood() {		
 		// Don't modify any parameters as this can happen multi-threaded
 		return lastLL = ll.logLikelihood(counts);
 	}	
+
+	@Override
+	protected MeanVarParams getFinalParameters() {
+		// Return the LL that was just computed above
+		return new MeanVarParams(delta.toArray(), variance.toArray(), lastLL);
+	}
 
 	@Override
 	public <T> NormalNoiseModel<T> fitModelOrdinal(PreferenceProfile<T> profile) {		
