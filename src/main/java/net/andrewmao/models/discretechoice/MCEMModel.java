@@ -7,6 +7,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.andrewmao.models.noise.NoiseModel;
 
 /**
@@ -18,7 +21,8 @@ import net.andrewmao.models.noise.NoiseModel;
  * @param <T>
  */
 public abstract class MCEMModel<T, M extends NoiseModel<?>, P> extends RandomUtilityEstimator<M, P> {	
-
+	protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+	
 	int maxIters;
 	double abseps;
 	double releps;
@@ -62,7 +66,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>, P> extends RandomUti
 		for( int i = 0; i < maxIters; i++ ) {
 			submittedJobs.set(0);
 			
-			System.out.println("Starting iteration " + i);
+			logger.debug("Starting iteration {}", i);
 			
 			eStep(i);						
 			
@@ -83,7 +87,7 @@ public abstract class MCEMModel<T, M extends NoiseModel<?>, P> extends RandomUti
 			mStep();			
 				
 			double newLL = getLogLikelihood();
-			System.out.printf("Likelihood: %f\n", newLL);
+			logger.debug("Likelihood: {}", newLL);
 			double absImpr = newLL - ll;
 			double relImpr = -absImpr / ll;
 						

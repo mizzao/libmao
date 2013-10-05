@@ -2,7 +2,7 @@ CC=gfortran
 SOURCES=mvndstpack.f mvnexppack.f mvnxpppack.f
 OBJECTS=$(SOURCES:.f=.o)
 LDFLAGS=-Wall -shared
-CFLAGS=-Wall -fPIC
+CFLAGS=-Wall -fPIC -frecursive
 
 all: mvnpack.so
 

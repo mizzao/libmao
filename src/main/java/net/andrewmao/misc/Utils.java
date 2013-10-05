@@ -13,6 +13,8 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.NoSuchElementException;
 
+import org.slf4j.impl.SimpleLogger;
+
 import net.andrewmao.misc.Base64Coder;
 
 public class Utils {
@@ -27,6 +29,16 @@ public class Utils {
 		catch (NoSuchAlgorithmException e) {}
 	}
 	
+	/**
+	 * Set the logging level (useful for debugging.)
+	 * Must be called before any logging classes are actually initialized.
+	 * @param string
+	 */
+	public static void setLogLevel(String string) {
+		System.setProperty(SimpleLogger.SHOW_SHORT_LOG_NAME_KEY, "true");
+		System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, string);		
+	}
+
 	public synchronized static String base64Hash(BigInteger bi) {
 		md.update(bi.toByteArray());
 		byte[] output = md.digest();

@@ -18,9 +18,10 @@ public class MultivariateNormal {
 	static final MvnPackGenz lib;	
 	static {
 		try {
-			lib = new LibraryReplicator<MvnPackGenz>(
+			LibraryReplicator<MvnPackGenz> repl = new LibraryReplicator<MvnPackGenz>(
 					MvnPackGenz.class.getClassLoader().getResource(MvnPackGenz.MVNPACK_SO), 
-					MvnPackGenz.class).getProxiedInterface();
+					MvnPackGenz.class, 1); // FIXME: concurrency issues
+			lib = repl.getProxiedInterface();
 		} catch (IOException e) { 
 			throw new RuntimeException(e);			
 		}
@@ -131,9 +132,9 @@ public class MultivariateNormal {
 		DoubleByReference error = new DoubleByReference(0);
 		DoubleByReference value = new DoubleByReference(0);
 		IntByReference inform = new IntByReference(0);
-						
+
 		lib.mvndst_(new IntByReference(n), adjLower, adjUpper, infin, correl, 
-				maxpts, abseps_ref, releps_ref, error, value, inform);							
+				maxpts, abseps_ref, releps_ref, error, value, inform);
 		
 		int exitCode = inform.getValue();		
 		if( exitCode == 2 )	throw new RuntimeException("Dimension error for MVN");
@@ -183,9 +184,9 @@ public class MultivariateNormal {
 		double[] errors = new double[n+1];
 		double[] values = new double[n+1];		
 		IntByReference inform = new IntByReference(0);										
-												
+							
 		lib.mvnexp_(new IntByReference(n), adjLower, adjUpper, infin, correl, 
-				maxpts, abseps_ref, releps_ref, errors, values, inform);			
+				maxpts, abseps_ref, releps_ref, errors, values, inform);
 		
 		int exitCode = inform.getValue();		
 		if( exitCode == 2 ) throw new RuntimeException("Dimension error for MVN");									
@@ -237,9 +238,9 @@ public class MultivariateNormal {
 		double[] errors = new double[2*n+1];
 		double[] values = new double[2*n+1];						
 		IntByReference inform = new IntByReference(0);										
-												
+						
 		lib.mvnxpp_(new IntByReference(n), adjLower, adjUpper, infin, correl, 
-				maxpts, abseps_ref, releps_ref, errors, values, inform);			
+				maxpts, abseps_ref, releps_ref, errors, values, inform);	
 		
 		int exitCode = inform.getValue();		
 		if( exitCode == 2 ) throw new RuntimeException("Dimension error for MVN");									

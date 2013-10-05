@@ -13,6 +13,8 @@ import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.DiagonalMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.linear.RealVector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
@@ -35,6 +37,7 @@ import net.andrewmao.stat.MultivariateMean;
  *
  */
 public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>, MeanVarParams> {	
+	final Logger logger = LoggerFactory.getLogger(this.getClass());
 	
 	public static final double FIXED_VARIANCE = 1.0d;
 	
@@ -76,7 +79,7 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 			// Reset likelihood
 			currentLL.setValue(0);
 			
-			System.out.println("Starting iteration " + i);
+			logger.debug("Starting iteration {}", i);
 			
 			/* 
 			 * E-step: compute conditional expectation
@@ -131,9 +134,9 @@ public class OrderedNormalEM extends RandomUtilityEstimator<NormalNoiseModel<?>,
 			double relImpr = -absImpr / ll;
 			ll = newLL;
 			
-//			System.out.println(mean);
-//			System.out.println(variance);
-			System.out.printf("Likelihood: %f\n", ll);						
+			logger.debug("Mean:", mean);
+			logger.debug("Variance: {}", variance);
+			logger.debug("Likelihood: {}", ll);						
 			
 			if( absImpr < abseps ) {
 //				System.out.printf("Absolute tolerance reached: %f < %f\n", absImpr, abseps);

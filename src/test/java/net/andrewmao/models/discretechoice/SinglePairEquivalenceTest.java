@@ -4,10 +4,14 @@ import static org.junit.Assert.*;
 
 import java.util.Collection;
 
+import net.andrewmao.models.noise.GumbelNoiseModel;
 import net.andrewmao.models.noise.NormalNoiseModel;
 import net.andrewmao.models.noise.TestParameterGen;
+import net.andrewmao.probability.NormalDist;
 import net.andrewmao.probability.Num;
+import net.andrewmao.socialchoice.rules.DefaultWinnerErrorMetric;
 import net.andrewmao.socialchoice.rules.PreferenceProfile;
+import net.andrewmao.socialchoice.rules.RankingMetric;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.junit.After;
@@ -45,10 +49,31 @@ public class SinglePairEquivalenceTest {
 	static NormalDistribution stdNormal = new NormalDistribution();
 	
 	static Character[] items = new Character[] { '0', '1' };	
-	PreferenceProfile<Character> prefs;
+	static RankingMetric<Character> errorMetric = new DefaultWinnerErrorMetric<>();
 	
+	final PreferenceProfile<Character> prefs;	
+	final GumbelNoiseModel<Character> btFitted;
+	final GumbelNoiseModel<Character> plFitted;
+	final NormalNoiseModel<Character> tmFitted;
+	final NormalNoiseModel<Character> emFitted;
+	final NormalNoiseModel<Character> mcemFitted;
+	
+	@SuppressWarnings("unchecked")
 	public SinglePairEquivalenceTest(PreferenceProfile<Character> prefs) {
 		this.prefs = prefs;
+		
+		btFitted = (GumbelNoiseModel<Character>) bt.fitModelOrdinal(prefs);
+		plFitted = pl.fitModelOrdinal(prefs);
+		
+		tmFitted = (NormalNoiseModel<Character>) tm.fitModelOrdinal(prefs);
+		System.out.println("TM: " + tmFitted.toParamString());
+		
+		emFitted = on.fitModelOrdinal(prefs);
+		System.out.println("MVN: " + emFitted.toParamString());
+		
+		mcem.setup(new double[items.length]);
+		mcemFitted = mcem.fitModelOrdinal(prefs);	
+		System.out.println("MCEM: " + mcemFitted.toParamString());
 		
 		System.out.println();
 	}
@@ -72,8 +97,8 @@ public class SinglePairEquivalenceTest {
 		/*
 		 * Tests the equivalency of BT and PL on data for two alternatives.
 		 */
-		double[] btParams = bt.fitModelOrdinal(prefs).getValueMap().toArray();			
-		double[] plParams = pl.fitModelOrdinal(prefs).getValueMap().toArray();
+		double[] btParams = btFitted.getValueMap().toArray();			
+		double[] plParams = plFitted.getValueMap().toArray();
 
 		double btDiff = btParams[0] - btParams[1];
 		double plDiff = plParams[0] - plParams[1];
@@ -83,29 +108,23 @@ public class SinglePairEquivalenceTest {
 	
 	@Test
 	public void testLogitMetricExpectation() {
-		fail("Not Implemented");
+		double[] plParams = plFitted.getValueMap().toArray();
+		double plError = 1 - 1d / (2 + Math.expm1(plParams[1] - plParams[0]));
+		
+		assertEquals(plError, plFitted.computeExpectedMetric(errorMetric), tol_logit);
 	}
 	
 	@Test
 	public void testProbitModels() {		
 		/*
 		 * Tests the equivalency of BT and PL on data for two alternatives.
-		 */
-		NormalNoiseModel<?> tmFitted = tm.fitModelOrdinal(prefs); 
-		double[] tmParams = tmFitted.getValueMap().toArray();
-		System.out.println("TM: " + tmFitted.toParamString());
-		
-		NormalNoiseModel<?> onFitted = on.fitModelOrdinal(prefs);
-		double[] onParams = onFitted.getValueMap().toArray();
-		System.out.println("MVN: " + onFitted.toParamString());
-		
-		mcem.setup(stdNormal.sample(2));
-		NormalNoiseModel<?> mcemFitted = mcem.fitModelOrdinal(prefs); 
+		 */ 
+		double[] tmParams = tmFitted.getValueMap().toArray();		
+		double[] emParams = emFitted.getValueMap().toArray();		
 		double[] mcemParams = mcemFitted.getValueMap().toArray();				
-		System.out.println("MCEM: " + mcemFitted.toParamString());
 		
 		double tmDiff = (tmParams[0] - tmParams[1]) * Num.RAC2; // Uses a variance of sqrt(1/2) so we need to adjust
-		double onDiff = onParams[0] - onParams[1];
+		double onDiff = emParams[0] - emParams[1];
 		double mcemDiff = mcemParams[0] - mcemParams[1];
 		
 		System.out.printf("TM: %.04f, MCEM: %.04f, Integral-EM: %.04f\n", tmDiff, mcemDiff, onDiff);
@@ -121,6 +140,9 @@ public class SinglePairEquivalenceTest {
 
 	@Test
 	public void testProbitMetricExpectation() {
-		fail("Not Implemented");
+		double[] normalParams = tmFitted.getValueMap().toArray();
+		double normalError = 1 - NormalDist.cdf01(normalParams[0] - normalParams[1]);
+		
+		assertEquals(normalError, tmFitted.computeExpectedMetric(errorMetric), accuracy_probit);
 	}
 }

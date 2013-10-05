@@ -24,12 +24,14 @@ import net.andrewmao.stat.MultivariateMean;
  * This is a general implementation of the probit model as described at
  * https://wiki.ece.cmu.edu/ddl/index.php/Introduction_to_random_utility_discrete_choice_models
  * 
+ * FIXME: Supposed to support independent variances, but currently broken
+ * 
  * @author mao
  *
  * @param <T>
  */
 public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel<?>, MeanVarParams> {
-
+	
 	final boolean floatVariance;
 	final int startingSamples;
 	final int incrSamples;	
@@ -153,8 +155,8 @@ public class OrderedNormalMCEM extends MCEMModel<NormalMoments, NormalNoiseModel
 		// Re-center means - first mean is 0
 		delta.mapSubtractToSelf(delta.getEntry(0));
 		
-//		System.out.println(delta);
-//		System.out.println(variance);			
+		logger.debug("Mean: {}", delta);
+		logger.debug("Variance: {}", variance);			
 	}	
 
 	@Override

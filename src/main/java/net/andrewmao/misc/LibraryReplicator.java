@@ -9,6 +9,9 @@ import java.net.URL;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.io.Files;
 import com.sun.jna.Native;
 
@@ -20,6 +23,7 @@ import com.sun.jna.Native;
  *
  */
 public class LibraryReplicator<C> {
+	final Logger logger;
 
 	final BlockingQueue<C> libQueue;
 	final Class<C> interfaceClass;
@@ -29,7 +33,9 @@ public class LibraryReplicator<C> {
 	public LibraryReplicator(URL libraryResource, Class<C> interfaceClass, int copies) throws IOException {
 		if (!interfaceClass.isInterface()) 
 			throw new RuntimeException(interfaceClass + "is not a valid interface to map to the library.");
-				
+		logger = LoggerFactory.getLogger(
+				this.getClass().getSimpleName() + "-" + interfaceClass.getSimpleName() );		
+		
 		libQueue = new LinkedBlockingQueue<C>(copies);
 		this.interfaceClass = interfaceClass;
 		
@@ -40,7 +46,8 @@ public class LibraryReplicator<C> {
 			File copy = new File(orig + "." + i);
 			Files.copy(origFile, copy);						
 			
-			C libCopy = (C) Native.loadLibrary(copy.getPath(), interfaceClass);			
+			C libCopy = (C) Native.loadLibrary(copy.getPath(), interfaceClass);	
+			logger.debug("{} mapped to {}", libCopy, copy);
 			libQueue.offer(libCopy); // This should never fail
 		}				
 		
@@ -72,12 +79,14 @@ public class LibraryReplicator<C> {
 					try { instance = libQueue.take(); }
 					catch(InterruptedException e) {}
 				} while(instance == null);	
+				logger.trace("{} taken", instance);
 				
 				// Invoke the method
 				return method.invoke(instance, args);	
 			}
 			finally {				
 				// Return the library to the queue, even if there is an exception
+				logger.trace("{} returning", instance);
 				while( instance != null ) {
 					try { libQueue.put(instance); break; }
 					catch( InterruptedException e ) {} 
