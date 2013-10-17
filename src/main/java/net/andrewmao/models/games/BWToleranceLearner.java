@@ -31,10 +31,11 @@ public class BWToleranceLearner extends BaumWelchScaledLearner {
 	{
 		double logLk = Double.NEGATIVE_INFINITY;
 				
-		Hmm<O> hmm = initialHmm;
+		Hmm<O> hmm = initialHmm;		
 		
 		/* TODO This is a little inefficient because the iteration 
-		 * runs forward-backward algorithm already, but it's quick so w/e */		
+		 * runs forward-backward algorithm already, but it's quick so w/e 
+		 */		
 		
 		for (int i = 0; i < maxIters; i++) {
 			hmm = iterate(hmm, sequences);

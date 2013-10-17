@@ -3,6 +3,8 @@ package net.andrewmao.models.games;
 import java.text.NumberFormat;
 import java.util.*;
 
+import com.google.common.collect.ImmutableList;
+
 import net.andrewmao.math.RandomSelection;
 
 import be.ac.ulg.montefiore.run.jahmm.Opdf;
@@ -22,10 +24,9 @@ implements Opdf<SigActObservation<S,A>> {
 	
 	private static final long serialVersionUID = 1L;
 
-	final List<S> signals;
-	final List<A> actions;
+	final ImmutableList<S> signals;
+	final ImmutableList<A> actions;
 	
-	final double[] signalPrior;
 	final OpdfInteger signalDistribution;
 	
 	final double[][] actionProbs;
@@ -36,16 +37,15 @@ implements Opdf<SigActObservation<S,A>> {
 			double[] signalPrior, double[][] probs) {
 		
 		Set<S> sigs = EnumSet.allOf(signalClass);
-		signals = new ArrayList<S>(sigs);
-		for( S s : sigs )
-			signals.set(s.ordinal(), s);
+		List<S> signals = new ArrayList<S>(sigs);
+		for( S s : sigs ) signals.set(s.ordinal(), s);		
+		this.signals = ImmutableList.copyOf(signals);
 		
 		Set<A> acts = EnumSet.allOf(actionClass);
-		actions = new ArrayList<A>(acts);
-		for( A a : acts )
-			actions.set(a.ordinal(), a);
-		
-		this.signalPrior = signalPrior;
+		List<A> actions = new ArrayList<A>(acts);
+		for( A a : acts ) actions.set(a.ordinal(), a);
+		this.actions = ImmutableList.copyOf(actions);
+				
 		this.actionProbs = probs;
 		
 		if( signalPrior != null ) {
@@ -53,6 +53,15 @@ implements Opdf<SigActObservation<S,A>> {
 			signalDistribution = new OpdfInteger(signalPrior);
 		}
 		else signalDistribution = null;
+	}
+	
+	private OpdfStrategy(ImmutableList<S> signals, ImmutableList<A> actions,
+			OpdfInteger signalDistribution, double[][] actionProbs) {
+		// Internal constructor for cloning
+		this.signals = signals;
+		this.actions = actions;
+		this.signalDistribution = signalDistribution;
+		this.actionProbs = actionProbs;
 	}
 	
 	@Override
@@ -63,7 +72,7 @@ implements Opdf<SigActObservation<S,A>> {
 
 	@Override
 	public SigActObservation<S,A> generate() {
-		if( signalPrior == null )
+		if( signalDistribution == null )
 			throw new UnsupportedOperationException("Can't generate signals without prior");
 		
 		int sigIdx = signalDistribution.generate().value;
@@ -145,21 +154,18 @@ implements Opdf<SigActObservation<S,A>> {
 		return sb.toString();
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
 	public OpdfStrategy<S,A> clone()
-	{
-		try {
-			OpdfStrategy<S,A> opdf = (OpdfStrategy<S,A>) super.clone();
-			
-//			opdf.signals = new ArrayList<S>(signals);
-//			opdf.actions = new ArrayList<A>(actions);
-//			opdf.actionProbs = actionProbs.clone();
-			
-			return opdf;
-		} catch(CloneNotSupportedException e) {
-            throw new AssertionError(e);
-        }
+	{	
+		// Signal and action are the same immutable list, but clone prior and distributions.
+		
+		// Action probabilities need a deep clone
+		double[][] actionProbsClone = new double[actionProbs.length][];
+		for( int i = 0; i < actionProbs.length; i++ ) {
+			actionProbsClone[i] = actionProbs[i].clone();
+		}		
+					
+		return new OpdfStrategy<>(signals, actions, signalDistribution.clone(), actionProbsClone);		
 	}
 
 }
