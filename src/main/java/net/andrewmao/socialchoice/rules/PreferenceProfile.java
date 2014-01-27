@@ -30,6 +30,10 @@ public class PreferenceProfile<T> {
 		return profile;
 	}
 
+	public List<T> getSortedOrdering() {
+		return Arrays.asList(getSortedCandidates());		
+	}
+
 	public T[] getSortedCandidates() {
 		T[] candidates = Arrays.copyOf(profile[0], profile[0].length);
 		
@@ -157,59 +161,6 @@ public class PreferenceProfile<T> {
 		if( subsetSize < profile.length )
 			return new PreferenceProfile<T>(RandomSelection.selectKRandom(profile, subsetSize, rnd));
 		else return this;
-	}
-	
-	/**
-	 * Returns a candidate if it is always ranked highest in the preference profile
-	 * @return
-	 */
-	public T getConstantWinner() {
-		T winner = profile[0][0];
-		
-		for( int i = 1; i < profile.length; i++ ) {
-			if( !winner.equals(profile[i][0]) ) return null;
-		}
-		
-		return winner;
-	}
-
-	/**
-	 * Returns a candidate if it is always ranked lowest in the preference profile
-	 * @return
-	 */
-	public T getConstantLoser() {
-		int c = getNumCandidates();
-		
-		T loser = profile[0][c-1];
-		
-		for( int i = 1; i < profile.length; i++ ) {
-			if( !loser.equals(profile[i][c-1]) ) return null;
-		}
-		
-		return loser;		
-	}
-
-	/**
-	 * Creates a copy of this preference profile removing any constant winner or loser at the ends.
-	 * Used for MM models to ensure convergence.
-	 * @return
-	 */
-	public PreferenceProfile<T> preprocess() {
-		boolean removeWinner = getConstantWinner() != null;
-		boolean removeLoser = getConstantLoser() != null;
-		
-		int newSize = getNumCandidates();
-		if( removeWinner ) newSize--;
-		if( removeLoser ) newSize--;
-		
-		@SuppressWarnings("unchecked")
-		T[][] newProfile = (T[][]) Array.newInstance(profile[0][0].getClass(), profile.length, newSize);
-		int startIdx = removeWinner ? 1 : 0;		
-		
-		for( int i = 0; i < profile.length; i++ )
-			System.arraycopy(profile[i], startIdx, newProfile[i], 0, newSize);		
-		
-		return new PreferenceProfile<T>(newProfile);
 	}
 
 	public String toString() {
